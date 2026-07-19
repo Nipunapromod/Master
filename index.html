@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A/L Mastermind Dashboard v4.0</title>
+    <title>A/L Mastermind Dashboard v4.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Premium Icons -->
@@ -36,7 +36,6 @@
         }
     </script>
     <style>
-        /* Custom scrollbars and styling */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -86,7 +85,7 @@
 
     <!-- Authentication Entry Shield -->
     <div id="auth-screen" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-md w-full space-y-6 shadow-2xl glow-indigo">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 shadow-2xl glow-indigo">
             <div class="text-center space-y-2">
                 <div class="bg-gradient-to-tr from-brand-600 to-indigo-500 p-4 rounded-2xl inline-block shadow-lg shadow-brand-500/20">
                     <i class="fa-solid fa-graduation-cap text-3xl text-white"></i>
@@ -95,6 +94,31 @@
                     A/L MASTERMIND
                 </h1>
                 <p class="text-xs text-slate-400">Sri Lankan Advanced Level Academic Platform</p>
+            </div>
+
+            <!-- Supabase Diagnostic Tool Panel -->
+            <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3 space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400 font-bold uppercase text-[9px] tracking-wider">Supabase Live Connection Diagnostic</span>
+                    <span id="diagnostic-status-badge" class="px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-800 text-slate-400">PENDING</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[10px]">
+                    <div class="bg-slate-900/60 p-2 rounded border border-slate-800/50 flex justify-between">
+                        <span class="text-slate-500">SDK Status:</span>
+                        <span id="diag-sdk" class="font-bold text-amber-400">Loading...</span>
+                    </div>
+                    <div class="bg-slate-900/60 p-2 rounded border border-slate-800/50 flex justify-between">
+                        <span class="text-slate-500">Ping Response:</span>
+                        <span id="diag-ping" class="font-bold text-slate-400">Unchecked</span>
+                    </div>
+                </div>
+                <!-- Dynamic Helper Error Context -->
+                <div id="diag-helper-box" class="hidden p-2.5 rounded bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-300 space-y-1.5">
+                    <p class="font-bold text-rose-400 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-exclamation"></i> Action Required:
+                    </p>
+                    <p id="diag-helper-text" class="leading-relaxed"></p>
+                </div>
             </div>
 
             <!-- Login / Signup toggler -->
@@ -146,16 +170,22 @@
                     <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                 </div>
 
-                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition duration-200 shadow-lg shadow-brand-600/20">
-                    <span id="auth-submit-label">Log In</span> <i class="fa-solid fa-arrow-right-to-bracket ml-1"></i>
-                </button>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition duration-200 shadow-lg shadow-brand-600/20">
+                        <span id="auth-submit-label">Log In</span> <i class="fa-solid fa-arrow-right-to-bracket ml-1"></i>
+                    </button>
+                    <!-- Quick Bypass local option -->
+                    <button type="button" onclick="bypassToDemoSandbox()" class="bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold px-4 rounded-xl text-xs transition border border-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-plug-circle-exclamation"></i> Local Demo
+                    </button>
+                </div>
             </form>
 
-            <div class="text-center pt-2">
+            <div class="text-center pt-1 border-t border-slate-800/60">
                 <p id="auth-database-badge" class="text-[9px] uppercase tracking-wider font-extrabold text-emerald-400 bg-emerald-500/10 py-1.5 px-3 rounded-lg border border-emerald-500/20">
                     <i class="fa-solid fa-cloud-arrow-up mr-1 text-emerald-400"></i> Seeding Supabase Cloud Sync...
                 </p>
-                <p class="text-[9px] text-slate-500 mt-2">Connect your Supabase credentials inside Settings to modify database instances</p>
+                <p class="text-[9px] text-slate-500 mt-2">To configure or edit cloud keys, navigate to the Settings tab inside the dashboard.</p>
             </div>
         </div>
     </div>
@@ -174,7 +204,6 @@
             </div>
         </div>
 
-        <!-- Premium Badge & Quick Stats -->
         <div class="flex items-center space-x-4">
             <div class="hidden sm:flex items-center bg-slate-950 border border-slate-800 rounded-full px-3 py-1 text-xs space-x-2">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -213,7 +242,7 @@
                     <span>Tasks & Classes</span>
                 </button>
 
-                <!-- Active Recall (Forgetting Curve / Functions Tracker) -->
+                <!-- Active Recall (Forgetting Curve Tracker) -->
                 <button onclick="switchTab('forgetting')" id="btn-tab-forgetting" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
                     <i class="fa-solid fa-brain text-lg w-6"></i>
                     <span>Recall Planner</span>
@@ -246,7 +275,6 @@
             
             <!-- ================= HOME TAB ================= -->
             <section id="tab-content-home" class="tab-pane space-y-6">
-                
                 <!-- Hero Countdown Header (Locked to 2027 August 10) -->
                 <div class="relative bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 overflow-hidden glow-indigo">
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.12),transparent_45%)]"></div>
@@ -417,11 +445,10 @@
 
             <!-- ================= TRACKER TAB ================= -->
             <section id="tab-content-tracker" class="tab-pane hidden space-y-6">
-                
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-white tracking-tight">Paper Marks Analyzer</h2>
-                        <p class="text-xs text-slate-400">Log scores of model, school, and provincial exams to unlock high-fidelity analytics.</p>
+                        <p class="text-xs text-slate-400">Log scores of weekly tuition class exam papers to analyze dynamic trends & composite grades.</p>
                     </div>
                     
                     <div class="flex items-center space-x-2">
@@ -437,7 +464,7 @@
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h3 class="text-sm font-bold text-white flex items-center space-x-2">
                             <i class="fa-solid fa-file-pen text-indigo-400"></i>
-                            <span>Log New Practice Paper</span>
+                            <span>Log New Tuition Class Paper</span>
                         </h3>
                         <button onclick="closeLogPaperModal()" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
                     </div>
@@ -453,7 +480,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Paper Number</label>
-                            <input type="number" id="paper-number" required placeholder="e.g. 26" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            <input type="number" id="paper-number" required placeholder="e.g. 27" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Marks Obtained (%)</label>
@@ -564,7 +591,6 @@
 
             <!-- ================= TASKS & CLASS MANAGER TAB ================= -->
             <section id="tab-content-tasks" class="tab-pane hidden space-y-6">
-                
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
                     <!-- Task Manager (To-Do List) -->
@@ -764,7 +790,6 @@
 
             <!-- ================= AI ASSISTANT TAB ================= -->
             <section id="tab-content-ai" class="tab-pane hidden flex flex-col h-[calc(100vh-140px)] space-y-4">
-                
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2 flex-shrink-0">
                     <div>
                         <h2 class="text-xl font-bold text-white flex items-center space-x-2">
@@ -941,7 +966,7 @@
                         <div class="space-y-3">
                             <h3 class="text-sm font-bold text-white flex items-center space-x-2">
                                 <i class="fa-solid fa-database text-emerald-400"></i>
-                                <span>Supabase Cloud Sync</span>
+                                <span>Supabase Cloud Sync Keys</span>
                             </h3>
                             <p class="text-xs text-slate-400">
                                 Link your dashboard to an active Supabase SaaS project to enable secure, persistent multi-device sync for Marks, To-Do items, Classes, and Profiles.
@@ -954,7 +979,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Anon API Key</label>
-                                    <input type="password" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 placeholder:text-slate-700 focus:outline-none focus:border-brand-500">
+                                    <input type="password" id="sb-key" placeholder="sb_publishable_..." class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 placeholder:text-slate-700 focus:outline-none focus:border-brand-500">
                                 </div>
                                 <div class="flex gap-2">
                                     <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs transition">
@@ -1089,7 +1114,9 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
         </div>
     </div>
 
+    <!-- MAIN DASHBOARD CORE SCRIPTS -->
     <script>
+        
         // Session and Storage cookies
         function setCookie(name, value, days) {
             let expires = "";
@@ -1132,9 +1159,9 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
         let activeChartFilter = 'All'; 
         let currentUserSession = null; 
 
-        // Seeded Credentials inside fallback storage database
-        const defaultSupabaseUrl = 'https://sjbzwrubjieiiifbpztlb.supabase.co';
-        const defaultSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqYnp3cnViamllaWlmYnB6dGxiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0NjIyNjIsImV4cCI6MjEwMDAzODI2Mn0.0TDgg8zoB_O58U6lqKO8YQoY_10JcKzP0pjSz0buB1Y';
+        // Dynamic pre-seeded credentials based on your direct input
+        const defaultSupabaseUrl = 'https://sjbzwrubjieiifbpztlb.supabase.co';
+        const defaultSupabaseKey = 'sb_publishable_J4KsahgxNsGpOiqpfycnqQ_bSwyKPZ5';
 
         let localUserAccounts = JSON.parse(localStorage.getItem('al_user_db')) || {
             "test@mastermind.lk": {
@@ -1146,12 +1173,12 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
                     district: "Colombo"
                 },
                 paperLogs: [
-                    { id: 1, subject: 'Combined Maths', type: 'Paper 1', marks: 78, date: '2026-07-10', absent: false },
-                    { id: 2, subject: 'Chemistry', type: 'Paper 1', marks: 62, date: '2026-07-12', absent: false },
-                    { id: 3, subject: 'Physics', type: 'Paper 1', marks: 71, date: '2026-07-14', absent: false },
-                    { id: 4, subject: 'Combined Maths', type: 'Paper 2', marks: null, date: '2026-07-18', absent: true },
-                    { id: 5, subject: 'Chemistry', type: 'Paper 2', marks: 70, date: '2026-07-22', absent: false },
-                    { id: 6, subject: 'Physics', type: 'Paper 2', marks: 75, date: '2026-07-25', absent: false }
+                    { id: 1, subject: 'Combined Maths', type: 'Paper 27', marks: 78, date: '2026-07-10', absent: false },
+                    { id: 2, subject: 'Chemistry', type: 'Paper 27', marks: 62, date: '2026-07-12', absent: false },
+                    { id: 3, subject: 'Physics', type: 'Paper 27', marks: 71, date: '2026-07-14', absent: false },
+                    { id: 4, subject: 'Combined Maths', type: 'Paper 28', marks: null, date: '2026-07-18', absent: true },
+                    { id: 5, subject: 'Chemistry', type: 'Paper 28', marks: 70, date: '2026-07-22', absent: false },
+                    { id: 6, subject: 'Physics', type: 'Paper 28', marks: 75, date: '2026-07-25', absent: false }
                 ],
                 taskLogs: [
                     { id: 1, name: 'Revise Chemistry Thermodynamics Equations', date: '2026-07-20', time: '05:00 PM - 07:00 PM', done: false },
@@ -1171,8 +1198,7 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
         let currentAuthMode = 'login';
         let supabaseClient = null;
 
-        function initSupabase() {
-            // Retrieve config, defaulting instantly to pre-seeded properties
+        async function initSupabase() {
             let url = localStorage.getItem('supabase_url');
             let key = localStorage.getItem('supabase_key');
 
@@ -1186,13 +1212,56 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
             document.getElementById('sb-url').value = url;
             document.getElementById('sb-key').value = key;
 
+            // Diagnostic elements
+            const diagSdk = document.getElementById('diag-sdk');
+            const diagPing = document.getElementById('diag-ping');
+            const diagStatusBadge = document.getElementById('diagnostic-status-badge');
+            const diagHelperBox = document.getElementById('diag-helper-box');
+            const diagHelperText = document.getElementById('diag-helper-text');
+
+            if (typeof window.supabase === 'undefined') {
+                diagSdk.innerText = "FAILED (Not Loaded)";
+                diagSdk.className = "font-bold text-rose-500";
+                diagStatusBadge.innerText = "ERROR";
+                diagStatusBadge.className = "px-2 py-0.5 rounded text-[9px] font-extrabold bg-rose-500/10 text-rose-400";
+                diagHelperBox.classList.remove('hidden');
+                diagHelperText.innerText = "The Supabase CDN script failed to load. Please check your internet connection or ensure script blocking extensions are disabled.";
+                return false;
+            }
+
+            diagSdk.innerText = "OK (SDK Loaded)";
+            diagSdk.className = "font-bold text-emerald-400";
+
             try {
-                supabaseClient = supabase.createClient(url, key);
-                document.getElementById('auth-database-badge').innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1 text-emerald-400"></i> Supabase Cloud Sync Connected';
-                document.getElementById('auth-database-badge').className = "text-[9px] uppercase tracking-wider font-extrabold text-emerald-400 bg-emerald-500/10 py-1.5 px-3 rounded-lg border border-emerald-500/20";
-                return true;
+                supabaseClient = window.supabase.createClient(url, key);
+                
+                // Test ping against the Supabase database REST endpoint to verify credentials
+                const response = await fetch(`${url}/rest/v1/`, {
+                    method: 'GET',
+                    headers: { 'apikey': key }
+                });
+
+                if (response.ok) {
+                    diagPing.innerText = "CONNECTED (200 OK)";
+                    diagPing.className = "font-bold text-emerald-400";
+                    diagStatusBadge.innerText = "ONLINE";
+                    diagStatusBadge.className = "px-2 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/10 text-emerald-400";
+                    diagHelperBox.classList.add('hidden'); // clear any old helpers
+
+                    document.getElementById('auth-database-badge').innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1 text-emerald-400"></i> Supabase Cloud Sync Connected';
+                    document.getElementById('auth-database-badge').className = "text-[9px] uppercase tracking-wider font-extrabold text-emerald-400 bg-emerald-500/10 py-1.5 px-3 rounded-lg border border-emerald-500/20";
+                    return true;
+                } else {
+                    throw new Error(`Invalid credentials or API block. HTTP ${response.status}`);
+                }
             } catch (err) {
-                console.error("Supabase failed initialization:", err);
+                console.error("Supabase live connection check failed:", err);
+                diagPing.innerText = "DISCONNECTED";
+                diagPing.className = "font-bold text-rose-500";
+                diagStatusBadge.innerText = "OFFLINE";
+                diagStatusBadge.className = "px-2 py-0.5 rounded text-[9px] font-extrabold bg-rose-500/10 text-rose-400";
+                diagHelperBox.classList.remove('hidden');
+                diagHelperText.innerHTML = `<strong>Error details:</strong> ${err.message || err}<br><span class="block mt-1">Please verify that your Supabase URL and Anon API key inside the Settings tab are correct. If this is a new Supabase project, make sure CORS is enabled or use the <strong>Local Demo</strong> bypass button.</span>`;
             }
             
             supabaseClient = null;
@@ -1202,7 +1271,7 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
         }
 
         // Connect Supabase using input config
-        function saveSupabaseConfig(event) {
+        async function saveSupabaseConfig(event) {
             event.preventDefault();
             const url = document.getElementById('sb-url').value.trim();
             const key = document.getElementById('sb-key').value.trim();
@@ -1215,12 +1284,12 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
             localStorage.setItem('supabase_url', url);
             localStorage.setItem('supabase_key', key);
             
-            const success = initSupabase();
+            const success = await initSupabase();
             if (success) {
-                showAlert("Database Connected", "Linked to Supabase successfully. Please register a new cloud account or sign in to synchronize database records!");
-                handleLogout(); // force clear auth prompt
+                showAlert("Database Connected", "Linked to your Supabase project successfully! Please log in or create an account.");
+                handleLogout(); // force clear auth screen prompt
             } else {
-                showAlert("Connection Failed", "Initialization error. Check console logs.");
+                showAlert("Connection Failed", "Unable to establish contact. Double check your credentials and run the SQL table builder.");
             }
         }
 
@@ -1230,7 +1299,7 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
             document.getElementById('sb-url').value = '';
             document.getElementById('sb-key').value = '';
             initSupabase();
-            showAlert("Disconnected", "Unlinked cloud database. Operating in sandbox demo mode.");
+            showAlert("Disconnected", "Unlinked cloud database. Operating in local sandbox demo mode.");
             handleLogout();
         }
 
@@ -1254,12 +1323,23 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
             }
         }
 
+        function bypassToDemoSandbox() {
+            setCookie('al_user_session', 'test@mastermind.lk', 7);
+            loadLocalData('test@mastermind.lk');
+            document.getElementById('auth-screen').classList.add('hidden');
+            syncProfileUI();
+            updateCoreStats();
+            showAlert('Local Sandbox Bypass', `Loaded local default student profile successfully.`);
+        }
+
         async function handleAuthSubmit(event) {
             event.preventDefault();
             const email = document.getElementById('auth-email').value.trim().toLowerCase();
             const password = document.getElementById('auth-password').value;
 
-            // Mode A: Cloud Database mode active
+            const diagHelperBox = document.getElementById('diag-helper-box');
+            const diagHelperText = document.getElementById('diag-helper-text');
+
             if (supabaseClient) {
                 try {
                     if (currentAuthMode === 'register') {
@@ -1269,25 +1349,29 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
 
                         const { data, error } = await supabaseClient.auth.signUp({ email, password });
                         if (error) {
-                            showAlert("Registration Failed", error.message);
-                            return;
+                            throw error;
                         }
 
                         if (data?.user) {
-                            // Create profile mapping
+                            // Attempt to build public database user profile record
                             const { error: profileErr } = await supabaseClient.from('profiles').insert([
                                 { id: data.user.id, name, year: "2027-08-10", course, district }
                             ]);
-                            if (profileErr) console.error("Profile build failed:", profileErr);
+                            if (profileErr) {
+                                console.error("Profile record insertion failed:", profileErr);
+                                if (profileErr.message && profileErr.message.includes("profiles")) {
+                                    throw new Error(`Account created, but database tables are missing! Go to Supabase SQL editor and run the Setup SQL located in the Settings tab.`);
+                                }
+                            }
                         }
 
-                        showAlert("Success!", "Your account has been built on Supabase. Please sign in now.");
+                        // Inform user about email confirmation if they didn't get automatically logged in
+                        showAlert("Account Created", "Successfully built account! Note: If you cannot log in, check your email for a confirmation message or turn off 'Confirm Email' in your Supabase Auth Providers Settings.");
                         toggleAuthMode('login');
                     } else {
                         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                         if (error) {
-                            showAlert("Failed Sign In", error.message);
-                            return;
+                            throw error;
                         }
 
                         currentUserSession = data.session;
@@ -1297,19 +1381,21 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
                         document.getElementById('auth-screen').classList.add('hidden');
                         syncProfileUI();
                         updateCoreStats();
-                        showAlert('Cloud Connected', `Successfully logged in to Supabase secure server!`);
+                        showAlert('Cloud Sync Active', `Logged into Supabase cloud database as ${studentProfile.name || 'Scholar'}!`);
                     }
                 } catch (err) {
-                    console.warn("Supabase outbound call failed. Bypassing to persistent Local Demo Mode:", err);
-                    showAlert(
-                        "Sandbox Offline Redirect", 
-                        "Cloud endpoints were blocked by iframe sandbox rules. Logged you into persistent Local Demo Mode immediately so your progress is not interrupted!"
-                    );
-                    runLocalAuthFallback(email, password);
+                    console.error("Supabase Auth Operation Failed:", err);
+                    diagHelperBox.classList.remove('hidden');
+                    let helpMsg = `<strong>Authentication Failed:</strong> ${err.message || err}`;
+                    if (err.message && err.message.includes("Email not confirmed")) {
+                        helpMsg += `<br><span class="block mt-1 text-amber-300 font-semibold">💡 FIX: Go to your Supabase Console -> Authentication -> Providers -> Email -> Toggle OFF "Confirm email" and save. Or check your inbox to confirm this email.</span>`;
+                    } else if (err.message && err.message.includes("relation") || err.message && err.message.includes("table")) {
+                        helpMsg += `<br><span class="block mt-1 text-purple-300 font-semibold">💡 FIX: You forgot to create tables! Copy the SQL code inside settings and paste it inside Supabase SQL Editor.</span>`;
+                    }
+                    diagHelperText.innerHTML = helpMsg;
+                    showAlert("Authentication Error", err.message || "Failed to sync with Supabase project.");
                 }
-            } 
-            // Mode B: Local Memory Sandbox fallback
-            else {
+            } else {
                 runLocalAuthFallback(email, password);
             }
         }
@@ -1433,7 +1519,7 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
         }
 
         async function checkSessionCookie() {
-            initSupabase();
+            await initSupabase();
 
             const sessionEmail = getCookie('al_user_session');
             if (sessionEmail) {
@@ -1621,264 +1707,6 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
             document.getElementById('next-forgetting-alert').innerText = `${pending} Concept(s) Need Active Review`;
         }
 
-        async function addTask(event) {
-            event.preventDefault();
-            const name = document.getElementById('task-name').value;
-            const date = document.getElementById('task-date').value;
-            
-            const startH = document.getElementById('task-start-hour').value;
-            const startAM = document.getElementById('task-start-ampm').value;
-            const endH = document.getElementById('task-end-hour').value;
-            const endAM = document.getElementById('task-end-ampm').value;
-
-            const compiledTime = compileTimeRange(startH, startAM, endH, endAM);
-
-            if (supabaseClient) {
-                try {
-                    const { data: { user } } = await supabaseClient.auth.getUser();
-                    const { data, error } = await supabaseClient.from('tasks').insert([
-                        { user_id: user.id, name, date, time: compiledTime, done: false }
-                    ]).select();
-                    if (!error && data) {
-                        taskLogs.push(data[0]);
-                    }
-                } catch (err) {
-                    console.warn("Bypassed dynamic task cloud sync.");
-                }
-            } else {
-                const newTask = {
-                    id: Date.now(),
-                    name,
-                    date,
-                    time: compiledTime,
-                    done: false
-                };
-                taskLogs.push(newTask);
-                saveLocalData();
-            }
-
-            document.getElementById('task-form').reset();
-            renderTasks();
-            updateCoreStats();
-        }
-
-        async function toggleTask(id) {
-            const task = taskLogs.find(t => t.id === id);
-            if (!task) return;
-
-            const nextDone = !task.done;
-
-            if (supabaseClient) {
-                try {
-                    const { error } = await supabaseClient.from('tasks').update({ done: nextDone }).eq('id', id);
-                    if (!error) {
-                        taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
-                    }
-                } catch (err) {
-                    taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
-                }
-            } else {
-                taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
-                saveLocalData();
-            }
-            renderTasks();
-        }
-
-        async function deleteTask(id) {
-            if (supabaseClient) {
-                try {
-                    const { error } = await supabaseClient.from('tasks').delete().eq('id', id);
-                    if (!error) {
-                        taskLogs = taskLogs.filter(t => t.id !== id);
-                    }
-                } catch (err) {
-                    taskLogs = taskLogs.filter(t => t.id !== id);
-                }
-            } else {
-                taskLogs = taskLogs.filter(t => t.id !== id);
-                saveLocalData();
-            }
-            renderTasks();
-        }
-
-        async function addClass(event) {
-            event.preventDefault();
-            const name = document.getElementById('class-name').value;
-            const day = document.getElementById('class-day').value;
-            
-            const startH = document.getElementById('class-start-hour').value;
-            const startM = document.getElementById('class-start-minute').value;
-            const startAM = document.getElementById('class-start-ampm').value;
-            
-            const endH = document.getElementById('class-end-hour').value;
-            const endM = document.getElementById('class-end-minute').value;
-            const endAM = document.getElementById('class-end-ampm').value;
-
-            const compiledTime = compileDetailedTimeRange(startH, startM, startAM, endH, endM, endAM);
-
-            if (supabaseClient) {
-                try {
-                    const { data: { user } } = await supabaseClient.auth.getUser();
-                    const { data, error } = await supabaseClient.from('classes').insert([
-                        { user_id: user.id, name, day, time: compiledTime }
-                    ]).select();
-                    if (!error && data) {
-                        classLogs.push(data[0]);
-                    }
-                } catch (err) {
-                    console.warn("Bypassed dynamic class cloud sync.");
-                }
-            } else {
-                const newClass = {
-                    id: Date.now(),
-                    name,
-                    day,
-                    time: compiledTime
-                };
-                classLogs.push(newClass);
-                saveLocalData();
-            }
-
-            document.getElementById('class-form').reset();
-            renderClasses();
-            updateCoreStats();
-            showAlert('Success', 'Tuition reminder successfully created!');
-        }
-
-        async function deleteClass(id) {
-            if (supabaseClient) {
-                try {
-                    const { error } = await supabaseClient.from('classes').delete().eq('id', id);
-                    if (!error) {
-                        classLogs = classLogs.filter(c => c.id !== id);
-                    }
-                } catch (err) {
-                    classLogs = classLogs.filter(c => c.id !== id);
-                }
-            } else {
-                classLogs = classLogs.filter(c => c.id !== id);
-                saveLocalData();
-            }
-            renderClasses();
-            updateCoreStats();
-        }
-
-        async function savePaper(event) {
-            event.preventDefault();
-            const subject = document.getElementById('paper-subject').value;
-            const numberVal = document.getElementById('paper-number').value;
-            const marksInput = document.getElementById('paper-marks');
-            const isAbsent = document.getElementById('paper-absent').checked;
-            const date = document.getElementById('paper-date').value;
-
-            const type = `Paper ${numberVal}`;
-            let marks = null;
-
-            if (!isAbsent) {
-                marks = parseInt(marksInput.value);
-                if (isNaN(marks) || marks < 0 || marks > 100) {
-                    showAlert('Invalid Entry', 'Marks must be an integer between 0 and 100.');
-                    return;
-                }
-            }
-
-            if (supabaseClient) {
-                try {
-                    const { data: { user } } = await supabaseClient.auth.getUser();
-                    const { data, error } = await supabaseClient.from('papers').insert([
-                        { user_id: user.id, subject, type, marks, date, absent: isAbsent }
-                    ]).select();
-                    if (!error && data) {
-                        paperLogs.push(data[0]);
-                    }
-                } catch (err) {
-                    console.warn("Bypassed dynamic score cloud sync.");
-                }
-            } else {
-                const newPaper = {
-                    id: Date.now(),
-                    subject,
-                    type,
-                    marks,
-                    date,
-                    absent: isAbsent
-                };
-                paperLogs.push(newPaper);
-                saveLocalData();
-            }
-
-            document.getElementById('paper-form').reset();
-            toggleAbsentInput(document.getElementById('paper-absent'));
-            closeLogPaperModal();
-            showAlert('Success', isAbsent ? 'Absent status recorded successfully!' : 'Paper score successfully saved!');
-            
-            renderMarksAnalytics();
-            updateCoreStats();
-        }
-
-        async function deletePaper(id) {
-            if (supabaseClient) {
-                try {
-                    const { error } = await supabaseClient.from('papers').delete().eq('id', id);
-                    if (!error) {
-                        paperLogs = paperLogs.filter(p => p.id !== id);
-                    }
-                } catch (err) {
-                    paperLogs = paperLogs.filter(p => p.id !== id);
-                }
-            } else {
-                paperLogs = paperLogs.filter(p => p.id !== id);
-                saveLocalData();
-            }
-            renderMarksAnalytics();
-            updateCoreStats();
-        }
-
-        function setChartFilter(subject) {
-            activeChartFilter = subject;
-            updateFilterBtnHighlight();
-            renderMarksAnalytics();
-            renderChatViewChart();
-        }
-
-        function updateFilterBtnHighlight() {
-            const filters = {
-                'All': 'btn-filter-all',
-                'Combined Maths': 'btn-filter-maths',
-                'Chemistry': 'btn-filter-chem',
-                'Physics': 'btn-filter-phys'
-            };
-            const chatFilters = {
-                'All': 'chat-filter-btn-all',
-                'Combined Maths': 'chat-filter-btn-maths',
-                'Chemistry': 'chat-filter-btn-chem',
-                'Physics': 'chat-filter-btn-phys'
-            };
-
-            Object.values(filters).forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.className = "chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200";
-            });
-            Object.values(chatFilters).forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.className = "px-2 py-1 bg-slate-900 text-slate-400 text-[10px] rounded font-bold transition";
-            });
-
-            const activeId = filters[activeChartFilter];
-            const activeEl = document.getElementById(activeId);
-            if (activeEl) activeEl.className = "chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all bg-brand-600 text-white shadow-lg shadow-brand-500/25";
-
-            const activeChatId = chatFilters[activeChartFilter];
-            const activeChatEl = document.getElementById(activeChatId);
-            if (activeChatEl) activeChatEl.className = "px-2 py-1 bg-brand-600 text-white text-[10px] rounded font-bold transition shadow-lg shadow-brand-500/20";
-
-            const titleEl = document.getElementById('chart-title-lbl');
-            if (titleEl) titleEl.innerText = activeChartFilter === 'All' ? 'Subject Progression (3-Subject Composite)' : `${activeChartFilter} Progression History`;
-
-            const ctaBtnLabel = document.getElementById('insight-ai-btn-lbl');
-            if (ctaBtnLabel) ctaBtnLabel.innerText = activeChartFilter === 'All' ? 'Analyse all on AI Chat' : `Ask AI about ${activeChartFilter}`;
-        }
-
         let performanceChartInstance = null;
         function renderMarksAnalytics() {
             const tableBody = document.getElementById('paper-table-body');
@@ -1898,7 +1726,7 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
                 return;
             }
 
-            // Numeric X-axis sort by extracted paper numbers, explicitly filtering out paper 12 & 26
+            // Numeric extraction sort strictly by paper index numbers
             paperLogs.sort((a, b) => {
                 const numA = parseInt(String(a.type).replace(/\D/g, ''), 10) || 0;
                 const numB = parseInt(String(b.type).replace(/\D/g, ''), 10) || 0;
@@ -1952,7 +1780,7 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
             }
 
             const datasets = [];
-            // Remove Paper 12 and Paper 26 from showing up on the X axis entirely as requested
+            // Strictly exclude Paper 12 and Paper 26 from displaying on the chart axis
             const activePapersForLabels = (activeChartFilter === 'All' ? paperLogs : paperLogs.filter(p => p.subject === activeChartFilter))
                 .filter(p => {
                     const num = parseInt(String(p.type).replace(/\D/g, ''), 10);
@@ -2183,6 +2011,264 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
             }
         }
 
+        async function addTask(event) {
+            event.preventDefault();
+            const name = document.getElementById('task-name').value;
+            const date = document.getElementById('task-date').value;
+            
+            const startH = document.getElementById('task-start-hour').value;
+            const startAM = document.getElementById('task-start-ampm').value;
+            const endH = document.getElementById('task-end-hour').value;
+            const endAM = document.getElementById('task-end-ampm').value;
+
+            const compiledTime = compileTimeRange(startH, startAM, endH, endAM);
+
+            if (supabaseClient) {
+                try {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { data, error } = await supabaseClient.from('tasks').insert([
+                        { user_id: user.id, name, date, time: compiledTime, done: false }
+                    ]).select();
+                    if (!error && data) {
+                        taskLogs.push(data[0]);
+                    }
+                } catch (err) {
+                    console.warn("Bypassed dynamic task cloud sync.");
+                }
+            } else {
+                const newTask = {
+                    id: Date.now(),
+                    name,
+                    date,
+                    time: compiledTime,
+                    done: false
+                };
+                taskLogs.push(newTask);
+                saveLocalData();
+            }
+
+            document.getElementById('task-form').reset();
+            renderTasks();
+            updateCoreStats();
+        }
+
+        async function toggleTask(id) {
+            const task = taskLogs.find(t => t.id === id);
+            if (!task) return;
+
+            const nextDone = !task.done;
+
+            if (supabaseClient) {
+                try {
+                    const { error } = await supabaseClient.from('tasks').update({ done: nextDone }).eq('id', id);
+                    if (!error) {
+                        taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
+                    }
+                } catch (err) {
+                    taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
+                }
+            } else {
+                taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
+                saveLocalData();
+            }
+            renderTasks();
+        }
+
+        async function deleteTask(id) {
+            if (supabaseClient) {
+                try {
+                    const { error } = await supabaseClient.from('tasks').delete().eq('id', id);
+                    if (!error) {
+                        taskLogs = taskLogs.filter(t => t.id !== id);
+                    }
+                } catch (err) {
+                    taskLogs = taskLogs.filter(t => t.id !== id);
+                }
+            } else {
+                taskLogs = taskLogs.filter(t => t.id !== id);
+                saveLocalData();
+            }
+            renderTasks();
+        }
+
+        async function addClass(event) {
+            event.preventDefault();
+            const name = document.getElementById('class-name').value;
+            const day = document.getElementById('class-day').value;
+            
+            const startH = document.getElementById('class-start-hour').value;
+            const startM = document.getElementById('class-start-minute').value;
+            const startAM = document.getElementById('class-start-ampm').value;
+            
+            const endH = document.getElementById('class-end-hour').value;
+            const endM = document.getElementById('class-end-minute').value;
+            const endAM = document.getElementById('class-end-ampm').value;
+
+            const compiledTime = compileDetailedTimeRange(startH, startM, startAM, endH, endM, endAM);
+
+            if (supabaseClient) {
+                try {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { data, error } = await supabaseClient.from('classes').insert([
+                        { user_id: user.id, name, day, time: compiledTime }
+                    ]).select();
+                    if (!error && data) {
+                        classLogs.push(data[0]);
+                    }
+                } catch (err) {
+                    console.warn("Bypassed class sync.");
+                }
+            } else {
+                const newClass = {
+                    id: Date.now(),
+                    name,
+                    day,
+                    time: compiledTime
+                };
+                classLogs.push(newClass);
+                saveLocalData();
+            }
+
+            document.getElementById('class-form').reset();
+            renderClasses();
+            updateCoreStats();
+            showAlert('Success', 'Tuition reminder successfully created!');
+        }
+
+        async function deleteClass(id) {
+            if (supabaseClient) {
+                try {
+                    const { error } = await supabaseClient.from('classes').delete().eq('id', id);
+                    if (!error) {
+                        classLogs = classLogs.filter(c => c.id !== id);
+                    }
+                } catch (err) {
+                    classLogs = classLogs.filter(c => c.id !== id);
+                }
+            } else {
+                classLogs = classLogs.filter(c => c.id !== id);
+                saveLocalData();
+            }
+            renderClasses();
+            updateCoreStats();
+        }
+
+        async function savePaper(event) {
+            event.preventDefault();
+            const subject = document.getElementById('paper-subject').value;
+            const numberVal = document.getElementById('paper-number').value;
+            const marksInput = document.getElementById('paper-marks');
+            const isAbsent = document.getElementById('paper-absent').checked;
+            const date = document.getElementById('paper-date').value;
+
+            const type = `Paper ${numberVal}`;
+            let marks = null;
+
+            if (!isAbsent) {
+                marks = parseInt(marksInput.value);
+                if (isNaN(marks) || marks < 0 || marks > 100) {
+                    showAlert('Invalid Entry', 'Marks must be an integer between 0 and 100.');
+                    return;
+                }
+            }
+
+            if (supabaseClient) {
+                try {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { data, error } = await supabaseClient.from('papers').insert([
+                        { user_id: user.id, subject, type, marks, date, absent: isAbsent }
+                    ]).select();
+                    if (!error && data) {
+                        paperLogs.push(data[0]);
+                    }
+                } catch (err) {
+                    console.warn("Bypassed dynamic score cloud sync.");
+                }
+            } else {
+                const newPaper = {
+                    id: Date.now(),
+                    subject,
+                    type,
+                    marks,
+                    date,
+                    absent: isAbsent
+                };
+                paperLogs.push(newPaper);
+                saveLocalData();
+            }
+
+            document.getElementById('paper-form').reset();
+            toggleAbsentInput(document.getElementById('paper-absent'));
+            closeLogPaperModal();
+            showAlert('Success', isAbsent ? 'Absent status recorded successfully!' : 'Paper score successfully saved!');
+            
+            renderMarksAnalytics();
+            updateCoreStats();
+        }
+
+        async function deletePaper(id) {
+            if (supabaseClient) {
+                try {
+                    const { error } = await supabaseClient.from('papers').delete().eq('id', id);
+                    if (!error) {
+                        paperLogs = paperLogs.filter(p => p.id !== id);
+                    }
+                } catch (err) {
+                    paperLogs = paperLogs.filter(p => p.id !== id);
+                }
+            } else {
+                paperLogs = paperLogs.filter(p => p.id !== id);
+                saveLocalData();
+            }
+            renderMarksAnalytics();
+            updateCoreStats();
+        }
+
+        function setChartFilter(subject) {
+            activeChartFilter = subject;
+            updateFilterBtnHighlight();
+            renderMarksAnalytics();
+            renderChatViewChart();
+        }
+
+        function updateFilterBtnHighlight() {
+            const filters = {
+                'All': 'btn-filter-all',
+                'Combined Maths': 'btn-filter-maths',
+                'Chemistry': 'btn-filter-chem',
+                'Physics': 'btn-filter-phys'
+            };
+            const chatFilters = {
+                'All': 'chat-filter-btn-all',
+                'Combined Maths': 'chat-filter-btn-maths',
+                'Chemistry': 'chat-filter-btn-chem',
+                'Physics': 'chat-filter-btn-phys'
+            };
+
+            Object.values(filters).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = "chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200";
+            });
+            Object.values(chatFilters).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = "px-2 py-1 bg-slate-900 text-slate-400 text-[10px] rounded font-bold transition";
+            });
+
+            const activeId = filters[activeChartFilter];
+            const activeEl = document.getElementById(activeId);
+            if (activeEl) activeEl.className = "chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all bg-brand-600 text-white shadow-lg shadow-brand-500/25";
+
+            const activeChatId = chatFilters[activeChartFilter];
+            const activeChatEl = document.getElementById(activeChatId);
+            if (activeChatEl) activeChatEl.className = "px-2 py-1 bg-brand-600 text-white text-[10px] rounded font-bold transition shadow-lg shadow-brand-500/20";
+
+            const titleEl = document.getElementById('chart-title-lbl');
+            if (titleEl) titleEl.innerText = activeChartFilter === 'All' ? 'Subject Progression (3-Subject Composite)' : `${activeChartFilter} Progression History`;
+
+            const ctaBtnLabel = document.getElementById('insight-ai-btn-lbl');
+            if (ctaBtnLabel) ctaBtnLabel.innerText = activeChartFilter === 'All' ? 'Analyse all on AI Chat' : `Ask AI about ${activeChartFilter}`;
+        }
+
         async function saveRecallTopic(event) {
             event.preventDefault();
             const subject = document.getElementById('recall-subject').value;
@@ -2336,7 +2422,7 @@ create policy "Users manage own recalls" on public.recalls for all using (auth.u
             });
         }
 
-        const apiKey = ""; // Left empty as required, system injected
+        const apiKey = ""; // Injected dynamically at execution
 
         async function makeAICall(promptContent) {
             const maxRetries = 5;
@@ -2714,6 +2800,7 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
         window.factoryResetSystem = factoryResetSystem;
         window.saveSupabaseConfig = saveSupabaseConfig;
         window.disconnectSupabase = disconnectSupabase;
+        window.bypassToDemoSandbox = bypassToDemoSandbox;
 
         window.onload = function() {
             checkSessionCookie();
