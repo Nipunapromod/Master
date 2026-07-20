@@ -148,9 +148,6 @@
                     <button type="submit" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition duration-200 shadow-lg shadow-brand-600/20">
                         <span id="auth-submit-label">Log In</span> <i class="fa-solid fa-arrow-right-to-bracket ml-1"></i>
                     </button>
-                    <button type="button" onclick="bypassAuthToDemo()" class="bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold py-3 px-4 rounded-xl text-xs transition">
-                        Local Demo
-                    </button>
                 </div>
             </form>
 
@@ -1064,38 +1061,6 @@
         const defaultSupabaseUrl = 'https://bvnawbslzifctckurzjk.supabase.co';
         const defaultSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDQ3NTgzMCwiZXhwIjoyMTAwMDUxODMwfQ.9kH0CKdiw0GRLAcAHAuYWTd-Y1HZJMkhIleeNOISgxs';
 
-        let localUserAccounts = JSON.parse(localStorage.getItem('al_user_db')) || {
-            "test@mastermind.lk": {
-                password: "password123",
-                profile: {
-                    name: "Supun Perera",
-                    year: "2027-08-10",
-                    course: "Engineering",
-                    district: "Colombo"
-                },
-                paperLogs: [
-                    { id: 1, subject: 'Combined Maths', type: 'Paper 1', marks: 78, date: '2026-07-10', absent: false },
-                    { id: 2, subject: 'Chemistry', type: 'Paper 1', marks: 62, date: '2026-07-12', absent: false },
-                    { id: 3, subject: 'Physics', type: 'Paper 1', marks: 71, date: '2026-07-14', absent: false },
-                    { id: 4, subject: 'Combined Maths', type: 'Paper 2', marks: null, date: '2026-07-18', absent: true },
-                    { id: 5, subject: 'Chemistry', type: 'Paper 2', marks: 70, date: '2026-07-22', absent: false },
-                    { id: 6, subject: 'Physics', type: 'Paper 2', marks: 75, date: '2026-07-25', absent: false }
-                ],
-                taskLogs: [
-                    { id: 1, name: 'Revise Chemistry Thermodynamics Equations', date: '2026-07-20', time: '05:00 PM - 07:00 PM', done: false },
-                    { id: 2, name: 'Solve Combined Maths 2022 Integration Question', date: '2026-07-21', time: '10:00 AM - 12:00 PM', done: true }
-                ],
-                classLogs: [
-                    { id: 1, name: 'Maths Mastery Class - Saman Sir', day: 'Sunday', time: '08:00 AM - 01:00 PM' },
-                    { id: 2, name: 'Physics Theory Class - Ruwan Sir', day: 'Wednesday', time: '02:30 PM - 06:30 PM' }
-                ],
-                recallLogs: [
-                    { id: 1, subject: 'Chemistry', topic: 'Organic Reaction Mechanisms (Alkenes)', dateStudied: '2026-07-15', reviewedCount: 1 },
-                    { id: 2, subject: 'Combined Maths', topic: 'Integration by Substitution Rules', dateStudied: '2026-07-16', reviewedCount: 0 }
-                ]
-            }
-        };
-
         let currentAuthMode = 'login';
         let supabaseClient = null;
 
@@ -1115,17 +1080,7 @@
                 }
                 return true;
             } catch (err) {
-                console.error("Cloud failed initialization, using local state:", err);
-            }
-            
-            supabaseClient = null;
-            document.getElementById('auth-database-badge').innerHTML = '<i class="fa-solid fa-circle-nodes mr-1 text-amber-400"></i> Operating in Local Sandbox Mode';
-            document.getElementById('auth-database-badge').className = "text-[9px] uppercase tracking-wider font-extrabold text-amber-400 bg-amber-500/10 py-1.5 px-3 rounded-lg border border-amber-500/20";
-            
-            const syncBadge = document.getElementById('sync-status-badge');
-            if (syncBadge) {
-                syncBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> Offline Local Sandbox';
-                syncBadge.className = "font-bold text-amber-400";
+                console.error("Cloud failed initialization:", err);
             }
             return false;
         }
@@ -1158,7 +1113,6 @@
             
             if (diagBox) diagBox.classList.add('hidden');
 
-            // Mode A: Cloud Database mode active
             if (supabaseClient) {
                 try {
                     if (currentAuthMode === 'register') {
@@ -1199,13 +1153,8 @@
                         showAlert('Cloud Connected', `Successfully connected to secure data cloud!`);
                     }
                 } catch (err) {
-                    console.warn("Outbound call blocked or errored. Redirecting to Sandbox:", err);
-                    runLocalAuthFallback(email, password);
+                    showAuthDiagError("Connection Error", "Outbound secure server call blocked. Please check your network connection.");
                 }
-            } 
-            // Mode B: Local Memory Sandbox fallback
-            else {
-                runLocalAuthFallback(email, password);
             }
         }
 
@@ -1216,86 +1165,9 @@
                 diagBox.innerHTML = `
                     <div class="font-bold text-red-400 mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${title}</div>
                     <div class="leading-relaxed text-slate-300">${msg}</div>
-                    <div class="mt-2 text-slate-400 italic">If this domain is new, verify that email confirmation is bypassed or check your connection status. Tap 'Local Demo' to access local storage.</div>
                 `;
             } else {
                 showAlert(title, msg);
-            }
-        }
-
-        function runLocalAuthFallback(email, password) {
-            if (currentAuthMode === 'register') {
-                if (localUserAccounts[email]) {
-                    showAlert('Account Exists', 'This email is already registered. Please sign in instead.');
-                    return;
-                }
-                const name = document.getElementById('auth-name').value.trim() || "Scholar";
-                const course = document.getElementById('auth-course').value;
-                const district = document.getElementById('auth-district').value;
-
-                localUserAccounts[email] = {
-                    password: password,
-                    profile: {
-                        name: name,
-                        year: "2027-08-10",
-                        course: course,
-                        district: district
-                    },
-                    paperLogs: [],
-                    taskLogs: [],
-                    classLogs: [],
-                    recallLogs: []
-                };
-                localStorage.setItem('al_user_db', JSON.stringify(localUserAccounts));
-                showAlert('Success!', 'Demo account registered successfully. Please sign in now.');
-                toggleAuthMode('login');
-            } else {
-                const account = localUserAccounts[email];
-                if (!account || account.password !== password) {
-                    showAuthDiagError('Failed Authentication', 'Invalid account credentials. Please verify your typing or register a new local profile.');
-                    return;
-                }
-
-                setCookie('al_user_session', email, 7);
-                loadLocalData(email);
-                
-                document.getElementById('auth-screen').classList.add('hidden');
-                syncProfileUI();
-                updateCoreStats();
-                showAlert('Welcome Back!', `Logged in successfully as ${studentProfile.name}`);
-            }
-        }
-
-        function bypassAuthToDemo() {
-            const demoEmail = "test@mastermind.lk";
-            setCookie('al_user_session', demoEmail, 7);
-            loadLocalData(demoEmail);
-            document.getElementById('auth-screen').classList.add('hidden');
-            syncProfileUI();
-            updateCoreStats();
-            showAlert('Local Mode Active', 'Loaded study vault with sandbox memory. Changes will survive inside this browser window.');
-        }
-
-        function loadLocalData(email) {
-            const account = localUserAccounts[email];
-            if (account) {
-                studentProfile = account.profile;
-                paperLogs = account.paperLogs || [];
-                taskLogs = account.taskLogs || [];
-                classLogs = account.classLogs || [];
-                recallLogs = account.recallLogs || [];
-            }
-        }
-
-        function saveLocalData() {
-            const sessionEmail = getCookie('al_user_session');
-            if (sessionEmail && localUserAccounts[sessionEmail]) {
-                localUserAccounts[sessionEmail].profile = studentProfile;
-                localUserAccounts[sessionEmail].paperLogs = paperLogs;
-                localUserAccounts[sessionEmail].taskLogs = taskLogs;
-                localUserAccounts[sessionEmail].classLogs = classLogs;
-                localUserAccounts[sessionEmail].recallLogs = recallLogs;
-                localStorage.setItem('al_user_db', JSON.stringify(localUserAccounts));
             }
         }
 
@@ -1329,7 +1201,7 @@
                 const { data: recalls } = await supabaseClient.from('recalls').select('*');
                 if (recalls) recallLogs = recalls;
             } catch (err) {
-                console.error("Cloud fetch bypassed:", err);
+                console.error("Cloud fetch failed:", err);
             }
         }
 
@@ -1347,7 +1219,7 @@
                     district: studentProfile.district
                 });
             } catch (err) {
-                console.error("Cloud save bypassed:", err);
+                console.error("Cloud save failed:", err);
             }
         }
 
@@ -1355,28 +1227,19 @@
             initSupabase();
 
             const sessionEmail = getCookie('al_user_session');
-            if (sessionEmail) {
-                if (supabaseClient) {
-                    try {
-                        const { data: { session } } = await supabaseClient.auth.getSession();
-                        if (session) {
-                            currentUserSession = session;
-                            await loadCloudData();
-                            document.getElementById('auth-screen').classList.add('hidden');
-                            syncProfileUI();
-                            updateCoreStats();
-                            return;
-                        }
-                    } catch (err) {
-                        console.warn("Session check fallback initialized.");
+            if (sessionEmail && supabaseClient) {
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session) {
+                        currentUserSession = session;
+                        await loadCloudData();
+                        document.getElementById('auth-screen').classList.add('hidden');
+                        syncProfileUI();
+                        updateCoreStats();
+                        return;
                     }
-                } 
-                if (localUserAccounts[sessionEmail]) {
-                    loadLocalData(sessionEmail);
-                    document.getElementById('auth-screen').classList.add('hidden');
-                    syncProfileUI();
-                    updateCoreStats();
-                    return;
+                } catch (err) {
+                    console.warn("Session check failed.");
                 }
             }
             document.getElementById('auth-screen').classList.remove('hidden');
@@ -2581,30 +2444,9 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
 
         function factoryResetSystem() {
             if (supabaseClient) {
-                showAlert('Notice', 'Direct database format blocked on live connection. Please use manual account setups or reset your settings locally.');
+                showAlert('Notice', 'Direct database format blocked on live connection. Please contact administration for structural profile resets.');
                 return;
             }
-            localStorage.removeItem('al_user_db');
-            paperLogs = [];
-            taskLogs = [];
-            classLogs = [];
-            recallLogs = [];
-            studentProfile = {
-                name: "New Student",
-                year: "2027-08-10",
-                course: "Engineering",
-                district: "Colombo"
-            };
-            
-            saveLocalData();
-            syncProfileUI();
-            updateCoreStats();
-            renderTasks();
-            renderClasses();
-            renderRecallPlanner();
-            renderMarksAnalytics();
-            
-            showAlert('Formatted', 'Dashboard formatted successfully.');
         }
 
         window.setCookie = setCookie;
@@ -2640,7 +2482,6 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
         window.saveProfile = saveProfile;
         window.updateProfileYearCountdown = updateProfileYearCountdown;
         window.factoryResetSystem = factoryResetSystem;
-        window.bypassAuthToDemo = bypassAuthToDemo;
 
         window.onload = function() {
             checkSessionCookie();
