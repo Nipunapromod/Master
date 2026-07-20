@@ -124,11 +124,37 @@
                         <div>
                             <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">District</label>
                             <select id="auth-district" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none">
-                                <option value="Colombo">Colombo</option>
-                                <option value="Gampaha">Gampaha</option>
-                                <option value="Kandy">Kandy</option>
-                                <option value="Kurunegala">Kurunegala</option>
-                                <option value="Galle">Galle</option>
+                                <optgroup label="Highly Competitive Tier">
+                                    <option value="Colombo">Colombo</option>
+                                    <option value="Gampaha">Gampaha</option>
+                                    <option value="Kalutara">Kalutara</option>
+                                    <option value="Kandy">Kandy</option>
+                                    <option value="Galle">Galle</option>
+                                    <option value="Matara">Matara</option>
+                                    <option value="Kurunegala">Kurunegala</option>
+                                </optgroup>
+                                <optgroup label="Competitive Tier">
+                                    <option value="Jaffna">Jaffna</option>
+                                    <option value="Matale">Matale</option>
+                                    <option value="Kegalle">Kegalle</option>
+                                    <option value="Ratnapura">Ratnapura</option>
+                                    <option value="Badulla">Badulla</option>
+                                    <option value="Hambantota">Hambantota</option>
+                                    <option value="Puttalam">Puttalam</option>
+                                    <option value="Ampara">Ampara</option>
+                                    <option value="Batticaloa">Batticaloa</option>
+                                </optgroup>
+                                <optgroup label="Rural Advantage Tier">
+                                    <option value="Anuradhapura">Anuradhapura</option>
+                                    <option value="Polonnaruwa">Polonnaruwa</option>
+                                    <option value="Moneragala">Moneragala</option>
+                                    <option value="Trincomalee">Trincomalee</option>
+                                    <option value="Nuwara Eliya">Nuwara Eliya</option>
+                                    <option value="Vavuniya">Vavuniya</option>
+                                    <option value="Mannar">Mannar</option>
+                                    <option value="Mullaitivu">Mullaitivu</option>
+                                    <option value="Kilinochchi">Kilinochchi</option>
+                                </optgroup>
                             </select>
                         </div>
                     </div>
@@ -1347,15 +1373,18 @@
             const globalAvg = (mathAvg + chemAvg + physAvg) / 3;
             
             let districtDifficultyFactor = 1.0;
-            if (['Colombo', 'Gampaha', 'Kandy'].includes(studentProfile.district)) {
+            const highlyCompetitive = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Galle', 'Matara', 'Kurunegala'];
+            const competitive = ['Jaffna', 'Matale', 'Kegalle', 'Ratnapura', 'Badulla', 'Hambantota', 'Puttalam', 'Ampara', 'Batticaloa'];
+
+            if (highlyCompetitive.includes(studentProfile.district)) {
                 districtDifficultyFactor = 1.12; 
                 document.getElementById('est-district-tier').innerText = "Highly Competitive";
-            } else if (['Galle', 'Kurunegala', 'Jaffna'].includes(studentProfile.district)) {
+            } else if (competitive.includes(studentProfile.district)) {
                 districtDifficultyFactor = 1.05;
                 document.getElementById('est-district-tier').innerText = "Competitive";
             } else {
                 districtDifficultyFactor = 0.95; 
-                document.getElementById('est-district-tier').innerText = "Sufficient Cutoffs";
+                document.getElementById('est-district-tier').innerText = "Rural Advantage";
             }
 
             let estZScore = ((globalAvg - 48) / (12 * districtDifficultyFactor));
