@@ -8,8 +8,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js for beautiful analytics -->
+    
+    <!-- Chart.js and dependencies for zooming & saving -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Hammer.js for gesture support in Chart zoom -->
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <!-- Chart.js Zoom Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+
     <!-- Secure Handshake Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -143,10 +149,10 @@
                                     <option value="Ampara">Ampara</option>
                                     <option value="Batticaloa">Batticaloa</option>
                                     <option value="Trincomalee">Trincomalee</option>
-                                </optgroup>
-                                <optgroup label="Rural Advantage Tier">
                                     <option value="Anuradhapura">Anuradhapura</option>
                                     <option value="Polonnaruwa">Polonnaruwa</option>
+                                </optgroup>
+                                <optgroup label="Rural Advantage Tier">
                                     <option value="Moneragala">Moneragala</option>
                                     <option value="Nuwara Eliya">Nuwara Eliya</option>
                                     <option value="Vavuniya">Vavuniya</option>
@@ -215,7 +221,6 @@
     </header>
 
     <div class="flex flex-1 overflow-hidden relative">
-        
         <aside class="hidden md:flex flex-col w-64 bg-slate-900/80 border-r border-slate-800 p-4 space-y-2 justify-between flex-shrink-0">
             <div class="space-y-1">
                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">Core Dashboard</p>
@@ -266,7 +271,7 @@
             <!-- ================= HOME TAB ================= -->
             <section id="tab-content-home" class="tab-pane space-y-6">
                 
-                <!-- Countdown locked specifically to target exam date August 10, 2027 -->
+                <!-- Countdown locked to target exam date August 10, 2027 -->
                 <div class="relative bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 overflow-hidden glow-indigo">
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.12),transparent_45%)]"></div>
                     
@@ -311,7 +316,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    
                     <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 hover:border-indigo-500/30 transition duration-300 cursor-pointer" onclick="switchTabAndFilterChart('tracker', 'Combined Maths')">
                         <div class="flex items-center justify-between mb-3">
                             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Maths Average</span>
@@ -428,13 +432,13 @@
 
             </section>
 
-            <!-- ================= TRACKER TAB ================= -->
+            <!-- ================= TRACKER TAB (WITH ZOOM AND PAN) ================= -->
             <section id="tab-content-tracker" class="tab-pane hidden space-y-6">
                 
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-white tracking-tight">Paper Marks Analyzer</h2>
-                        <p class="text-xs text-slate-400">Log scores of model, school, and provincial exams to unlock high-fidelity analytics.</p>
+                        <p class="text-xs text-slate-400">Log scores of model, school, and provincial exams. Use the mouse wheel to zoom the chart horizontally.</p>
                     </div>
                     
                     <div class="flex items-center space-x-2">
@@ -490,21 +494,37 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
                     <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
                             <h3 class="text-sm font-bold text-white flex items-center space-x-2">
                                 <i class="fa-solid fa-chart-line text-brand-400"></i>
                                 <span id="chart-title-lbl">Subject Progression (3-Subject Composite)</span>
                             </h3>
                             
-                            <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
-                                <button onclick="setChartFilter('All')" id="btn-filter-all" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all bg-brand-600 text-white">All 3 Subjects</button>
-                                <button onclick="setChartFilter('Combined Maths')" id="btn-filter-maths" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Combined Maths</button>
-                                <button onclick="setChartFilter('Chemistry')" id="btn-filter-chem" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Chemistry</button>
-                                <button onclick="setChartFilter('Physics')" id="btn-filter-phys" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Physics</button>
+                            <!-- Combined Actions: Subject Filter + Zoom & Save Controls -->
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+                                    <button onclick="setChartFilter('All')" id="btn-filter-all" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all bg-brand-600 text-white">All 3 Subjects</button>
+                                    <button onclick="setChartFilter('Combined Maths')" id="btn-filter-maths" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Maths</button>
+                                    <button onclick="setChartFilter('Chemistry')" id="btn-filter-chem" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Chemistry</button>
+                                    <button onclick="setChartFilter('Physics')" id="btn-filter-phys" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Physics</button>
+                                </div>
+                                
+                                <div class="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+                                    <button onclick="resetChartZoom()" title="Reset Chart Zoom" class="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-200 rounded transition flex items-center space-x-1">
+                                        <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
+                                        <span>Reset</span>
+                                    </button>
+                                    <button onclick="saveChartImage()" title="Save Chart Image" class="px-2 py-1 text-[10px] font-bold text-brand-400 hover:text-brand-300 rounded transition flex items-center space-x-1">
+                                        <i class="fa-solid fa-download text-[10px]"></i>
+                                        <span>Save</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="relative w-full h-80 bg-slate-950 rounded-xl p-4 border border-slate-800/60 flex items-center justify-center">
-                            <canvas id="marksChart" class="w-full h-full"></canvas>
+
+                        <!-- Canvas viewport -->
+                        <div class="relative w-full h-[480px] bg-slate-950 rounded-xl p-4 border border-slate-800/60 flex items-center justify-center">
+                            <canvas id="marksChart" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
                         </div>
                     </div>
 
@@ -807,7 +827,7 @@
                             </div>
                         </div>
 
-                        <div id="ai-loading" class="hidden px-4 py-3 bg-slate-950 border-t border-slate-800/60 rounded-xl mt-2 flex items-center space-x-2 text-xs text-brand-400 flex-shrink-0">
+                        <div id="ai-loading" class="hidden px-4 py-3 bg-slate-950 border-t border-slate-800/60 rounded-xl mt-2 flex items-center space-x-2 text-brand-400 flex-shrink-0">
                             <i class="fa-solid fa-circle-notch animate-spin"></i>
                             <span>AI Mastermind is thinking, calculating averages & devising answers...</span>
                         </div>
@@ -919,10 +939,10 @@
                                         <option value="Ampara">Ampara</option>
                                         <option value="Batticaloa">Batticaloa</option>
                                         <option value="Trincomalee">Trincomalee</option>
-                                    </optgroup>
-                                    <optgroup label="Rural Advantage Tier">
                                         <option value="Anuradhapura">Anuradhapura</option>
                                         <option value="Polonnaruwa">Polonnaruwa</option>
+                                    </optgroup>
+                                    <optgroup label="Rural Advantage Tier">
                                         <option value="Moneragala">Moneragala</option>
                                         <option value="Nuwara Eliya">Nuwara Eliya</option>
                                         <option value="Vavuniya">Vavuniya</option>
@@ -931,6 +951,11 @@
                                         <option value="Kilinochchi">Kilinochchi</option>
                                     </optgroup>
                                 </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Custom Gemini API Key (Required for Vercel Deployments)</label>
+                                <input type="password" id="profile-api-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                                <p class="text-[9px] text-slate-500 mt-1">Required when deployed outside this workspace (e.g. on Vercel). Starts with <code class="bg-slate-950 px-1 py-0.5 rounded text-brand-400">AIzaSy</code>. Stored securely in your local browser storage.</p>
                             </div>
                             <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition">
                                 Save Profile Changes
@@ -1350,7 +1375,7 @@
             
             let districtDifficultyFactor = 1.0;
             const highlyCompetitive = ['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Galle', 'Matara', 'Kurunegala'];
-            const competitive = ['Jaffna', 'Matale', 'Kegalle', 'Ratnapura', 'Badulla', 'Hambantota', 'Puttalam', 'Ampara', 'Batticaloa', 'Trincomalee'];
+            const competitive = ['Jaffna', 'Matale', 'Kegalle', 'Ratnapura', 'Badulla', 'Hambantota', 'Puttalam', 'Ampara', 'Batticaloa', 'Trincomalee', 'Anuradhapura', 'Polonnaruwa'];
 
             if (highlyCompetitive.includes(studentProfile.district)) {
                 districtDifficultyFactor = 1.12; 
@@ -1631,27 +1656,84 @@
             if (ctaBtnLabel) ctaBtnLabel.innerText = activeChartFilter === 'All' ? 'Analyse all on AI Chat' : `Ask AI about ${activeChartFilter}`;
         }
 
-        const gapSegmentDash = (ctx) => {
-            if (ctx.p0.skip || ctx.p1.skip) {
-                return [4, 4];
-            }
+        const isGapSegment = (ctx) => {
+            if (!ctx.p0 || !ctx.p1 || ctx.p0.skip || ctx.p1.skip) return false;
             const idx0 = ctx.p0DataIndex;
             const idx1 = ctx.p1DataIndex;
-            if (idx1 - idx0 > 1) {
-                return [4, 4]; // Draw dotted line if there's a gap (absent papers in between)
-            }
+            if (idx1 - idx0 > 1) return true;
+            
             const dataset = ctx.dataset;
             if (dataset && dataset.data) {
                 for (let i = idx0 + 1; i < idx1; i++) {
                     if (dataset.data[i] === null) {
-                        return [4, 4]; // Dotted bridging pattern
+                        return true;
                     }
                 }
             }
-            return undefined; // Solid default line
+            return false;
+        };
+
+        const gapSegmentDash = (ctx) => {
+            return isGapSegment(ctx) ? [4, 4] : undefined;
+        };
+
+        // Reset chart zoom helper
+        function resetChartZoom() {
+            if (performanceChartInstance) {
+                performanceChartInstance.resetZoom();
+            }
+        }
+
+        // Save chart canvas as premium image
+        function saveChartImage() {
+            if (!performanceChartInstance) return;
+            const link = document.createElement('a');
+            link.download = `${activeChartFilter.replace(/\s+/g, '_')}_Progression_Analytics.png`;
+            // Capture image as full resolution dark theme block
+            link.href = performanceChartInstance.canvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+
+        const getVerticalGradient = (chartCtx, chartArea) => {
+            if (!chartArea) return '#10b981';
+            try {
+                const grad = chartCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                
+                // +75 = green (#10b981)
+                grad.addColorStop(0, '#10b981');    // Peak scores
+                grad.addColorStop(0.25, '#10b981'); // Threshold 75%+
+
+                // +65 = yellow (#fbbf24)
+                grad.addColorStop(0.40, '#fbbf24'); // B boundary
+
+                // +55 = orange (#f97316)
+                grad.addColorStop(0.55, '#f97316'); // C boundary
+
+                // <55 = red (#f43f5e)
+                grad.addColorStop(0.80, '#f43f5e'); // Pass threshold dips
+                grad.addColorStop(1, '#f43f5e');    // Low marks anchor
+                
+                return grad;
+            } catch (e) {
+                return '#10b981';
+            }
+        };
+
+        // Custom Canvas Background plugin to support solid background exports
+        const darkThemeCanvasBackgroundPlugin = {
+            id: 'customCanvasBackgroundColor',
+            beforeDraw: (chart) => {
+                const { ctx, width, height } = chart;
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = '#020617'; // slate-950 to match UI
+                ctx.fillRect(0, 0, width, height);
+                ctx.restore();
+            }
         };
 
         let performanceChartInstance = null;
+
         function renderMarksAnalytics() {
             const tableBody = document.getElementById('paper-table-body');
             document.getElementById('paper-count-badge').innerText = paperLogs.length;
@@ -1672,7 +1754,6 @@
                 return;
             }
 
-            // Order logs chronologically, filtering calibration milestones 12 and 26
             paperLogs.sort((a, b) => {
                 const numA = parseInt(String(a.type).replace(/\D/g, ''), 10) || 0;
                 const numB = parseInt(String(b.type).replace(/\D/g, ''), 10) || 0;
@@ -1752,13 +1833,18 @@
                 datasets.push({
                     label: 'Combined Maths',
                     data: alignScores(mathPapers),
-                    borderColor: '#818cf8',
-                    backgroundColor: 'rgba(129, 140, 248, 0.1)',
-                    borderWidth: 3,
+                    borderColor: function(context) {
+                        const chart = context.chart;
+                        if (activeChartFilter === 'All') return '#818cf8';
+                        return getVerticalGradient(chart.ctx, chart.chartArea);
+                    },
+                    backgroundColor: 'rgba(129, 140, 248, 0.05)',
+                    borderWidth: 3.5,
                     tension: 0.35,
                     spanGaps: true,
                     segment: {
-                        borderDash: gapSegmentDash
+                        borderDash: ctx => gapSegmentDash(ctx),
+                        borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     },
                     pointBackgroundColor: '#818cf8',
                     pointRadius: 4,
@@ -1769,13 +1855,18 @@
                 datasets.push({
                     label: 'Chemistry',
                     data: alignScores(chemPapers),
-                    borderColor: '#34d399',
-                    backgroundColor: 'rgba(52, 211, 153, 0.1)',
-                    borderWidth: 3,
+                    borderColor: function(context) {
+                        const chart = context.chart;
+                        if (activeChartFilter === 'All') return '#34d399';
+                        return getVerticalGradient(chart.ctx, chart.chartArea);
+                    },
+                    backgroundColor: 'rgba(52, 211, 153, 0.05)',
+                    borderWidth: 3.5,
                     tension: 0.35,
                     spanGaps: true,
                     segment: {
-                        borderDash: gapSegmentDash
+                        borderDash: ctx => gapSegmentDash(ctx),
+                        borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     },
                     pointBackgroundColor: '#34d399',
                     pointRadius: 4,
@@ -1786,13 +1877,18 @@
                 datasets.push({
                     label: 'Physics',
                     data: alignScores(physPapers),
-                    borderColor: '#fbbf24',
-                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-                    borderWidth: 3,
+                    borderColor: function(context) {
+                        const chart = context.chart;
+                        if (activeChartFilter === 'All') return '#fbbf24';
+                        return getVerticalGradient(chart.ctx, chart.chartArea);
+                    },
+                    backgroundColor: 'rgba(251, 191, 36, 0.05)',
+                    borderWidth: 3.5,
                     tension: 0.35,
                     spanGaps: true,
                     segment: {
-                        borderDash: gapSegmentDash
+                        borderDash: ctx => gapSegmentDash(ctx),
+                        borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     },
                     pointBackgroundColor: '#fbbf24',
                     pointRadius: 4,
@@ -1802,6 +1898,7 @@
 
             performanceChartInstance = new Chart(ctx, {
                 type: 'line',
+                plugins: [darkThemeCanvasBackgroundPlugin],
                 data: {
                     labels: uniqueLabels,
                     datasets: datasets
@@ -1818,14 +1915,39 @@
                                     size: 11
                                 }
                             }
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                            }
                         }
                     },
                     scales: {
                         y: {
                             min: 0,
-                            max: 100,
+                            max: 110, // Scaled up maximum limit to 110 for padding and top breathing space
                             grid: { color: 'rgba(51, 65, 85, 0.25)' },
-                            ticks: { color: '#64748b', font: { weight: 'bold' } }
+                            ticks: { 
+                                color: '#64748b', 
+                                font: { weight: 'bold' },
+                                stepSize: 10, // Scale increments configured uniformly
+                                callback: function(value) {
+                                    // Ticks formatted into padded double-digit strings
+                                    if (value === 0) return '00';
+                                    if (value < 10) return '0' + value;
+                                    return value;
+                                }
+                            }
                         },
                         x: {
                             grid: { color: 'rgba(51, 65, 85, 0.25)' },
@@ -1872,13 +1994,18 @@
                 datasets.push({
                     label: 'Maths',
                     data: alignScores(mathPapers),
-                    borderColor: '#818cf8',
+                    borderColor: function(context) {
+                        const chart = context.chart;
+                        if (activeChartFilter === 'All') return '#818cf8';
+                        return getVerticalGradient(chart.ctx, chart.chartArea);
+                    },
                     borderWidth: 2,
                     tension: 0.3,
                     pointRadius: 2,
                     spanGaps: true,
                     segment: {
-                        borderDash: gapSegmentDash
+                        borderDash: ctx => gapSegmentDash(ctx),
+                        borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     }
                 });
             }
@@ -1886,13 +2013,18 @@
                 datasets.push({
                     label: 'Chemistry',
                     data: alignScores(chemPapers),
-                    borderColor: '#34d399',
+                    borderColor: function(context) {
+                        const chart = context.chart;
+                        if (activeChartFilter === 'All') return '#34d399';
+                        return getVerticalGradient(chart.ctx, chart.chartArea);
+                    },
                     borderWidth: 2,
                     tension: 0.3,
                     pointRadius: 2,
                     spanGaps: true,
                     segment: {
-                        borderDash: gapSegmentDash
+                        borderDash: ctx => gapSegmentDash(ctx),
+                        borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     }
                 });
             }
@@ -1900,19 +2032,25 @@
                 datasets.push({
                     label: 'Physics',
                     data: alignScores(physPapers),
-                    borderColor: '#fbbf24',
+                    borderColor: function(context) {
+                        const chart = context.chart;
+                        if (activeChartFilter === 'All') return '#fbbf24';
+                        return getVerticalGradient(chart.ctx, chart.chartArea);
+                    },
                     borderWidth: 2,
                     tension: 0.3,
                     pointRadius: 2,
                     spanGaps: true,
                     segment: {
-                        borderDash: gapSegmentDash
+                        borderDash: ctx => gapSegmentDash(ctx),
+                        borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     }
                 });
             }
 
             chatSideChartInstance = new Chart(ctx, {
                 type: 'line',
+                plugins: [darkThemeCanvasBackgroundPlugin],
                 data: {
                     labels: uniqueLabels,
                     datasets: datasets
@@ -1924,7 +2062,7 @@
                     scales: {
                         y: {
                             min: 20,
-                            max: 100,
+                            max: 110,
                             ticks: { display: false },
                             grid: { color: 'rgba(51, 65, 85, 0.15)' }
                         },
@@ -2113,11 +2251,10 @@
             });
         }
 
-        const GEMINI_API_KEY = "AQ.Ab8RN6LMw54o8z6fSHCk-02WoqreAHPxpCpz3Gmlu2G9ppISnQ";
+        const PRIMARY_AI_KEY = "AQ.Ab8RN6LMw54o8z6fSHCk-02WoqreAHPxpCpz3Gmlu2G9ppISnQ";
 
         async function makeAICall(promptContent) {
-            const maxRetries = 3;
-            
+            const maxRetries = 2;
             const subjectSpecificFocus = activeChartFilter === 'All' ? "the composite performance across Combined Mathematics, Physics, and Chemistry." : `a specific, deep focus on the subject: ${activeChartFilter}. Adjust your detailed syllabus recommendations primarily to improve this subject.`;
 
             const systemPrompt = `You are the ultimate Sri Lankan Advanced Level Examination Academic Coach.
@@ -2145,15 +2282,22 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
 1. Speak with encouraging but highly diagnostic accuracy. Highlight how missing class exams affects their progress if they have absent marks.
 2. Refer to specific Sri Lankan syllabus constraints (e.g. Mechanics, Organic Mechanisms, Physical Chem, Integration, Electronics).
 3. Frame advice matching the Z-score and competitive environment of Colombo, Gampaha, Kandy, etc., where cutoffs are high.
-4. Keep structural formulas and math notation cleanly rendered using LaTeX. Keep answers concise, actionable, and formatted beautifully in markdown. Do not mention the word "Supabase" or refer to any technical backend architecture.`;
+4. Keep structural formulas and math notation cleanly rendered. Keep answers concise, actionable, and formatted beautifully in markdown. Do not mention the word "Supabase" or refer to any technical backend architecture.`;
 
             const payload = {
                 contents: [{ parts: [{ text: promptContent }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] }
             };
 
-            // Order of key attempts: try the specified custom key first; if it returns an error, fallback to "" to auto-use Platform credentials
-            const keysToTry = [GEMINI_API_KEY, ""];
+            // Grab the user key from localStorage if it exists, otherwise fall back to workspace defaults
+            const userStoredKey = localStorage.getItem('user_gemini_api_key') || "";
+            const keysToTry = [];
+            if (userStoredKey) {
+                keysToTry.push(userStoredKey);
+            }
+            keysToTry.push(PRIMARY_AI_KEY);
+            keysToTry.push(""); // Platform transparent backup credential placeholder
+
             let lastError = null;
 
             for (const keyAttempt of keysToTry) {
@@ -2180,7 +2324,7 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
                         lastError = err;
                         if (attempt < maxRetries) {
                             await new Promise(resolve => setTimeout(resolve, delay));
-                            delay *= 2;
+                            delay *= 1.5;
                         }
                     }
                 }
@@ -2410,6 +2554,9 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
             document.getElementById('profile-year').value = studentProfile.year;
             document.getElementById('profile-course').value = studentProfile.course;
             document.getElementById('profile-district').value = studentProfile.district;
+            
+            // Populate key input field from browser local storage
+            document.getElementById('profile-api-key').value = localStorage.getItem('user_gemini_api_key') || "";
 
             countdownDate = studentProfile.year;
             initCountdown();
@@ -2421,6 +2568,14 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
             studentProfile.year = document.getElementById('profile-year').value;
             studentProfile.course = document.getElementById('profile-course').value;
             studentProfile.district = document.getElementById('profile-district').value;
+
+            // Save the custom API key strictly to browser's private localStorage (securely offline)
+            const enteredApiKey = document.getElementById('profile-api-key').value.trim();
+            if (enteredApiKey) {
+                localStorage.setItem('user_gemini_api_key', enteredApiKey);
+            } else {
+                localStorage.removeItem('user_gemini_api_key');
+            }
 
             if (supabaseClient) {
                 await saveProfileToCloud();
@@ -2470,6 +2625,8 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
         window.updateProfileYearCountdown = updateProfileYearCountdown;
         window.factoryResetSystem = factoryResetSystem;
         window.toggleAuthMode = toggleAuthMode;
+        window.resetChartZoom = resetChartZoom;
+        window.saveChartImage = saveChartImage;
 
         window.onload = function() {
             checkSessionCookie();
