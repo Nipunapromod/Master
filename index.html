@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A/L Mastermind Dashboard v5.2</title>
+    <title>A/L Mastermind Dashboard v5.3</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- KaTeX for Beautiful Mathematical Formula Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     
     <!-- Chart.js and dependencies for zooming & saving -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -432,13 +437,13 @@
 
             </section>
 
-            <!-- ================= TRACKER TAB (WITH ZOOM AND PAN) ================= -->
+            <!-- ================= TRACKER TAB ================= -->
             <section id="tab-content-tracker" class="tab-pane hidden space-y-6">
                 
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-white tracking-tight">Paper Marks Analyzer</h2>
-                        <p class="text-xs text-slate-400">Log scores of model, school, and provincial exams. Use the mouse wheel to zoom the chart horizontally.</p>
+                        <p class="text-xs text-slate-400">Log scores of model, school, and provincial exams. Use the mouse wheel or pinch gestures to zoom the timeline horizontally.</p>
                     </div>
                     
                     <div class="flex items-center space-x-2">
@@ -528,7 +533,6 @@
                         </div>
                     </div>
 
-                    <!-- Rapid Insights Side-Panel -->
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 flex flex-col justify-between">
                         <div class="space-y-4">
                             <h3 class="text-sm font-bold text-white flex items-center space-x-2">
@@ -951,11 +955,6 @@
                                         <option value="Kilinochchi">Kilinochchi</option>
                                     </optgroup>
                                 </select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Custom Gemini API Key (Required for Vercel Deployments)</label>
-                                <input type="password" id="profile-api-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
-                                <p class="text-[9px] text-slate-500 mt-1">Required when deployed outside this workspace (e.g. on Vercel). Starts with <code class="bg-slate-950 px-1 py-0.5 rounded text-brand-400">AIzaSy</code>. Stored securely in your local browser storage.</p>
                             </div>
                             <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition">
                                 Save Profile Changes
@@ -2251,7 +2250,7 @@
             });
         }
 
-        const PRIMARY_AI_KEY = "AQ.Ab8RN6LMw54o8z6fSHCk-02WoqreAHPxpCpz3Gmlu2G9ppISnQ";
+        const PRIMARY_AI_KEY = "INSERT_GEMINI_API_KEY_HERE";
 
         async function makeAICall(promptContent) {
             const maxRetries = 2;
@@ -2282,21 +2281,21 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
 1. Speak with encouraging but highly diagnostic accuracy. Highlight how missing class exams affects their progress if they have absent marks.
 2. Refer to specific Sri Lankan syllabus constraints (e.g. Mechanics, Organic Mechanisms, Physical Chem, Integration, Electronics).
 3. Frame advice matching the Z-score and competitive environment of Colombo, Gampaha, Kandy, etc., where cutoffs are high.
-4. Keep structural formulas and math notation cleanly rendered. Keep answers concise, actionable, and formatted beautifully in markdown. Do not mention the word "Supabase" or refer to any technical backend architecture.`;
+4. Always use standard LaTeX notation for mathematical formulas, symbols, and equations (e.g., wrap inline math inside $...$ and block equations inside $$...$$) to ensure perfect rendering in the chat console.
+5. Keep structural formulas and math notation cleanly rendered. Keep answers concise, actionable, and formatted beautifully in markdown. Do not mention the word "Supabase" or refer to any technical backend architecture.`;
 
             const payload = {
                 contents: [{ parts: [{ text: promptContent }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] }
             };
 
-            // Grab the user key from localStorage if it exists, otherwise fall back to workspace defaults
-            const userStoredKey = localStorage.getItem('user_gemini_api_key') || "";
+            // Setup keys: first tries the build-time env placeholder, then falls back to platform default key
             const keysToTry = [];
-            if (userStoredKey) {
-                keysToTry.push(userStoredKey);
+            if (PRIMARY_AI_KEY && PRIMARY_AI_KEY !== "INSERT_GEMINI_API_KEY_HERE") {
+                keysToTry.push(PRIMARY_AI_KEY);
             }
-            keysToTry.push(PRIMARY_AI_KEY);
-            keysToTry.push(""); // Platform transparent backup credential placeholder
+            // Workspace platform transparent default API key placeholder fallback
+            keysToTry.push(""); 
 
             let lastError = null;
 
@@ -2332,6 +2331,24 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
             throw lastError || new Error("All API attempts failed.");
         }
 
+        function triggerMathRender(element) {
+            if (typeof renderMathInElement !== 'undefined') {
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            {left: "$$", right: "$$", display: true},
+                            {left: "$", right: "$", display: false},
+                            {left: "\\(", right: "\\)", display: false},
+                            {left: "\\[", right: "\\]", display: true}
+                        ],
+                        throwOnError: false
+                    });
+                } catch (err) {
+                    console.warn("KaTeX render cycle bypassed:", err);
+                }
+            }
+        }
+
         function appendMessage(sender, text, isAI = false) {
             const chatOutput = document.getElementById('ai-chat-output');
             if (!chatOutput) return;
@@ -2351,12 +2368,16 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
             const contentHtml = `
                 <div class="${isAI ? 'bg-slate-950 border border-slate-800' : 'bg-brand-900/40 border border-brand-700/30'} rounded-2xl p-4 text-xs text-slate-300 leading-relaxed ${!isAI ? 'order-1' : ''}">
                     <p class="font-bold text-white mb-1.5">${isAI ? 'Exam Advisor' : 'You'}</p>
-                    <p>${formattedText}</p>
+                    <div class="math-content">${formattedText}</div>
                 </div>
             `;
 
             wrapper.innerHTML = avatarHtml + contentHtml;
             chatOutput.appendChild(wrapper);
+            
+            // Dynamically run KaTeX formatting over the updated thread box
+            triggerMathRender(wrapper);
+            
             chatOutput.scrollTop = chatOutput.scrollHeight;
         }
 
@@ -2555,9 +2576,6 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
             document.getElementById('profile-course').value = studentProfile.course;
             document.getElementById('profile-district').value = studentProfile.district;
             
-            // Populate key input field from browser local storage
-            document.getElementById('profile-api-key').value = localStorage.getItem('user_gemini_api_key') || "";
-
             countdownDate = studentProfile.year;
             initCountdown();
         }
@@ -2568,14 +2586,6 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
             studentProfile.year = document.getElementById('profile-year').value;
             studentProfile.course = document.getElementById('profile-course').value;
             studentProfile.district = document.getElementById('profile-district').value;
-
-            // Save the custom API key strictly to browser's private localStorage (securely offline)
-            const enteredApiKey = document.getElementById('profile-api-key').value.trim();
-            if (enteredApiKey) {
-                localStorage.setItem('user_gemini_api_key', enteredApiKey);
-            } else {
-                localStorage.removeItem('user_gemini_api_key');
-            }
 
             if (supabaseClient) {
                 await saveProfileToCloud();
