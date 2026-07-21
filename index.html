@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A/L Mastermind Dashboard v5.2</title>
+    <title>A/L Mastermind Dashboard v5.6</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Premium Icons -->
@@ -226,6 +226,7 @@
     </header>
 
     <div class="flex flex-1 overflow-hidden relative">
+        <!-- Sidebar Navigation -->
         <aside class="hidden md:flex flex-col w-64 bg-slate-900/80 border-r border-slate-800 p-4 space-y-2 justify-between flex-shrink-0">
             <div class="space-y-1">
                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">Core Dashboard</p>
@@ -251,8 +252,8 @@
                 </button>
                 
                 <button onclick="switchTab('ai')" id="btn-tab-ai" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
-                    <i class="fa-solid fa-robot text-lg w-6"></i>
-                    <span>AI Exam Expert</span>
+                    <i class="fa-solid fa-wand-magic-sparkles text-lg w-6"></i>
+                    <span>Gemini AI Coach</span>
                 </button>
 
                 <button onclick="switchTab('settings')" id="btn-tab-settings" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
@@ -276,7 +277,7 @@
             <!-- ================= HOME TAB ================= -->
             <section id="tab-content-home" class="tab-pane space-y-6">
                 
-                <!-- Countdown locked to target exam date August 10, 2027 -->
+                <!-- Countdown Display -->
                 <div class="relative bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 overflow-hidden glow-indigo">
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.12),transparent_45%)]"></div>
                     
@@ -320,6 +321,7 @@
                     </div>
                 </div>
 
+                <!-- Score Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 hover:border-indigo-500/30 transition duration-300 cursor-pointer" onclick="switchTabAndFilterChart('tracker', 'Combined Maths')">
                         <div class="flex items-center justify-between mb-3">
@@ -437,7 +439,7 @@
 
             </section>
 
-            <!-- ================= TRACKER TAB (WITH ZOOM AND PAN) ================= -->
+            <!-- ================= TRACKER TAB ================= -->
             <section id="tab-content-tracker" class="tab-pane hidden space-y-6">
                 
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -527,7 +529,7 @@
                             </div>
                         </div>
 
-                        <!-- Canvas viewport -->
+                        <!-- Canvas viewport (Expanded 480px high view) -->
                         <div class="relative w-full h-[480px] bg-slate-950 rounded-xl p-4 border border-slate-800/60 flex items-center justify-center">
                             <canvas id="marksChart" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
                         </div>
@@ -557,7 +559,7 @@
                             <p class="text-xs text-brand-300 font-medium">Need deep diagnostic analysis?</p>
                             <button onclick="requestAIMarkAnalysis()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 rounded-lg text-xs transition flex items-center justify-center space-x-1.5">
                                 <i class="fa-solid fa-brain"></i>
-                                <span id="insight-ai-btn-lbl">Analyse all on AI Chat</span>
+                                <span id="insight-ai-btn-lbl">Analyse all with Gemini</span>
                             </button>
                         </div>
                     </div>
@@ -799,7 +801,7 @@
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
                                 <span class="relative inline-flex rounded-full h-3 w-3 bg-brand-500"></span>
                             </span>
-                            <span>AI Exam Advisor & Synergizer</span>
+                            <span>Gemini AI Exam Advisor & Synergizer</span>
                         </h2>
                         <p class="text-xs text-slate-400">Deep syllabus diagnostic, marks forecasting, and customized study plan advisor.</p>
                     </div>
@@ -810,31 +812,59 @@
                     </button>
                 </div>
 
-                <div class="flex-1 flex flex-col lg:flex-row gap-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 overflow-hidden min-h-0">
+                <!-- API Key Input Stage Screen -->
+                <div id="ai-api-key-screen" class="hidden flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-6">
+                    <div class="bg-gradient-to-tr from-brand-600 to-indigo-500 p-4 rounded-3xl text-3xl shadow-lg shadow-brand-500/25">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <div class="space-y-2 max-w-md">
+                        <h3 class="text-lg font-extrabold text-white">Activate Your Gemini AI Coach / Gemini යතුර සක්‍රීය කරන්න</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Please provide a Google Gemini API Key. Your key will be securely synchronized directly with your account profile so you never have to configure it again.
+                        </p>
+                        <a href="https://aistudio.google.com/" target="_blank" class="text-xs text-brand-400 hover:underline flex items-center justify-center gap-1 font-bold">
+                            Get a FREE API key from Google AI Studio <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+                    <div class="w-full max-w-sm space-y-3">
+                        <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500 text-center">
+                        <button onclick="saveGeminiApiKey()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl text-xs transition duration-200">
+                            Save Key & Continue
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bilingual Welcome Stage Wrapper -->
+                <div id="ai-lang-selection-screen" class="hidden flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-6">
+                    <div class="bg-gradient-to-tr from-indigo-500 to-brand-600 p-4 rounded-3xl text-3xl shadow-lg shadow-brand-500/25">
+                        <i class="fa-solid fa-language"></i>
+                    </div>
+                    <div class="space-y-2 max-w-md">
+                        <h3 class="text-lg font-extrabold text-white">Select Academic Language / මාධ්‍යය තෝරන්න</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Configure Gemini to parse exam logs and construct tailored response cards in your preferred medium.
+                        </p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                        <button onclick="selectLanguage('English')" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition duration-200">
+                            English Medium
+                        </button>
+                        <button onclick="selectLanguage('Sinhala')" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition duration-200">
+                            සිංහල මාධ්‍යය
+                        </button>
+                    </div>
+                </div>
+
+                <div id="ai-active-workspace" class="hidden flex-1 flex flex-col lg:flex-row gap-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 overflow-hidden min-h-0">
                     
                     <div class="flex-1 flex flex-col min-h-0">
                         <div id="ai-chat-output" class="flex-1 overflow-y-auto p-2 space-y-4">
-                            <!-- Welcome -->
-                            <div class="flex items-start space-x-3 max-w-2xl">
-                                <div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5">
-                                    <i class="fa-solid fa-robot"></i>
-                                </div>
-                                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
-                                    <p class="font-bold text-white mb-1.5">Welcome A/L Scholar! 👋</p>
-                                    <p class="mb-2">I am your dedicated Sri Lankan A/L Academic Assistant. Use the dashboard filter sidebar to isolate my feedback or view analytical charts instantly.</p>
-                                    <p class="mb-3">What would you like to review or predict today?</p>
-                                    <div class="flex flex-wrap gap-1.5">
-                                        <button onclick="sendQuickPrompt('Analyze my average marks and predict my target results')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">📊 Run Diagnostic</button>
-                                        <button onclick="sendQuickPrompt('Give me a detailed study path for Physics Mechanics syllabus')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">💡 Mechanics Path</button>
-                                        <button onclick="sendQuickPrompt('Create a revision template for Chemistry Organic Mechanisms')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">🔬 Organic Prep</button>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Localized Welcome Card injected dynamically at language selection -->
                         </div>
 
                         <div id="ai-loading" class="hidden px-4 py-3 bg-slate-950 border-t border-slate-800/60 rounded-xl mt-2 flex items-center space-x-2 text-brand-400 flex-shrink-0">
                             <i class="fa-solid fa-circle-notch animate-spin"></i>
-                            <span>AI Mastermind is thinking, calculating averages & devising answers...</span>
+                            <span id="ai-loader-text">Gemini is thinking, calculating averages & devising answers...</span>
                         </div>
 
                         <div class="bg-slate-950 p-2.5 border border-slate-800/85 rounded-xl mt-3 flex-shrink-0">
@@ -874,7 +904,7 @@
                         <div class="bg-indigo-950/20 border border-indigo-800/35 p-3 rounded-xl text-center space-y-2">
                             <span class="text-[10px] font-bold text-indigo-300 block uppercase tracking-wide">Sync Live Target Context</span>
                             <button onclick="syncChartAIConsult()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-semibold py-1.5 rounded transition">
-                                Ask AI about Active Chart
+                                Ask Gemini about Active Chart
                             </button>
                         </div>
                     </div>
@@ -916,7 +946,7 @@
                                     <select id="profile-course" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                                         <option value="Engineering">BSc. Eng (Engineering)</option>
                                         <option value="Physical Science">BSc. Physical Science</option>
-                                        <option value="Computer Science">BSc. Computer Science / IT</option>
+                                        <option value="Computer Science">BSc. Science / IT / AI</option>
                                         <option value="Quantity Surveying">BSc. Quantity Surveying</option>
                                     </select>
                                 </div>
@@ -957,11 +987,18 @@
                                     </optgroup>
                                 </select>
                             </div>
-                            <div>
-                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Custom Gemini API Key (Required for Vercel Deployments)</label>
-                                <input type="password" id="profile-api-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
-                                <p class="text-[9px] text-slate-500 mt-1">Required when deployed outside this workspace (e.g. on Vercel). Starts with <code class="bg-slate-950 px-1 py-0.5 rounded text-brand-400">AIzaSy</code>. Stored securely in your local browser storage.</p>
+
+                            <!-- Gemini API Key Configuration Section -->
+                            <div class="pt-4 border-t border-slate-800">
+                                <label class="block text-[10px] uppercase font-black text-brand-400 mb-1 flex items-center gap-1">
+                                    <i class="fa-solid fa-key"></i> Google Gemini API Key (Stored in Cloud Profile)
+                                </label>
+                                <input type="password" id="profile-gemini-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                                <p class="text-[9px] text-slate-500 mt-1 leading-relaxed">
+                                    This API key is synchronized inside your cloud account credentials. Change it anytime to refresh permissions.
+                                </p>
                             </div>
+
                             <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition">
                                 Save Profile Changes
                             </button>
@@ -1026,8 +1063,8 @@
             <span class="text-[8px] font-semibold">Recall</span>
         </button>
         <button onclick="switchTab('ai')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
-            <i class="fa-solid fa-robot text-sm"></i>
-            <span class="text-[8px] font-semibold">AI Help</span>
+            <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+            <span class="text-[8px] font-semibold">Gemini</span>
         </button>
         <button onclick="switchTab('settings')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
             <i class="fa-solid fa-sliders text-sm"></i>
@@ -1087,14 +1124,15 @@
             name: "Supun Perera",
             year: "2027-08-10",
             course: "Engineering",
-            district: "Colombo"
+            district: "Colombo",
+            gemini_api_key: ""
         };
 
         let countdownDate = studentProfile.year;
         let activeChartFilter = 'All'; 
         let currentUserSession = null; 
 
-        // White-labeled endpoints
+        // Supabase Endpoint Settings
         const defaultSupabaseUrl = 'https://bvnawbslzifctckurzjk.supabase.co';
         const defaultSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDQ3NTgzMCwiZXhwIjoyMTAwMDUxODMwfQ.9kH0CKdiw0GRLAcAHAuYWTd-Y1HZJMkhIleeNOISgxs';
 
@@ -1163,7 +1201,7 @@
 
                         if (data?.user) {
                             const { error: profileErr } = await supabaseClient.from('profiles').upsert([
-                                { id: data.user.id, name, year: "2027-08-10", course, district }
+                                { id: data.user.id, name, year: "2027-08-10", course, district, gemini_api_key: "" }
                             ]);
                             if (profileErr) console.error("Profile load failed:", profileErr);
                         }
@@ -1217,8 +1255,12 @@
                         name: profileData.name,
                         year: profileData.year,
                         course: profileData.course,
-                        district: profileData.district
+                        district: profileData.district,
+                        gemini_api_key: profileData.gemini_api_key || ""
                     };
+                    if (profileData.gemini_api_key) {
+                        localStorage.setItem('gemini_api_key', profileData.gemini_api_key);
+                    }
                 }
 
                 const { data: papers } = await supabaseClient.from('papers').select('*');
@@ -1248,7 +1290,8 @@
                     name: studentProfile.name,
                     year: studentProfile.year,
                     course: studentProfile.course,
-                    district: studentProfile.district
+                    district: studentProfile.district,
+                    gemini_api_key: studentProfile.gemini_api_key || ""
                 });
             } catch (err) {
                 console.error("Cloud synchronization exception:", err);
@@ -1658,7 +1701,7 @@
             if (titleEl) titleEl.innerText = activeChartFilter === 'All' ? 'Subject Progression (3-Subject Composite)' : `${activeChartFilter} Progression History`;
 
             const ctaBtnLabel = document.getElementById('insight-ai-btn-lbl');
-            if (ctaBtnLabel) ctaBtnLabel.innerText = activeChartFilter === 'All' ? 'Analyse all on AI Chat' : `Ask AI about ${activeChartFilter}`;
+            if (ctaBtnLabel) ctaBtnLabel.innerText = activeChartFilter === 'All' ? 'Analyse all with Gemini' : `Ask Gemini about ${activeChartFilter}`;
         }
 
         const isGapSegment = (ctx) => {
@@ -1682,41 +1725,35 @@
             return isGapSegment(ctx) ? [4, 4] : undefined;
         };
 
-        // Reset chart zoom helper
         function resetChartZoom() {
             if (performanceChartInstance) {
                 performanceChartInstance.resetZoom();
             }
         }
 
-        // Save chart canvas as premium image
         function saveChartImage() {
             if (!performanceChartInstance) return;
             const link = document.createElement('a');
             link.download = `${activeChartFilter.replace(/\s+/g, '_')}_Progression_Analytics.png`;
-            // Capture image as full resolution dark theme block
             link.href = performanceChartInstance.canvas.toDataURL('image/png', 1.0);
             link.click();
         }
 
+        // Linear multi-stop gradient based on strict thresholds: +75 green, +65 yellow, +55 orange, 55> red
         const getVerticalGradient = (chartCtx, chartArea) => {
             if (!chartArea) return '#10b981';
             try {
                 const grad = chartCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
                 
-                // +75 = green (#10b981)
-                grad.addColorStop(0, '#10b981');    // Peak scores
-                grad.addColorStop(0.25, '#10b981'); // Threshold 75%+
-
-                // +65 = yellow (#fbbf24)
-                grad.addColorStop(0.40, '#fbbf24'); // B boundary
-
-                // +55 = orange (#f97316)
-                grad.addColorStop(0.55, '#f97316'); // C boundary
-
-                // <55 = red (#f43f5e)
-                grad.addColorStop(0.80, '#f43f5e'); // Pass threshold dips
-                grad.addColorStop(1, '#f43f5e');    // Low marks anchor
+                // Scale is exactly 0 to 100. Let's map coordinates:
+                // Top (100% marks) is top of chart (0), bottom (0% marks) is bottom (1).
+                // So Y ratio = 1 - (Score / 100)
+                grad.addColorStop(0, '#10b981');    // 100% -> Green
+                grad.addColorStop(0.25, '#10b981'); // 75% -> Green
+                grad.addColorStop(0.35, '#fbbf24'); // 65% -> Yellow
+                grad.addColorStop(0.45, '#f97316'); // 55% -> Orange
+                grad.addColorStop(0.70, '#f43f5e'); // Under 55% -> Red
+                grad.addColorStop(1, '#f43f5e');    // 0% -> Red
                 
                 return grad;
             } catch (e) {
@@ -1724,7 +1761,6 @@
             }
         };
 
-        // Custom Canvas Background plugin to support solid background exports
         const darkThemeCanvasBackgroundPlugin = {
             id: 'customCanvasBackgroundColor',
             beforeDraw: (chart) => {
@@ -1940,14 +1976,13 @@
                     scales: {
                         y: {
                             min: 0,
-                            max: 110, // Scaled up maximum limit to 110 for padding and top breathing space
+                            max: 100, // CAPPED EXACTLY AT 100
                             grid: { color: 'rgba(51, 65, 85, 0.25)' },
                             ticks: { 
                                 color: '#64748b', 
                                 font: { weight: 'bold' },
-                                stepSize: 10, // Scale increments configured uniformly
+                                stepSize: 10,
                                 callback: function(value) {
-                                    // Ticks formatted into padded double-digit strings
                                     if (value === 0) return '00';
                                     if (value < 10) return '0' + value;
                                     return value;
@@ -2066,8 +2101,8 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         y: {
-                            min: 20,
-                            max: 110,
+                            min: 0,
+                            max: 100, // CONSTRAINED AT 100 FOR CHAT VIEW
                             ticks: { display: false },
                             grid: { color: 'rgba(51, 65, 85, 0.15)' }
                         },
@@ -2140,6 +2175,11 @@
             }
 
             document.getElementById('forgetting-form').reset();
+            renderRecallTopic(topic, subject, date);
+        }
+
+        function renderRecallTopic(topic, subject, date) {
+            recallLogs.push({ id: 'local_' + Date.now(), subject, topic, date_studied: date, reviewed_count: 0 });
             renderRecallPlanner();
             updateCoreStats();
             showAlert('Spaced Loop Added', `Recall loops mapped for "${topic}".`);
@@ -2160,6 +2200,8 @@
                 } catch (err) {
                     recallLogs = recallLogs.map(r => r.id === id ? { ...r, reviewedCount: nextCount, reviewed_count: nextCount } : r);
                 }
+            } else {
+                recallLogs = recallLogs.map(r => r.id === id ? { ...r, reviewedCount: nextCount, reviewed_count: nextCount } : r);
             }
             renderRecallPlanner();
             updateCoreStats();
@@ -2175,6 +2217,8 @@
                 } catch (err) {
                     recallLogs = recallLogs.filter(r => r.id !== id);
                 }
+            } else {
+                recallLogs = recallLogs.filter(r => r.id !== id);
             }
             renderRecallPlanner();
             updateCoreStats();
@@ -2256,17 +2300,83 @@
             });
         }
 
-        const PRIMARY_AI_KEY = "AQ.Ab8RN6LMw54o8z6fSHCk-02WoqreAHPxpCpz3Gmlu2G9ppISnQ";
+        let selectedMedium = ''; 
+
+        function checkGeminiKeyAndProceed() {
+            const savedKey = studentProfile.gemini_api_key || localStorage.getItem('gemini_api_key') || "";
+            const apiKeyScreen = document.getElementById('ai-api-key-screen');
+            const langScreen = document.getElementById('ai-lang-selection-screen');
+            const activeWorkspace = document.getElementById('ai-active-workspace');
+
+            if (!savedKey) {
+                apiKeyScreen.classList.remove('hidden');
+                langScreen.classList.add('hidden');
+                activeWorkspace.classList.add('hidden');
+            } else {
+                apiKeyScreen.classList.add('hidden');
+                if (selectedMedium) {
+                    langScreen.classList.add('hidden');
+                    activeWorkspace.classList.remove('hidden');
+                } else {
+                    langScreen.classList.remove('hidden');
+                    activeWorkspace.classList.add('hidden');
+                }
+            }
+        }
+
+        async function saveGeminiApiKey() {
+            const inputVal = document.getElementById('gemini-api-key-input').value.trim();
+            if (!inputVal) {
+                showAlert("Error", "Please enter a valid API key.");
+                return;
+            }
+            studentProfile.gemini_api_key = inputVal;
+            localStorage.setItem('gemini_api_key', inputVal);
+
+            if (supabaseClient) {
+                await saveProfileToCloud();
+            }
+
+            showAlert("Key Saved", "Your Google Gemini API Key has been stored securely.");
+            checkGeminiKeyAndProceed();
+        }
+
+        function selectLanguage(lang) {
+            selectedMedium = lang;
+            document.getElementById('ai-lang-selection-screen').classList.add('hidden');
+            document.getElementById('ai-active-workspace').classList.remove('hidden');
+            clearChatHistory();
+            setTimeout(renderChatViewChart, 150);
+        }
+
+        function changeMedium() {
+            selectedMedium = '';
+            document.getElementById('ai-active-workspace').classList.add('hidden');
+            document.getElementById('ai-lang-selection-screen').classList.remove('hidden');
+        }
 
         async function makeAICall(promptContent) {
             const maxRetries = 2;
-        const subjectSpecificFocus = activeChartFilter === 'All' ? "the composite performance across Combined Mathematics, Physics, and Chemistry." : `a specific, deep focus on the subject: ${activeChartFilter}. Adjust your detailed syllabus recommendations primarily to improve this subject.`;
+            const subjectSpecificFocus = activeChartFilter === 'All' 
+                ? "the composite performance across Combined Mathematics, Physics, and Chemistry." 
+                : `a specific, deep focus on the subject: ${activeChartFilter}. Adjust your detailed syllabus recommendations primarily to improve this subject.`;
 
-        const systemPrompt = `You are the ultimate Sri Lankan Advanced Level Examination Academic Coach.
+            const languageConstraint = selectedMedium === 'Sinhala'
+                ? `You must construct your final answer entirely in Sinhala (සිංහල භාෂාවෙන්). You must use accurate Sri Lankan Advanced Level scientific terminology, such as:
+                  - Combined Mathematics -> සංයුක්ත ගණිතය (අනුකලනය, අවකලනය, ත්‍රිකෝණමිතිය, විද්‍යාව)
+                  - Physics -> භෞතික විද්‍යාව (යාන්ත්‍ර විද්‍යාව, ධාරා විද්‍යුතය, ආලෝකය, දෝලන හා තරංග)
+                  - Chemistry -> රසායන විද්‍යාව (කාබනික රසායනය, අකාබනික රසායනය, භෞතික රසායනය)
+                  Ensure you write encouragement in rich, clear Sinhala while formatting formula expressions cleanly in LaTeX.`
+                : `Construct your final answer in clear English. Highlight typical hurdles, common marks loss traps, and past paper revision tips relevant to the Sri Lankan Physical Science stream.`;
+
+            const systemPrompt = `You are the ultimate Sri Lankan Advanced Level Examination Academic Coach, powered by Gemini.
 You provide precise advice, syllabus strategies, study schedules, and predictions based on the student's metrics.
 The user is in the physical science stream consisting of Combined Mathematics, Physics, and Chemistry.
 
 Currently, the user is looking at: ${subjectSpecificFocus}
+
+Language Medium Constraint:
+${languageConstraint}
 
 Student Profile Context:
 - Student Name: ${studentProfile.name}
@@ -2288,107 +2398,117 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
 2. Refer to specific Sri Lankan syllabus constraints (e.g. Mechanics, Organic Mechanisms, Physical Chem, Integration, Electronics).
 3. Frame advice matching the Z-score and competitive environment of Colombo, Gampaha, Kandy, etc., where cutoffs are high.
 4. Always use standard LaTeX notation for mathematical formulas, symbols, and equations (e.g., wrap inline math inside $...$ and block equations inside $$...$$) to ensure perfect rendering in the chat console.
-5. Keep structural formulas and math notation cleanly rendered. Keep answers concise, actionable, and formatted beautifully in markdown. Do not mention the word "Supabase" or refer to any technical backend architecture.`;
+5. Keep structural formulas and math notation cleanly rendered. Keep answers concise, actionable, and formatted beautifully in markdown. Do not mention any technical database architecture or hosting details.`;
 
-        const payload = {
-                contents: [{ parts: [{ text: promptContent }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] }
+            const activeAPIKey = studentProfile.gemini_api_key || localStorage.getItem('gemini_api_key') || "";
+            if (!activeAPIKey) {
+                return `⚠️ **Gemini API Key Missing**
+Please set your Gemini API Key in the Settings tab or input it inside the AI Advisor prompt first.`;
+            }
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeAPIKey}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [{ text: `${systemPrompt}\n\nStudent Query: ${promptContent}` }]
+                }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                }
             };
 
-            // Grab the user key from localStorage if it exists, otherwise fall back to workspace defaults
-            const userStoredKey = localStorage.getItem('user_gemini_api_key') || "";
-            const keysToTry = [];
-            if (userStoredKey) {
-                keysToTry.push(userStoredKey);
-            }
-            keysToTry.push(PRIMARY_AI_KEY);
-            keysToTry.push(""); // Platform transparent backup credential placeholder
+            let delay = 1000;
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-            let lastError = null;
+                    if (response.status === 400 || response.status === 403 || response.status === 401) {
+                        return `⚠️ **Gemini API Key Invalid or Rejected**
+                        
+The Gemini server rejected the request with status code ${response.status}. 
 
-            for (const keyAttempt of keysToTry) {
-                let delay = 1000;
-                for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                    try {
-                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${keyAttempt}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+**How to Fix This:**
+1. Generate a valid, free key on your [Google AI Studio Console](https://aistudio.google.com/).
+2. Go to the **Settings** tab on the left sidebar.
+3. Paste your fresh key under **Google Gemini API Key** and click **Save Profile Changes**.
+4. Retry your request.`;
+                    }
 
-                        if (!response.ok) {
-                            throw new Error(`HTTP Error Status: ${response.status}`);
-                        }
+                    if (!response.ok) {
+                        throw new Error(`HTTP Error Status: ${response.status}`);
+                    }
 
-                        const data = await response.json();
-                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (text) return text;
-                        throw new Error("Empty response returned from model.");
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) return text;
+                    throw new Error("Empty response returned from Gemini.");
 
-                    } catch (err) {
-                        console.warn(`Attempt ${attempt} with key "${keyAttempt}" failed. Retrying...`, err);
-                        lastError = err;
-                        if (attempt < maxRetries) {
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            delay *= 1.5;
-                        }
+                } catch (err) {
+                    console.warn(`Gemini Attempt ${attempt} failed. Retrying...`, err);
+                    if (attempt < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 1.5;
+                    } else {
+                        throw err;
                     }
                 }
             }
-            throw lastError || new Error("All API attempts failed.");
-    }
+            throw new Error("All Gemini API attempts failed.");
+        }
 
-    function triggerMathRender(element) {
-        if (typeof renderMathInElement !== 'undefined') {
-            try {
-                renderMathInElement(element, {
-                    delimiters: [
-                        {left: "$$", right: "$$", display: true},
-                        {left: "$", right: "$", display: false},
-                        {left: "\\(", right: "\\)", display: false},
-                        {left: "\\[", right: "\\]", display: true}
-                    ],
-                    throwOnError: false
-                });
-            } catch (err) {
-                console.warn("KaTeX render cycle bypassed:", err);
+        function triggerMathRender(element) {
+            if (typeof renderMathInElement !== 'undefined') {
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            {left: "$$", right: "$$", display: true},
+                            {left: "$", right: "$", display: false},
+                            {left: "\\(", right: "\\)", display: false},
+                            {left: "\\[", right: "\\]", display: true}
+                        ],
+                        throwOnError: false
+                    });
+                } catch (err) {
+                    console.warn("KaTeX render cycle bypassed:", err);
+                }
             }
         }
-    }
 
-    function appendMessage(sender, text, isAI = false) {
-        const chatOutput = document.getElementById('ai-chat-output');
-        if (!chatOutput) return;
-        const wrapper = document.createElement('div');
-        wrapper.className = isAI ? "flex items-start space-x-3 max-w-2xl" : "flex items-start space-x-3 justify-end ml-auto max-w-2xl";
+        function appendMessage(sender, text, isAI = false) {
+            const chatOutput = document.getElementById('ai-chat-output');
+            if (!chatOutput) return;
+            const wrapper = document.createElement('div');
+            wrapper.className = isAI ? "flex items-start space-x-3 max-w-2xl" : "flex items-start space-x-3 justify-end ml-auto max-w-2xl";
 
-        const avatarHtml = isAI 
-            ? `<div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5"><i class="fa-solid fa-robot"></i></div>` 
-            : `<div class="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400 mt-0.5 order-2"><i class="fa-solid fa-user"></i></div>`;
+            const avatarHtml = isAI 
+                ? `<div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5"><i class="fa-solid fa-robot"></i></div>` 
+                : `<div class="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400 mt-0.5 order-2"><i class="fa-solid fa-user"></i></div>`;
 
-        let formattedText = text
-            .replace(/\n/g, '<br>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/- (.*?)(<br>|$)/g, '• $1$2');
+            let formattedText = text
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/- (.*?)(<br>|$)/g, '• $1$2');
 
-        const contentHtml = `
-            <div class="${isAI ? 'bg-slate-950 border border-slate-800' : 'bg-brand-900/40 border border-brand-700/30'} rounded-2xl p-4 text-xs text-slate-300 leading-relaxed ${!isAI ? 'order-1' : ''}">
-                <p class="font-bold text-white mb-1.5">${isAI ? 'Exam Advisor' : 'You'}</p>
-                <div class="math-content">${formattedText}</div>
-            </div>
-        `;
+            const contentHtml = `
+                <div class="${isAI ? 'bg-slate-950 border border-slate-800' : 'bg-brand-900/40 border border-brand-700/30'} rounded-2xl p-4 text-xs text-slate-300 leading-relaxed ${!isAI ? 'order-1' : ''}">
+                    <p class="font-bold text-white mb-1.5">${isAI ? 'Gemini AI Advisor' : 'You'}</p>
+                    <div class="math-content">${formattedText}</div>
+                </div>
+            `;
 
-        wrapper.innerHTML = avatarHtml + contentHtml;
-        chatOutput.appendChild(wrapper);
-        
-        // Dynamically run KaTeX formatting over the updated thread box
-        triggerMathRender(wrapper);
-        
-        chatOutput.scrollTop = chatOutput.scrollHeight;
-    }
+            wrapper.innerHTML = avatarHtml + contentHtml;
+            chatOutput.appendChild(wrapper);
+            
+            triggerMathRender(wrapper);
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+        }
 
-    async function submitAIChat(event) {
+        async function submitAIChat(event) {
             if (event) event.preventDefault();
             const inputField = document.getElementById('ai-chat-input');
             if (!inputField) return;
@@ -2407,21 +2527,33 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
                 appendMessage('ai', aiResponse, true);
             } catch (err) {
                 if (loader) loader.classList.add('hidden');
-                appendMessage('ai', "I encountered an error communicating with the brain center. Please ensure your network is stable and retry.", true);
+                appendMessage('ai', "I encountered an error communicating with Gemini. Please check your internet connection or verify your Gemini API key in the Settings tab.", true);
             }
         }
 
         function syncChartAIConsult() {
-            if (activeChartFilter === 'All') {
-                sendQuickPrompt("Analyze my overall 3-subject performance trend and estimate my cut-off probability.");
+            if (selectedMedium === 'Sinhala') {
+                if (activeChartFilter === 'All') {
+                    sendQuickPrompt("මගේ සමස්ත විෂයන් 3ෙහිම ලකුණු ප්‍රවණතාවය විශ්ලේෂණය කර කට්-ඕෆ් (Z-Score) සාමාර්ථ්‍යය තක්සේරු කරන්න.");
+                } else {
+                    sendQuickPrompt(`මම දැනට ${activeChartFilter} ලකුණු ප්‍රස්ථාරය විශ්ලේෂණය කරමින් සිටිමි. මගේ අඩුපාඩු හඳුනාගෙන, විභාගයට ඉහළ ලකුණු ලබාගැනීමට උදව් වන්න.`);
+                }
             } else {
-                sendQuickPrompt(`I am currently reviewing my ${activeChartFilter} trend. Please analyze these grades, highlight likely syllabus weak points, and suggest high-yield revisions.`);
+                if (activeChartFilter === 'All') {
+                    sendQuickPrompt("Analyze my overall 3-subject performance trend and estimate my cut-off probability.");
+                } else {
+                    sendQuickPrompt(`I am currently reviewing my ${activeChartFilter} trend. Please analyze these grades, highlight likely syllabus weak points, and suggest high-yield revisions.`);
+                }
             }
         }
 
         function requestAIMarkAnalysis() {
             switchTab('ai');
-            sendQuickPrompt("Generate a comprehensive diagnostic of my currently logged marks. Predict my A/L results, Z-score standing, and give me key actions to maximize my performance.");
+            if (selectedMedium === 'Sinhala') {
+                sendQuickPrompt("මගේ සියලු ලකුණු විශ්ලේෂණය කර, විභාගයේදී ලබාගත හැකි Z-Score එක සහ සාමාර්ථ්‍යයන් පුරෝකථනය කර අධ්‍යයන සැලැස්මක් දෙන්න.");
+            } else {
+                sendQuickPrompt("Generate a comprehensive diagnostic of my currently logged marks. Predict my A/L results, Z-score standing, and give me key actions to maximize my performance.");
+            }
         }
 
         function sendQuickPrompt(promptText) {
@@ -2435,22 +2567,56 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
         function clearChatHistory() {
             const chatOutput = document.getElementById('ai-chat-output');
             if (!chatOutput) return;
-            chatOutput.innerHTML = `
-                <div class="flex items-start space-x-3 max-w-2xl">
-                    <div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5">
-                        <i class="fa-solid fa-robot"></i>
-                    </div>
-                    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
-                        <p class="font-bold text-white mb-1.5">Advisor Chat Reset Successful! 👋</p>
-                        <p class="mb-2">Send over any specific topic or click an analyzer shortcut below to start fresh.</p>
-                        <div class="flex flex-wrap gap-1.5">
-                            <button onclick="sendQuickPrompt('Analyze my average marks and predict my target results')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">📊 Run Diagnostic</button>
-                            <button onclick="sendQuickPrompt('Give me a detailed study path for Physics Mechanics syllabus')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">💡 Mechanics Path</button>
-                            <button onclick="sendQuickPrompt('Create a revision template for Chemistry Organic Mechanisms')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">🔬 Organic Prep</button>
+
+            if (selectedMedium === 'Sinhala') {
+                document.getElementById('ai-loader-text').innerText = "Gemini විශ්ලේෂණය කරමින් පවතී...";
+                chatOutput.innerHTML = `
+                    <div class="flex items-start space-x-3 max-w-2xl">
+                        <div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
+                            <p class="font-bold text-white mb-1.5">සාදරයෙන් පිළිගන්නවා! 👋</p>
+                            <p class="mb-2">මම ඔබගේ උසස් පෙළ අධ්‍යයන සහකරු (Gemini Coach). පහතින් විෂය තෝරාගෙන කෙටි මාර්ග හරහා මා සමඟ සාකච්ඡා කළ හැක.</p>
+                            <p class="mb-3">අද අප කුමක් පිළිබඳවද සාකච්ඡා කරන්නේ?</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button onclick="sendQuickPrompt('මගේ ලකුණු සාමාන්‍යය විශ්ලේෂණය කර ඉදිරි සාමාර්ථ්‍යයන් පුරෝකථනය කරන්න')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">📊 සමස්ත ප්‍රගතිය</button>
+                                <button onclick="sendQuickPrompt('භෞතික විද්‍යාව යාන්ත්‍ර විද්‍යාව සඳහා සවිස්තර අධ්‍යයන සැලැස්මක් දෙන්න')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">💡 යාන්ත්‍ර විද්‍යාව</button>
+                                <button onclick="sendQuickPrompt('කාබනික රසායනය ප්‍රතික්‍රියා යාන්ත්‍රණ මතක තබාගැනීමේ ක්‍රමවේදයක් සාදන්න')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">🔬 කාබනික රසායනය</button>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-slate-800 flex justify-end">
+                                <button onclick="changeMedium()" class="text-[10px] text-brand-400 hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-language"></i> Change Language / මාධ්‍යය වෙනස් කරන්න
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                document.getElementById('ai-loader-text').innerText = "Gemini is thinking, calculating averages & devising answers...";
+                chatOutput.innerHTML = `
+                    <div class="flex items-start space-x-3 max-w-2xl">
+                        <div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
+                            <p class="font-bold text-white mb-1.5">Welcome A/L Scholar! 👋</p>
+                            <p class="mb-2">I am your dedicated Sri Lankan A/L Academic Assistant, powered by Gemini. Use the dashboard filter sidebar to isolate my feedback or view analytical charts instantly.</p>
+                            <p class="mb-3">What would you like to review or predict today?</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button onclick="sendQuickPrompt('Analyze my average marks and predict my target results')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">📊 Run Diagnostic</button>
+                                <button onclick="sendQuickPrompt('Give me a detailed study path for Physics Mechanics syllabus')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">💡 Mechanics Path</button>
+                                <button onclick="sendQuickPrompt('Create a revision template for Chemistry Organic Mechanisms')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">🔬 Organic Prep</button>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-slate-800 flex justify-end">
+                                <button onclick="changeMedium()" class="text-[10px] text-brand-400 hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-language"></i> Change Language / මාධ්‍යය වෙනස් කරන්න
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         function switchTab(tabId) {
@@ -2475,7 +2641,7 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
 
             const mobileBtns = document.querySelectorAll('.mobile-tab-btn');
             mobileBtns.forEach(btn => {
-                if (btn.innerText.toLowerCase().includes(tabId === 'tracker' ? 'track' : tabId === 'tasks' ? 'task' : tabId === 'forgetting' ? 'recall' : tabId === 'ai' ? 'ai' : tabId === 'settings' ? 'sett' : 'home')) {
+                if (btn.innerText.toLowerCase().includes(tabId === 'tracker' ? 'track' : tabId === 'tasks' ? 'task' : tabId === 'forgetting' ? 'recall' : tabId === 'ai' ? 'gemini' : tabId === 'settings' ? 'sett' : 'home')) {
                     btn.classList.add('text-brand-400');
                     btn.classList.remove('text-slate-500');
                 }
@@ -2486,6 +2652,7 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
             } else if (tabId === 'forgetting') {
                 renderRecallPlanner();
             } else if (tabId === 'ai') {
+                checkGeminiKeyAndProceed();
                 setTimeout(renderChatViewChart, 100);
             }
         }
@@ -2583,9 +2750,10 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
             document.getElementById('profile-course').value = studentProfile.course;
             document.getElementById('profile-district').value = studentProfile.district;
             
-            // Populate key input field from browser local storage
-            document.getElementById('profile-api-key').value = localStorage.getItem('user_gemini_api_key') || "";
-
+            const activeKey = studentProfile.gemini_api_key || localStorage.getItem('gemini_api_key') || '';
+            document.getElementById('profile-gemini-key').value = activeKey;
+            document.getElementById('gemini-api-key-input').value = activeKey;
+            
             countdownDate = studentProfile.year;
             initCountdown();
         }
@@ -2597,12 +2765,12 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
             studentProfile.course = document.getElementById('profile-course').value;
             studentProfile.district = document.getElementById('profile-district').value;
 
-            // Save the custom API key strictly to browser's private localStorage (securely offline)
-            const enteredApiKey = document.getElementById('profile-api-key').value.trim();
-            if (enteredApiKey) {
-                localStorage.setItem('user_gemini_api_key', enteredApiKey);
+            const newGeminiKey = document.getElementById('profile-gemini-key').value.trim();
+            studentProfile.gemini_api_key = newGeminiKey;
+            if (newGeminiKey) {
+                localStorage.setItem('gemini_api_key', newGeminiKey);
             } else {
-                localStorage.removeItem('user_gemini_api_key');
+                localStorage.removeItem('gemini_api_key');
             }
 
             if (supabaseClient) {
@@ -2655,6 +2823,9 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
         window.toggleAuthMode = toggleAuthMode;
         window.resetChartZoom = resetChartZoom;
         window.saveChartImage = saveChartImage;
+        window.selectLanguage = selectLanguage;
+        window.changeMedium = changeMedium;
+        window.saveGeminiApiKey = saveGeminiApiKey;
 
         window.onload = function() {
             checkSessionCookie();
