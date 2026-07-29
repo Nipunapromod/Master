@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A/L Mastermind Dashboard v5.6</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4c1d95">
     <link rel="icon" href="logo.ico" type="image/x-icon">
     <link rel="shortcut icon" href="logo.ico" type="image/x-icon">
     <link rel="apple-touch-icon" href="logo.png">
@@ -1109,7 +1111,7 @@
         </button>
         <button onclick="switchTab('ai')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
             <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
-            <span class="text-[8px] font-semibold">Gemini</span>
+            <span class="text-[8px] font-semibold">Mastermind AI</span>
         </button>
         <button onclick="switchTab('settings')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
             <i class="fa-solid fa-sliders text-sm"></i>
@@ -2939,6 +2941,12 @@ The Gemini server rejected the request with status code ${response.status}.
         window.onload = function() {
             checkSessionCookie();
             generateNewQuote();
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then((reg) => console.log('Service worker registered:', reg))
+                    .catch((err) => console.warn('Service worker failed to register:', err));
+            }
         }
     </script>
 </body>
