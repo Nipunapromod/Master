@@ -2552,7 +2552,7 @@ The Gemini server rejected the request with status code ${response.status}.
             return wrapper.querySelector('.ai-typing-content');
         }
 
-        function typeAIResponse(contentElement, fullText, speed = 18) {
+        function typeAIResponse(contentElement, fullText, speed = 8) {
             return new Promise((resolve) => {
                 if (!contentElement) {
                     resolve();
