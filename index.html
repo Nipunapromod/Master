@@ -2681,7 +2681,7 @@ The Gemini server rejected the request with status code ${response.status}.
             if (!chatOutput) return;
 
             if (selectedMedium === 'Sinhala') {
-                document.getElementById('ai-loader-text').innerText = "Mastermind විශ්ලේෂණය කරමින් පවතී...";
+                document.getElementById('ai-loader-text').innerText = "Mastermind is analyzing your data...";
                 chatOutput.innerHTML = `
                     <div class="flex items-start space-x-3 max-w-2xl">
                         <div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5">
@@ -2705,7 +2705,7 @@ The Gemini server rejected the request with status code ${response.status}.
                     </div>
                 `;
             } else {
-                document.getElementById('ai-loader-text').innerText = "Gemini is thinking, calculating averages & devising answers...";
+                document.getElementById('ai-loader-text').innerText = "Mastermind is thinking, calculating averages & devising answers...";
                 chatOutput.innerHTML = `
                     <div class="flex items-start space-x-3 max-w-2xl">
                         <div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5">
@@ -2713,7 +2713,7 @@ The Gemini server rejected the request with status code ${response.status}.
                         </div>
                         <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
                             <p class="font-bold text-white mb-1.5">Welcome A/L Scholar! 👋</p>
-                            <p class="mb-2">I am your dedicated Sri Lankan A/L Academic Assistant, powered by Gemini. Use the dashboard filter sidebar to isolate my feedback or view analytical charts instantly.</p>
+                            <p class="mb-2">I am your dedicated Sri Lankan A/L Academic Assistant, powered by Mastermind. Use the dashboard filter sidebar to isolate my feedback or view analytical charts instantly.</p>
                             <p class="mb-3">What would you like to review or predict today?</p>
                             <div class="flex flex-wrap gap-1.5">
                                 <button onclick="sendQuickPrompt('Analyze my average marks and predict my target results')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">📊 Run Diagnostic</button>
