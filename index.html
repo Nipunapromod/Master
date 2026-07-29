@@ -2497,6 +2497,8 @@ The Gemini server rejected the request with status code ${response.status}.
             const contentHtml = `
                 <div class="${isAI ? 'bg-slate-950 border border-slate-800' : 'bg-brand-900/40 border border-brand-700/30'} rounded-2xl p-4 text-xs text-slate-300 leading-relaxed ${!isAI ? 'order-1' : ''}">
                     <p class="font-bold text-white mb-1.5">${isAI ? 'Mastermind AI Advisor' : 'You'}</p>
+                    <div class="math-content">${formattedText}</div>
+                </div>
             `;
 
             wrapper.innerHTML = avatarHtml + contentHtml;
