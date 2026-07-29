@@ -92,6 +92,22 @@
 
         window.showAlert = showAlert;
         window.closeAlertModal = closeAlertModal;
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const field = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!field || !icon) return;
+
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
     </script>
 
     <div id="auth-screen" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4 overflow-y-auto">
@@ -168,6 +184,17 @@
                             </select>
                         </div>
                     </div>
+
+                    <div class="pt-3">
+                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Optional Gemini API Key</label>
+                        <div class="relative">
+                            <input type="password" id="register-gemini-key" placeholder="Optional Google Gemini API Key" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 pr-10 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            <button type="button" onclick="togglePasswordVisibility('register-gemini-key','register-gemini-key-toggle-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                                <i id="register-gemini-key-toggle-icon" class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                        <p class="text-[9px] text-slate-500 mt-1">Optional. Save this key now to use Mastermind AI right after signing up.</p>
+                    </div>
                 </div>
 
                 <div>
@@ -177,7 +204,12 @@
 
                 <div>
                     <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Password</label>
-                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                    <div class="relative">
+                        <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 pr-10 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                        <button type="button" onclick="togglePasswordVisibility('auth-password','auth-password-toggle-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                            <i id="auth-password-toggle-icon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex gap-2">
@@ -827,7 +859,12 @@
                         </a>
                     </div>
                     <div class="w-full max-w-sm space-y-3">
-                        <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500 text-center">
+                        <div class="relative">
+                            <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 pr-10 text-xs text-slate-200 focus:outline-none focus:border-brand-500 text-center">
+                            <button type="button" onclick="togglePasswordVisibility('gemini-api-key-input','gemini-api-key-input-toggle-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                                <i id="gemini-api-key-input-toggle-icon" class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
                         <button onclick="saveGeminiApiKey()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl text-xs transition duration-200">
                             Save Key & Continue
                         </button>
@@ -993,7 +1030,12 @@
                                 <label class="block text-[10px] uppercase font-black text-brand-400 mb-1 flex items-center gap-1">
                                     <i class="fa-solid fa-key"></i> Google Gemini API Key (Stored in Cloud Profile)
                                 </label>
-                                <input type="password" id="profile-gemini-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                                <div class="relative">
+                                    <input type="password" id="profile-gemini-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded p-2 pr-10 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                                    <button type="button" onclick="togglePasswordVisibility('profile-gemini-key','profile-gemini-key-toggle-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                                        <i id="profile-gemini-key-toggle-icon" class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
                                 <p class="text-[9px] text-slate-500 mt-1 leading-relaxed">
                                     This API key is synchronized inside your cloud account credentials. Change it anytime to refresh permissions.
                                 </p>
@@ -1192,6 +1234,7 @@
                         const name = document.getElementById('auth-name').value.trim() || "Scholar";
                         const course = document.getElementById('auth-course').value;
                         const district = document.getElementById('auth-district').value;
+                        const registerGeminiKey = document.getElementById('register-gemini-key').value.trim();
 
                         const { data, error } = await supabaseClient.auth.signUp({ email, password });
                         if (error) {
@@ -1201,7 +1244,7 @@
 
                         if (data?.user) {
                             const { error: profileErr } = await supabaseClient.from('profiles').upsert([
-                                { id: data.user.id, name, year: "2027-08-10", course, district, gemini_api_key: "" }
+                                { id: data.user.id, name, year: "2027-08-10", course, district, gemini_api_key: registerGeminiKey }
                             ]);
                             if (profileErr) console.error("Profile load failed:", profileErr);
                         }
