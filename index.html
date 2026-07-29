@@ -253,7 +253,7 @@
                 
                 <button onclick="switchTab('ai')" id="btn-tab-ai" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
                     <i class="fa-solid fa-wand-magic-sparkles text-lg w-6"></i>
-                    <span>Gemini AI Coach</span>
+                    <span>Mastermind AI Coach</span>
                 </button>
 
                 <button onclick="switchTab('settings')" id="btn-tab-settings" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
@@ -801,7 +801,7 @@
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
                                 <span class="relative inline-flex rounded-full h-3 w-3 bg-brand-500"></span>
                             </span>
-                            <span>Gemini AI Exam Advisor & Synergizer</span>
+                            <span>Mastermind AI Exam Advisor & Synergizer</span>
                         </h2>
                         <p class="text-xs text-slate-400">Deep syllabus diagnostic, marks forecasting, and customized study plan advisor.</p>
                     </div>
@@ -818,7 +818,7 @@
                         <i class="fa-solid fa-key"></i>
                     </div>
                     <div class="space-y-2 max-w-md">
-                        <h3 class="text-lg font-extrabold text-white">Activate Your Gemini AI Coach / Gemini යතුර සක්‍රීය කරන්න</h3>
+                        <h3 class="text-lg font-extrabold text-white">Activate Your Mastermind AI Coach / Mastermind යතුර සක්‍රීය කරන්න</h3>
                         <p class="text-xs text-slate-400 leading-relaxed">
                             Please provide a Google Gemini API Key. Your key will be securely synchronized directly with your account profile so you never have to configure it again.
                         </p>
@@ -2496,9 +2496,7 @@ The Gemini server rejected the request with status code ${response.status}.
 
             const contentHtml = `
                 <div class="${isAI ? 'bg-slate-950 border border-slate-800' : 'bg-brand-900/40 border border-brand-700/30'} rounded-2xl p-4 text-xs text-slate-300 leading-relaxed ${!isAI ? 'order-1' : ''}">
-                    <p class="font-bold text-white mb-1.5">${isAI ? 'Gemini AI Advisor' : 'You'}</p>
-                    <div class="math-content">${formattedText}</div>
-                </div>
+                    <p class="font-bold text-white mb-1.5">${isAI ? 'Mastermind AI Advisor' : 'You'}</p>
             `;
 
             wrapper.innerHTML = avatarHtml + contentHtml;
