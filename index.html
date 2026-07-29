@@ -2524,6 +2524,63 @@ The Gemini server rejected the request with status code ${response.status}.
             }
         }
 
+        function formatMessageText(text) {
+            return text
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/- (.*?)(<br>|$)/g, '• $1$2');
+        }
+
+        function createAIPlaceholderMessage() {
+            const chatOutput = document.getElementById('ai-chat-output');
+            if (!chatOutput) return null;
+            const wrapper = document.createElement('div');
+            wrapper.className = "flex items-start space-x-3 max-w-2xl";
+
+            const avatarHtml = `<div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5"><i class="fa-solid fa-robot"></i></div>`;
+            const contentHtml = `
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
+                    <p class="font-bold text-white mb-1.5">Mastermind AI Advisor</p>
+                    <div class="math-content ai-typing-content text-slate-400">Mastermind AI is composing your response...</div>
+                </div>
+            `;
+
+            wrapper.innerHTML = avatarHtml + contentHtml;
+            chatOutput.appendChild(wrapper);
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+            return wrapper.querySelector('.ai-typing-content');
+        }
+
+        function typeAIResponse(contentElement, fullText, speed = 18) {
+            return new Promise((resolve) => {
+                if (!contentElement) {
+                    resolve();
+                    return;
+                }
+
+                const plainText = fullText.replace(/\r/g, '');
+                let typed = '';
+                let index = 0;
+                const cursor = '▌';
+                const typingInterval = setInterval(() => {
+                    if (index < plainText.length) {
+                        typed += plainText[index++];
+                        const safeText = typed.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        contentElement.innerText = safeText + cursor;
+                        contentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    } else {
+                        clearInterval(typingInterval);
+                        contentElement.innerHTML = formatMessageText(fullText);
+                        contentElement.classList.remove('text-slate-400');
+                        contentElement.classList.add('text-slate-300');
+                        triggerMathRender(contentElement);
+                        resolve();
+                    }
+                }, speed);
+            });
+        }
+
         function appendMessage(sender, text, isAI = false) {
             const chatOutput = document.getElementById('ai-chat-output');
             if (!chatOutput) return;
@@ -2534,22 +2591,15 @@ The Gemini server rejected the request with status code ${response.status}.
                 ? `<div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5"><i class="fa-solid fa-robot"></i></div>` 
                 : `<div class="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400 mt-0.5 order-2"><i class="fa-solid fa-user"></i></div>`;
 
-            let formattedText = text
-                .replace(/\n/g, '<br>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/- (.*?)(<br>|$)/g, '• $1$2');
-
             const contentHtml = `
-                <div class="${isAI ? 'bg-slate-950 border border-slate-800' : 'bg-brand-900/40 border border-brand-700/30'} rounded-2xl p-4 text-xs text-slate-300 leading-relaxed ${!isAI ? 'order-1' : ''}">
+                <div class="${isAI ? 'bg-slate-950 border border-slate-800' : 'bg-brand-900/40 border border-brand-700/30'} rounded-2xl p-4 text-xs ${isAI ? 'text-slate-300' : 'text-slate-200'} leading-relaxed ${!isAI ? 'order-1' : ''}">
                     <p class="font-bold text-white mb-1.5">${isAI ? 'Mastermind AI Advisor' : 'You'}</p>
-                    <div class="math-content">${formattedText}</div>
+                    <div class="math-content">${formatMessageText(text)}</div>
                 </div>
             `;
 
             wrapper.innerHTML = avatarHtml + contentHtml;
             chatOutput.appendChild(wrapper);
-            
             triggerMathRender(wrapper);
             chatOutput.scrollTop = chatOutput.scrollHeight;
         }
@@ -2567,13 +2617,24 @@ The Gemini server rejected the request with status code ${response.status}.
             const loader = document.getElementById('ai-loading');
             if (loader) loader.classList.remove('hidden');
 
+            const aiTypingElement = createAIPlaceholderMessage();
             try {
                 const aiResponse = await makeAICall(query);
                 if (loader) loader.classList.add('hidden');
-                appendMessage('ai', aiResponse, true);
+                if (aiTypingElement) {
+                    await typeAIResponse(aiTypingElement, aiResponse);
+                } else {
+                    appendMessage('ai', aiResponse, true);
+                }
             } catch (err) {
                 if (loader) loader.classList.add('hidden');
-                appendMessage('ai', "I encountered an error communicating with Gemini. Please check your internet connection or verify your Gemini API key in the Settings tab.", true);
+                if (aiTypingElement) {
+                    aiTypingElement.innerHTML = formatMessageText("I encountered an error communicating with Gemini. Please check your internet connection or verify your Gemini API key in the Settings tab.");
+                    aiTypingElement.classList.remove('text-slate-400');
+                    aiTypingElement.classList.add('text-slate-300');
+                } else {
+                    appendMessage('ai', "I encountered an error communicating with Gemini. Please check your internet connection or verify your Gemini API key in the Settings tab.", true);
+                }
             }
         }
 
