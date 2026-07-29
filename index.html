@@ -2458,12 +2458,14 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeAPIKey}`;
             
             const payload = {
-                contents: [{
-                    parts: [{ text: `${systemPrompt}\n\nStudent Query: ${promptContent}` }]
-                }],
                 systemInstruction: {
+                    role: "user",
                     parts: [{ text: systemPrompt }]
-                }
+                },
+                contents: [{
+                    role: "user",
+                    parts: [{ text: promptContent }]
+                }]
             };
 
             let delay = 1000;
