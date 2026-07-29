@@ -2563,6 +2563,8 @@ The Gemini server rejected the request with status code ${response.status}.
                 let typed = '';
                 let index = 0;
                 const cursor = '▌';
+                const totalDuration = 4000;
+                const intervalSpeed = Math.max(4, Math.min(30, Math.floor(totalDuration / Math.max(plainText.length, 1))));
                 const typingInterval = setInterval(() => {
                     if (index < plainText.length) {
                         typed += plainText[index++];
@@ -2577,7 +2579,7 @@ The Gemini server rejected the request with status code ${response.status}.
                         triggerMathRender(contentElement);
                         resolve();
                     }
-                }, speed);
+                }, intervalSpeed);
             });
         }
 
