@@ -2457,22 +2457,49 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeAPIKey}`;
             
-            const payload = {
-                contents: [{
-                    parts: [{ text: `${systemPrompt}\n\nStudent Query: ${promptContent}` }]
-                }],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
+            const apiAttempts = [
+                {
+                    url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeAPIKey}`,
+                    body: {
+                        contents: [{
+                            parts: [{ text: `${systemPrompt}\n\nStudent Query: ${promptContent}` }]
+                        }],
+                        systemInstruction: {
+                            parts: [{ text: systemPrompt }]
+                        }
+                    }
+                },
+                {
+                    url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateMessage?key=${activeAPIKey}`,
+                    body: {
+                        messages: [
+                            { role: "system", content: [{ type: "text", text: systemPrompt }] },
+                            { role: "user", content: [{ type: "text", text: promptContent }] }
+                        ],
+                        temperature: 0.3,
+                        candidate_count: 1
+                    }
+                },
+                {
+                    url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateText?key=${activeAPIKey}`,
+                    body: {
+                        input: [
+                            { role: "system", content: [{ type: "text", text: systemPrompt }] },
+                            { role: "user", content: [{ type: "text", text: promptContent }] }
+                        ],
+                        temperature: 0.3
+                    }
                 }
-            };
+            ];
 
             let delay = 1000;
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            for (let attempt = 0; attempt < apiAttempts.length; attempt++) {
+                const attemptConfig = apiAttempts[attempt];
                 try {
-                    const response = await fetch(apiUrl, {
+                    const response = await fetch(attemptConfig.url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(attemptConfig.body)
                     });
 
                     if (response.status === 400 || response.status === 403 || response.status === 401) {
@@ -2487,23 +2514,36 @@ The Gemini server rejected the request with status code ${response.status}.
 4. Retry your request.`;
                     }
 
+                    if (response.status === 404 || response.status === 405) {
+                        console.warn(`Gemini endpoint not available for attempt ${attempt + 1}:`, attemptConfig.url);
+                        continue;
+                    }
+
                     if (!response.ok) {
                         throw new Error(`HTTP Error Status: ${response.status}`);
                     }
 
                     const data = await response.json();
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+                        || data?.candidates?.[0]?.content?.[0]?.text
+                        || data?.output?.[0]?.content?.find(item => item.type === 'output_text')?.text
+                        || data?.outputText
+                        || data?.candidates?.[0]?.output
+                        || data?.output?.[0]?.content?.find(item => item.type === 'text')?.text;
+
                     if (text) return text;
-                    throw new Error("Empty response returned from Gemini.");
+
+                    const errorDetails = data?.error || data?.status || JSON.stringify(data);
+                    throw new Error(`Empty response returned from Gemini. Response data: ${errorDetails}`);
 
                 } catch (err) {
-                    console.warn(`Gemini Attempt ${attempt} failed. Retrying...`, err);
-                    if (attempt < maxRetries) {
+                    console.warn(`Gemini attempt ${attempt + 1} failed.`, err);
+                    if (attempt < apiAttempts.length - 1) {
                         await new Promise(resolve => setTimeout(resolve, delay));
                         delay *= 1.5;
-                    } else {
-                        throw err;
+                        continue;
                     }
+                    throw err;
                 }
             }
             throw new Error("All Gemini API attempts failed.");
