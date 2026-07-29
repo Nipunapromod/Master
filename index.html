@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A/L Mastermind Dashboard v5.6</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4c1d95">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" href="logo.ico" type="image/x-icon">
     <link rel="shortcut icon" href="logo.ico" type="image/x-icon">
     <!-- Tailwind CSS -->
@@ -2451,7 +2455,7 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
 Please set your Gemini API Key in the Settings tab or input it inside the AI Advisor prompt first.`;
             }
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeAPIKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeAPIKey}`;
             
             const payload = {
                 contents: [{
@@ -2938,6 +2942,12 @@ The Gemini server rejected the request with status code ${response.status}.
         window.onload = function() {
             checkSessionCookie();
             generateNewQuote();
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then((reg) => console.log('Service worker registered:', reg))
+                    .catch((err) => console.warn('Service worker failed to register:', err));
+            }
         }
     </script>
 </body>
