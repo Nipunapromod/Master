@@ -1771,7 +1771,7 @@
         };
 
         const gapSegmentDash = (ctx) => {
-            return isGapSegment(ctx) ? [2, 2] : undefined;
+            return isGapSegment(ctx) ? [4, 4] : undefined;
         };
 
         function resetChartZoom() {
@@ -2457,49 +2457,22 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeAPIKey}`;
             
-            const apiAttempts = [
-                {
-                    url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeAPIKey}`,
-                    body: {
-                        contents: [{
-                            parts: [{ text: `${systemPrompt}\n\nStudent Query: ${promptContent}` }]
-                        }],
-                        systemInstruction: {
-                            parts: [{ text: systemPrompt }]
-                        }
-                    }
-                },
-                {
-                    url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateMessage?key=${activeAPIKey}`,
-                    body: {
-                        messages: [
-                            { role: "system", content: [{ type: "text", text: systemPrompt }] },
-                            { role: "user", content: [{ type: "text", text: promptContent }] }
-                        ],
-                        temperature: 0.3,
-                        candidate_count: 1
-                    }
-                },
-                {
-                    url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateText?key=${activeAPIKey}`,
-                    body: {
-                        input: [
-                            { role: "system", content: [{ type: "text", text: systemPrompt }] },
-                            { role: "user", content: [{ type: "text", text: promptContent }] }
-                        ],
-                        temperature: 0.3
-                    }
+            const payload = {
+                contents: [{
+                    parts: [{ text: `${systemPrompt}\n\nStudent Query: ${promptContent}` }]
+                }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
                 }
-            ];
+            };
 
             let delay = 1000;
-            for (let attempt = 0; attempt < apiAttempts.length; attempt++) {
-                const attemptConfig = apiAttempts[attempt];
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
-                    const response = await fetch(attemptConfig.url, {
+                    const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(attemptConfig.body)
+                        body: JSON.stringify(payload)
                     });
 
                     if (response.status === 400 || response.status === 403 || response.status === 401) {
@@ -2514,36 +2487,23 @@ The Gemini server rejected the request with status code ${response.status}.
 4. Retry your request.`;
                     }
 
-                    if (response.status === 404 || response.status === 405) {
-                        console.warn(`Gemini endpoint not available for attempt ${attempt + 1}:`, attemptConfig.url);
-                        continue;
-                    }
-
                     if (!response.ok) {
                         throw new Error(`HTTP Error Status: ${response.status}`);
                     }
 
                     const data = await response.json();
-                    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-                        || data?.candidates?.[0]?.content?.[0]?.text
-                        || data?.output?.[0]?.content?.find(item => item.type === 'output_text')?.text
-                        || data?.outputText
-                        || data?.candidates?.[0]?.output
-                        || data?.output?.[0]?.content?.find(item => item.type === 'text')?.text;
-
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (text) return text;
-
-                    const errorDetails = data?.error || data?.status || JSON.stringify(data);
-                    throw new Error(`Empty response returned from Gemini. Response data: ${errorDetails}`);
+                    throw new Error("Empty response returned from Gemini.");
 
                 } catch (err) {
-                    console.warn(`Gemini attempt ${attempt + 1} failed.`, err);
-                    if (attempt < apiAttempts.length - 1) {
+                    console.warn(`Gemini Attempt ${attempt} failed. Retrying...`, err);
+                    if (attempt < maxRetries) {
                         await new Promise(resolve => setTimeout(resolve, delay));
                         delay *= 1.5;
-                        continue;
+                    } else {
+                        throw err;
                     }
-                    throw err;
                 }
             }
             throw new Error("All Gemini API attempts failed.");
