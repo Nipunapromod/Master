@@ -1,6 +1,5 @@
 const cacheName = 'mastermind-ai-pwa-v1';
 const assetsToCache = [
-  '.',
   'index.html',
   'logo.ico',
   'manifest.json'
@@ -27,6 +26,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cacheResponse) => {
       return cacheResponse || fetch(event.request);
