@@ -2566,8 +2566,8 @@ The Gemini server rejected the request with status code ${response.status}.
                 let typed = '';
                 let index = 0;
                 const cursor = '▌';
-                const totalDuration = 2000;
-                const intervalSpeed = Math.max(2, Math.min(12, Math.floor(totalDuration / Math.max(plainText.length, 1))));
+                const totalDuration = 4000;
+                const intervalSpeed = Math.max(4, Math.min(30, Math.floor(totalDuration / Math.max(plainText.length, 1))));
                 const typingInterval = setInterval(() => {
                     if (index < plainText.length) {
                         typed += plainText[index++];
@@ -2689,7 +2689,7 @@ The Gemini server rejected the request with status code ${response.status}.
                         </div>
                         <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
                             <p class="font-bold text-white mb-1.5">සාදරයෙන් පිළිගන්නවා! 👋</p>
-                            <p class="mb-2">මම ඔබගේ උසස් පෙළ අධ්‍යයන සහකරු (Gemini Coach). පහතින් විෂය තෝරාගෙන කෙටි මාර්ග හරහා මා සමඟ සාකච්ඡා කළ හැක.</p>
+                            <p class="mb-2">මම ඔබගේ උසස් පෙළ අධ්‍යයන සහකරු (Mastermind Coach). පහතින් විෂය තෝරාගෙන කෙටි මාර්ග හරහා මා සමඟ සාකච්ඡා කළ හැක.</p>
                             <p class="mb-3">අද අප කුමක් පිළිබඳවද සාකච්ඡා කරන්නේ?</p>
                             <div class="flex flex-wrap gap-1.5">
                                 <button onclick="sendQuickPrompt('මගේ ලකුණු සාමාන්‍යය විශ්ලේෂණය කර ඉදිරි සාමාර්ථ්‍යයන් පුරෝකථනය කරන්න')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-brand-300 transition">📊 සමස්ත ප්‍රගතිය</button>
@@ -2705,7 +2705,7 @@ The Gemini server rejected the request with status code ${response.status}.
                     </div>
                 `;
             } else {
-                document.getElementById('ai-loader-text').innerText = "Mastermind is thinking, calculating averages & devising answers...";
+                document.getElementById('ai-loader-text').innerText = "Gemini is thinking, calculating averages & devising answers...";
                 chatOutput.innerHTML = `
                     <div class="flex items-start space-x-3 max-w-2xl">
                         <div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5">
