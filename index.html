@@ -2430,14 +2430,332 @@
             setTimeout(renderChatViewChart, 150);
         }
 
+        const AI_MAX_OUTPUT_TOKENS = 2048;
+        const AI_MAX_SUMMARY_TURNS = 10;
+        const AI_MAX_CONTINUATION_ROUNDS = 4;
+        const AI_MAX_RETRY_ATTEMPTS = 2;
+        const AI_RETRY_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+        const AI_CONTINUATION_PROMPT = 'Continue exactly where you stopped. Do not repeat anything. Continue from the last unfinished sentence.';
+        let aiRequestAbortController = null;
+        let aiRequestInFlight = false;
+        let currentAIPlaceholderContent = null;
+        let currentAIResponseWrapper = null;
+
         function changeMedium() {
             selectedMedium = '';
             document.getElementById('ai-active-workspace').classList.add('hidden');
             document.getElementById('ai-lang-selection-screen').classList.remove('hidden');
         }
 
+        function getAIFormElements() {
+            return {
+                input: document.getElementById('ai-chat-input'),
+                submitButton: document.querySelector('#ai-chat-form button[type="submit"]'),
+                loader: document.getElementById('ai-loading'),
+                output: document.getElementById('ai-chat-output')
+            };
+        }
+
+        function scrollChatToBottom() {
+            const { output } = getAIFormElements();
+            if (output) output.scrollTop = output.scrollHeight;
+        }
+
+        function isLikelyIncompleteResponse(text, finishReason) {
+            if (!text) return true;
+            if (finishReason === 'MAX_TOKENS') return true;
+            const trimmed = String(text).trim();
+            if (trimmed.length < 60) return false;
+            if (trimmed.endsWith('...') || trimmed.endsWith('…')) return true;
+            return !/[.!?\u2026\)]$/.test(trimmed);
+        }
+
+        function mergeAssistantText(previous, continuation) {
+            if (!previous) return continuation || '';
+            if (!continuation) return previous;
+            const maxOverlap = Math.min(200, previous.length, continuation.length);
+            for (let len = maxOverlap; len > 20; len--) {
+                if (previous.slice(-len) === continuation.slice(0, len)) {
+                    return previous + continuation.slice(len);
+                }
+            }
+            return previous + continuation;
+        }
+
+        function summarizeOlderChatHistory(history) {
+            if (!Array.isArray(history) || history.length === 0) return '';
+            const summaryLines = history.slice(0, Math.min(6, history.length)).map(entry => {
+                const roleLabel = entry.role === 'model' ? 'AI' : 'User';
+                const snippet = String(entry.parts?.[0]?.text || '')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .slice(0, 120);
+                return `${roleLabel}: ${snippet}`;
+            }).filter(Boolean);
+            return `Earlier conversation summary (${history.length} turns): ${summaryLines.join(' | ')}`;
+        }
+
+        function buildGeminiConversationContents(promptContent, partialAIResponse = null) {
+            const cleanedPrompt = String(promptContent || '').trim();
+            const rawHistory = aiChatHistory
+                .filter(entry => entry && typeof entry.text === 'string' && entry.text.trim())
+                .map(entry => ({
+                    role: entry.isAI ? 'model' : 'user',
+                    parts: [{ text: entry.text.trim() }]
+                }));
+
+            while (rawHistory.length && rawHistory[0].role === 'model') {
+                rawHistory.shift();
+            }
+
+            const needsSummary = rawHistory.length > AI_MAX_SUMMARY_TURNS + 2;
+            const historyToUse = needsSummary
+                ? rawHistory.slice(-AI_MAX_SUMMARY_TURNS)
+                : rawHistory;
+
+            const contents = [];
+            if (needsSummary) {
+                contents.push({ role: 'user', parts: [{ text: summarizeOlderChatHistory(rawHistory.slice(0, -AI_MAX_SUMMARY_TURNS)) }] });
+            }
+            contents.push(...historyToUse);
+
+            if (partialAIResponse) {
+                contents.push({ role: 'model', parts: [{ text: partialAIResponse.trim() }] });
+            }
+
+            const lastEntry = contents[contents.length - 1];
+            if (!lastEntry || lastEntry.role !== 'user' || lastEntry.parts[0].text.trim() !== cleanedPrompt) {
+                contents.push({ role: 'user', parts: [{ text: cleanedPrompt }] });
+            }
+
+            return contents;
+        }
+
+        function formatMessageText(text) {
+            const escaped = String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            const withCodeBlocks = escaped.replace(/```([\s\S]*?)```/g, '<pre class="rounded-xl bg-slate-900 p-3 overflow-x-auto"><code>$1</code></pre>');
+            const withInlineCode = withCodeBlocks.replace(/`([^`\n]+)`/g, '<code class="bg-slate-800 px-1 rounded">$1</code>');
+            const withBold = withInlineCode.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            const withItalic = withBold.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            const withLists = withItalic
+                .replace(/^\s*-\s+(.*)$/gm, '<li>$1</li>')
+                .replace(/^\s*\d+\.\s+(.*)$/gm, '<li>$1</li>')
+                .replace(/(<li>[\s\S]*?<\/li>\s*)+/g, match => `<ul>${match}</ul>`);
+
+            return withLists.replace(/\n/g, '<br>');
+        }
+
+        function saveAIChatHistory() {
+            try {
+                localStorage.setItem('almaster_ai_history', JSON.stringify(aiChatHistory.slice(-60)));
+            } catch (err) {
+                console.warn('Unable to persist AI chat history.', err);
+            }
+        }
+
+        function loadAIChatHistory() {
+            try {
+                const stored = localStorage.getItem('almaster_ai_history');
+                aiChatHistory = stored ? JSON.parse(stored) : [];
+            } catch (err) {
+                aiChatHistory = [];
+                console.warn('Unable to restore AI chat history.', err);
+            }
+            renderChatHistory();
+        }
+
+        function addChatHistory(sender, text, isAI = false) {
+            if (!text) return;
+            const safeText = String(text);
+            aiChatHistory.push({ sender, text: safeText, isAI, timestamp: Date.now() });
+            saveAIChatHistory();
+            appendMessage(sender, safeText, isAI);
+        }
+
+        function appendMessage(sender, text, isAI = false) {
+            const { output } = getAIFormElements();
+            if (!output) return;
+            const wrapper = document.createElement('div');
+            wrapper.className = isAI ? "flex items-start space-x-3 max-w-2xl" : "flex items-start space-x-3 justify-end ml-auto max-w-2xl";
+
+            const avatarHtml = isAI
+                ? `<div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5"><i class="fa-solid fa-robot"></i></div>`
+                : `<div class="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400 mt-0.5 order-2"><i class="fa-solid fa-user"></i></div>`;
+
+            const contentHtml = `
+                <div class="${isAI ? 'bg-slate-950 border border-slate-800' : 'bg-brand-900/40 border border-brand-700/30'} rounded-2xl p-4 text-xs ${isAI ? 'text-slate-300' : 'text-slate-200'} leading-relaxed ${!isAI ? 'order-1' : ''}">
+                    <p class="font-bold text-white mb-1.5">${isAI ? 'Mastermind AI Advisor' : 'You'}</p>
+                    <div class="math-content">${formatMessageText(text)}</div>
+                </div>
+            `;
+
+            wrapper.innerHTML = avatarHtml + contentHtml;
+            output.appendChild(wrapper);
+            triggerMathRender(wrapper);
+            scrollChatToBottom();
+        }
+
+        function renderChatHistory() {
+            const { output } = getAIFormElements();
+            if (!output) return;
+            output.innerHTML = '';
+            aiChatHistory.forEach(entry => appendMessage(entry.sender, entry.text, entry.isAI));
+            scrollChatToBottom();
+        }
+
+        function createAIPlaceholderMessage() {
+            const { output } = getAIFormElements();
+            if (!output) return null;
+            const wrapper = document.createElement('div');
+            wrapper.className = "flex items-start space-x-3 max-w-2xl";
+            const avatarHtml = `<div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5"><i class="fa-solid fa-robot"></i></div>`;
+            const contentHtml = `
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
+                    <p class="font-bold text-white mb-1.5">Mastermind AI Advisor</p>
+                    <div class="math-content ai-typing-content text-slate-400">Typing...</div>
+                </div>
+            `;
+            wrapper.innerHTML = avatarHtml + contentHtml;
+            output.appendChild(wrapper);
+            scrollChatToBottom();
+            currentAIResponseWrapper = wrapper;
+            return wrapper.querySelector('.ai-typing-content');
+        }
+
+        function updateStreamingPlaceholder(text) {
+            if (!currentAIPlaceholderContent) return;
+            currentAIPlaceholderContent.textContent = `${text}▌`;
+            scrollChatToBottom();
+        }
+
+        function extractStreamText(event) {
+            if (!event) return '';
+            const candidate = event?.candidate || event?.response?.candidates?.[0] || event?.response?.candidate || event?.candidates?.[0];
+            if (candidate?.content?.parts) {
+                return candidate.content.parts.map(part => String(part?.text || '')).join('');
+            }
+            if (candidate?.content) {
+                if (Array.isArray(candidate.content)) {
+                    return candidate.content.map(part => String(part?.text || '')).join('');
+                }
+                return String(candidate.content || '');
+            }
+            if (event?.delta?.content) {
+                const content = Array.isArray(event.delta.content) ? event.delta.content : [event.delta.content];
+                return content.map(part => String(part?.text || '')).join('');
+            }
+            return String(event?.text || '');
+        }
+
+        function extractFinishReason(event) {
+            if (!event) return null;
+            const candidate = event?.candidate || event?.response?.candidates?.[0] || event?.response?.candidate || event?.candidates?.[0];
+            return candidate?.finishReason || event?.finishReason || event?.event?.finishReason || null;
+        }
+
+        function extractTokenUsage(event) {
+            if (!event) return null;
+            const candidate = event?.candidate || event?.response?.candidates?.[0] || event?.response?.candidate || event?.candidates?.[0];
+            const usage = candidate?.metadata?.tokenUsage || event?.metadata?.tokenUsage || candidate?.tokenUsage;
+            if (!usage) return null;
+            return {
+                promptTokens: usage.inputTokens ?? usage.promptTokens,
+                completionTokens: usage.outputTokens ?? usage.completionTokens
+            };
+        }
+
+        async function requestGeminiStream(apiUrl, headers, payload) {
+            if (aiRequestAbortController) {
+                aiRequestAbortController.abort();
+            }
+            aiRequestAbortController = new AbortController();
+            const signal = aiRequestAbortController.signal;
+            aiRequestInFlight = true;
+
+            const requestStart = Date.now();
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(payload),
+                signal
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text().catch(() => '');
+                const apiMessage = errorBody || `Gemini returned HTTP ${response.status}`;
+                const apiError = new Error(apiMessage);
+                apiError.status = response.status;
+                throw apiError;
+            }
+
+            if (!response.body) {
+                throw new Error('Gemini stream response did not include a readable body.');
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let assistantText = '';
+            let finishReason = 'STOP';
+            let promptTokens = 0;
+            let completionTokens = 0;
+            let responseSize = 0;
+
+            const processEvent = (event) => {
+                const chunkText = extractStreamText(event);
+                if (chunkText) {
+                    assistantText += chunkText;
+                    responseSize += chunkText.length;
+                    updateStreamingPlaceholder(assistantText);
+                }
+                const eventFinish = extractFinishReason(event);
+                if (eventFinish) finishReason = eventFinish;
+                const tokenUsage = extractTokenUsage(event);
+                if (tokenUsage) {
+                    if (tokenUsage.promptTokens != null) promptTokens = tokenUsage.promptTokens;
+                    if (tokenUsage.completionTokens != null) completionTokens = tokenUsage.completionTokens;
+                }
+            };
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                let newlineIndex;
+                while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+                    const rawLine = buffer.slice(0, newlineIndex).trim();
+                    buffer = buffer.slice(newlineIndex + 1);
+                    if (!rawLine) continue;
+                    const cleanedLine = rawLine.startsWith('data:') ? rawLine.slice(5).trim() : rawLine;
+                    try {
+                        const event = JSON.parse(cleanedLine);
+                        processEvent(event);
+                    } catch (parseErr) {
+                        console.warn('[Gemini] stream parse failure', parseErr, cleanedLine);
+                    }
+                }
+            }
+
+            const leftover = buffer.trim();
+            if (leftover) {
+                try {
+                    const event = JSON.parse(leftover);
+                    processEvent(event);
+                } catch (parseErr) {
+                    console.warn('[Gemini] final stream parse failure', parseErr, leftover);
+                }
+            }
+
+            aiRequestInFlight = false;
+            const latency = Date.now() - requestStart;
+            return { text: assistantText, finishReason, promptTokens, completionTokens, latency, responseSize };
+        }
+
         async function makeAICall(promptContent) {
-            const maxRetries = 2;
             const subjectSpecificFocus = activeChartFilter === 'All'
                 ? "the composite performance across Combined Mathematics, Physics, and Chemistry."
                 : `a specific, deep focus on the subject: ${activeChartFilter}. Adjust your detailed syllabus recommendations primarily to improve this subject.`;
@@ -2477,305 +2795,135 @@ Instructions:
 4. Use standard LaTeX notation, with inline math inside $...$ and block math inside $$...$$.
 5. Keep the response concise and actionable.`;
 
-            const activeAPIKey =
-                studentProfile.gemini_api_key ||
-                localStorage.getItem('gemini_api_key') ||
-                '';
-
-            const useProxy =
-                typeof geminiProxyUrl === 'string' &&
-                geminiProxyUrl.trim().length > 0;
-
+            const activeAPIKey = studentProfile.gemini_api_key || localStorage.getItem('gemini_api_key') || '';
+            const useProxy = typeof geminiProxyUrl === 'string' && geminiProxyUrl.trim().length > 0;
             if (!useProxy && !activeAPIKey) {
-                throw new Error(
-                    'Gemini API key is missing. Add a valid Google AI Studio API key in Settings.'
-                );
+                throw new Error('Gemini API key is missing. Add a valid Google AI Studio API key in Settings.');
             }
 
             const apiUrl = useProxy
                 ? geminiProxyUrl.trim()
-                : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
+                : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContentStream`;
 
             const headers = {
                 'Content-Type': 'application/json'
             };
-
             if (!useProxy) {
                 headers['x-goog-api-key'] = activeAPIKey;
             }
 
-            // The current user message has already been added to aiChatHistory.
-            // Exclude it here, then append promptContent once to avoid duplication.
-            const recentHistory = aiChatHistory
-                .slice(0, -1)
-                .slice(-12)
-                .filter(entry => entry && typeof entry.text === 'string' && entry.text.trim())
-                .map(entry => ({
-                    role: entry.isAI ? 'model' : 'user',
-                    parts: [{ text: entry.text }]
-                }));
-
-            // Gemini conversation history should begin with a user turn.
-            while (recentHistory.length && recentHistory[0].role === 'model') {
-                recentHistory.shift();
-            }
-
-            const payload = {
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-                contents: [
-                    ...recentHistory,
-                    {
-                        role: 'user',
-                        parts: [{ text: promptContent }]
-                    }
-                ],
+            const makePayload = (prompt, partialAI = null) => ({
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: buildGeminiConversationContents(prompt, partialAI),
                 generationConfig: {
-                    temperature: 0.35,
-                    maxOutputTokens: 2048,
+                    temperature: 0.7,
+                    topP: 0.95,
+                    topK: 40,
+                    maxOutputTokens: AI_MAX_OUTPUT_TOKENS,
                     candidateCount: 1
                 }
-            };
-
-            let delay = 1000;
-
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers,
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await response.json().catch(() => ({}));
-
-                    if (!response.ok) {
-                        const apiMessage =
-                            data?.error?.message ||
-                            `Gemini request failed with HTTP ${response.status}.`;
-
-                        const apiError = new Error(apiMessage);
-                        apiError.status = response.status;
-                        throw apiError;
-                    }
-
-                    const blockReason = data?.promptFeedback?.blockReason;
-                    const text = data?.candidates?.[0]?.content?.parts
-                        ?.map(part => part?.text || '')
-                        .join('')
-                        .trim();
-
-                    if (text) {
-                        return text;
-                    }
-
-                    if (blockReason) {
-                        throw new Error(`Gemini blocked the request: ${blockReason}.`);
-                    }
-
-                    const finishReason = data?.candidates?.[0]?.finishReason;
-                    if (finishReason && finishReason !== 'STOP') {
-                        throw new Error(`Gemini stopped without a response: ${finishReason}.`);
-                    }
-
-                    throw new Error('Gemini returned an empty response.');
-                } catch (err) {
-                    const status = Number(err?.status || 0);
-                    const retryable =
-                        status === 429 ||
-                        status >= 500 ||
-                        status === 0;
-
-                    console.error(`Gemini request attempt ${attempt} failed:`, err);
-
-                    if (attempt < maxRetries && retryable) {
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2;
-                        continue;
-                    }
-
-                    throw err;
-                }
-            }
-
-            throw new Error('All Gemini API attempts failed.');
-        }
-
-        function triggerMathRender(element) {
-            if (typeof renderMathInElement !== 'undefined') {
-                try {
-                    renderMathInElement(element, {
-                        delimiters: [
-                            {left: "$$", right: "$$", display: true},
-                            {left: "$", right: "$", display: false},
-                            {left: "\\(", right: "\\)", display: false},
-                            {left: "\\[", right: "\\]", display: true}
-                        ],
-                        throwOnError: false
-                    });
-                } catch (err) {
-                    console.warn("KaTeX render cycle bypassed:", err);
-                }
-            }
-        }
-
-        function formatMessageText(text) {
-            const escaped = String(text)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-
-            return escaped
-                .replace(/\n/g, '<br>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/- (.*?)(<br>|$)/g, '• $1$2');
-        }
-
-        function saveAIChatHistory() {
-            try {
-                localStorage.setItem('almaster_ai_history', JSON.stringify(aiChatHistory.slice(-60)));
-            } catch (err) {
-                console.warn('Unable to persist AI chat history.', err);
-            }
-        }
-
-        function loadAIChatHistory() {
-            try {
-                const stored = localStorage.getItem('almaster_ai_history');
-                aiChatHistory = stored ? JSON.parse(stored) : [];
-            } catch (err) {
-                aiChatHistory = [];
-                console.warn('Unable to restore AI chat history.', err);
-            }
-            renderChatHistory();
-        }
-
-        function addChatHistory(sender, text, isAI = false) {
-            if (!text) return;
-            const safeText = String(text);
-            aiChatHistory.push({ sender, text: safeText, isAI, timestamp: Date.now() });
-            saveAIChatHistory();
-            appendMessage(sender, safeText, isAI);
-        }
-
-        function renderChatHistory() {
-            const chatOutput = document.getElementById('ai-chat-output');
-            if (!chatOutput) return;
-            chatOutput.innerHTML = '';
-            aiChatHistory.forEach(entry => appendMessage(entry.sender, entry.text, entry.isAI));
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        }
-
-        function createAIPlaceholderMessage() {
-            const chatOutput = document.getElementById('ai-chat-output');
-            if (!chatOutput) return null;
-            const wrapper = document.createElement('div');
-            wrapper.className = "flex items-start space-x-3 max-w-2xl";
-
-            const avatarHtml = `<div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5"><i class="fa-solid fa-robot"></i></div>`;
-            const contentHtml = `
-                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-300 leading-relaxed">
-                    <p class="font-bold text-white mb-1.5">Mastermind AI Advisor</p>
-                    <div class="math-content ai-typing-content text-slate-400">Mastermind AI is composing your response...</div>
-                </div>
-            `;
-
-            wrapper.innerHTML = avatarHtml + contentHtml;
-            chatOutput.appendChild(wrapper);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-            return wrapper.querySelector('.ai-typing-content');
-        }
-
-        function typeAIResponse(contentElement, fullText, speed = 8) {
-            return new Promise((resolve) => {
-                if (!contentElement) {
-                    resolve();
-                    return;
-                }
-
-                const plainText = fullText.replace(/\r/g, '');
-                let typed = '';
-                let index = 0;
-                const cursor = '▌';
-                const totalDuration = 4000;
-                const intervalSpeed = Math.max(4, Math.min(30, Math.floor(totalDuration / Math.max(plainText.length, 1))));
-                const typingInterval = setInterval(() => {
-                    if (index < plainText.length) {
-                        typed += plainText[index++];
-                        contentElement.textContent = typed + cursor;
-                        contentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    } else {
-                        clearInterval(typingInterval);
-                        contentElement.innerHTML = formatMessageText(fullText);
-                        contentElement.classList.remove('text-slate-400');
-                        contentElement.classList.add('text-slate-300');
-                        triggerMathRender(contentElement);
-                        resolve();
-                    }
-                }, intervalSpeed);
             });
-        }
 
-        function appendMessage(sender, text, isAI = false) {
-            const chatOutput = document.getElementById('ai-chat-output');
-            if (!chatOutput) return;
-            const wrapper = document.createElement('div');
-            wrapper.className = isAI ? "flex items-start space-x-3 max-w-2xl" : "flex items-start space-x-3 justify-end ml-auto max-w-2xl";
+            let assistantText = '';
+            let continuationCount = 0;
+            let partialAIResponse = null;
+            let finalFinishReason = 'STOP';
 
-            const avatarHtml = isAI 
-                ? `<div class="bg-brand-600/10 border border-brand-500/20 p-2.5 rounded-xl text-brand-400 mt-0.5"><i class="fa-solid fa-robot"></i></div>` 
-                : `<div class="bg-indigo-600/10 border border-indigo-500/20 p-2.5 rounded-xl text-indigo-400 mt-0.5 order-2"><i class="fa-solid fa-user"></i></div>`;
+            while (continuationCount < AI_MAX_CONTINUATION_ROUNDS) {
+                const prompt = continuationCount === 0 ? promptContent : AI_CONTINUATION_PROMPT;
+                const payload = makePayload(prompt, partialAIResponse);
+                let responseData = null;
 
-            const contentHtml = `
-                <div class="${isAI ? 'bg-slate-950 border border-slate-800' : 'bg-brand-900/40 border border-brand-700/30'} rounded-2xl p-4 text-xs ${isAI ? 'text-slate-300' : 'text-slate-200'} leading-relaxed ${!isAI ? 'order-1' : ''}">
-                    <p class="font-bold text-white mb-1.5">${isAI ? 'Mastermind AI Advisor' : 'You'}</p>
-                    <div class="math-content">${formatMessageText(text)}</div>
-                </div>
-            `;
+                for (let attempt = 1; attempt <= AI_MAX_RETRY_ATTEMPTS; attempt++) {
+                    try {
+                        responseData = await requestGeminiStream(apiUrl, headers, payload);
+                        break;
+                    } catch (err) {
+                        const status = Number(err?.status || 0);
+                        const retryable = AI_RETRY_STATUS_CODES.has(status) || err.name === 'TypeError' || err.message?.includes('NetworkError');
+                        console.warn('[Gemini] request failed', { attempt, status, retryable, message: err.message });
+                        if (attempt < AI_MAX_RETRY_ATTEMPTS && retryable) {
+                            await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt - 1)));
+                            continue;
+                        }
+                        throw err;
+                    }
+                }
 
-            wrapper.innerHTML = avatarHtml + contentHtml;
-            chatOutput.appendChild(wrapper);
-            triggerMathRender(wrapper);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
+                if (!responseData) {
+                    throw new Error('Gemini did not return a response.');
+                }
+
+                assistantText = mergeAssistantText(assistantText, responseData.text);
+                finalFinishReason = responseData.finishReason || finalFinishReason;
+
+                const incomplete = finalFinishReason === 'MAX_TOKENS' || isLikelyIncompleteResponse(assistantText, finalFinishReason);
+                if (!incomplete) {
+                    return assistantText;
+                }
+
+                continuationCount += 1;
+                partialAIResponse = assistantText;
+                if (continuationCount >= AI_MAX_CONTINUATION_ROUNDS) {
+                    return assistantText;
+                }
+            }
+
+            return assistantText;
         }
 
         async function submitAIChat(event) {
             if (event) event.preventDefault();
-            const inputField = document.getElementById('ai-chat-input');
-            if (!inputField) return;
-            const query = inputField.value.trim();
-            if (!query) return;
+            const { input, submitButton, loader } = getAIFormElements();
+            if (!input) return;
+            const prompt = input.value.trim();
+            if (!prompt) return;
 
-            inputField.value = '';
-            addChatHistory('user', query, false);
+            if (aiRequestInFlight && aiRequestAbortController) {
+                aiRequestAbortController.abort();
+                aiRequestInFlight = false;
+                if (currentAIResponseWrapper) {
+                    currentAIResponseWrapper.remove();
+                    currentAIResponseWrapper = null;
+                }
+            }
 
-            const loader = document.getElementById('ai-loading');
+            input.value = '';
+            input.disabled = true;
+            if (submitButton) submitButton.disabled = true;
             if (loader) loader.classList.remove('hidden');
 
-            const aiTypingElement = createAIPlaceholderMessage();
+            addChatHistory('user', prompt, false);
+            currentAIPlaceholderContent = createAIPlaceholderMessage();
+
             try {
-                const aiResponse = await makeAICall(query);
+                const aiResponse = await makeAICall(prompt);
                 if (loader) loader.classList.add('hidden');
-                if (aiTypingElement) {
-                    await typeAIResponse(aiTypingElement, aiResponse);
-                    aiChatHistory.push({ sender: 'ai', text: aiResponse, isAI: true, timestamp: Date.now() });
-                    saveAIChatHistory();
+                if (currentAIPlaceholderContent) {
+                    currentAIPlaceholderContent.innerHTML = formatMessageText(aiResponse);
+                    currentAIPlaceholderContent.classList.remove('text-slate-400');
+                    currentAIPlaceholderContent.classList.add('text-slate-300');
+                    triggerMathRender(currentAIPlaceholderContent);
                 } else {
                     addChatHistory('ai', aiResponse, true);
                 }
+
+                aiChatHistory.push({ sender: 'ai', text: aiResponse, isAI: true, timestamp: Date.now() });
+                saveAIChatHistory();
             } catch (err) {
-                if (loader) loader.classList.add('hidden');
-                console.error('Gemini chat failed:', err);
-                const errorText = `Gemini error: ${err?.message || 'Unknown request failure.'}`;
-                if (aiTypingElement) {
-                    const wrapper = aiTypingElement.closest('.flex');
-                    if (wrapper) wrapper.remove();
-                    addChatHistory('ai', errorText, true);
-                } else {
-                    addChatHistory('ai', errorText, true);
+                console.error('[Gemini] chat failed:', err);
+                if (currentAIResponseWrapper) {
+                    currentAIResponseWrapper.remove();
+                    currentAIResponseWrapper = null;
                 }
+                addChatHistory('ai', `Gemini error: ${err?.message || 'Unable to complete the request.'}`, true);
+            } finally {
+                aiRequestInFlight = false;
+                if (loader) loader.classList.add('hidden');
+                if (input) input.disabled = false;
+                if (submitButton) submitButton.disabled = false;
+                currentAIPlaceholderContent = null;
+                currentAIResponseWrapper = null;
             }
         }
 
