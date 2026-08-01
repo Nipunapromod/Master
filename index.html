@@ -2458,8 +2458,94 @@
             document.getElementById('ai-lang-selection-screen').classList.remove('hidden');
         }
 
+        function estimateTokenCount(text) {
+            const normalized = String(text || '').trim();
+            return Math.max(1, Math.ceil(normalized.length / 4));
+        }
+
+        function summarizeOlderChatHistory(history) {
+            const maxKeptTurns = 10;
+            if (history.length <= maxKeptTurns + 2) return null;
+
+            const olderMessages = history.slice(0, -maxKeptTurns);
+            const summaryParts = olderMessages.map(entry => {
+                const roleLabel = entry.role === 'model' ? 'AI' : 'User';
+                const snippet = String(entry.parts?.[0]?.text || entry.text || '')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .slice(0, 120);
+                return `${roleLabel}: ${snippet}`;
+            }).filter(Boolean);
+
+            const summary = `Earlier conversation summary (${olderMessages.length} entries): ${summaryParts.join(' | ')}`;
+            return summary.length > 1800 ? summary.slice(0, 1800) + '...' : summary;
+        }
+
+        function buildGeminiConversationContents(promptContent, partialAIResponse = null) {
+            const rawHistory = aiChatHistory
+                .slice(0, -1)
+                .filter(entry => entry && typeof entry.text === 'string' && entry.text.trim())
+                .map(entry => ({
+                    role: entry.isAI ? 'model' : 'user',
+                    parts: [{ text: entry.text.trim() }]
+                }));
+
+            while (rawHistory.length && rawHistory[0].role === 'model') {
+                rawHistory.shift();
+            }
+
+            const summaryText = summarizeOlderChatHistory(rawHistory);
+            const effectiveHistory = summaryText
+                ? [{ role: 'user', parts: [{ text: summaryText }] }, ...rawHistory.slice(-10)]
+                : rawHistory.slice(-12);
+
+            if (partialAIResponse) {
+                effectiveHistory.push({
+                    role: 'model',
+                    parts: [{ text: partialAIResponse.trim() }]
+                });
+            }
+
+            return [
+                ...effectiveHistory,
+                { role: 'user', parts: [{ text: promptContent.trim() }] }
+            ];
+        }
+
+        function cleanGeminiTextParts(parts) {
+            if (!Array.isArray(parts)) return '';
+            return parts.map(part => String(part?.text || '')).join('').trim();
+        }
+
+        function isLikelyIncompleteResponse(text, finishReason) {
+            if (!text) return true;
+            if (finishReason === 'MAX_TOKENS') return true;
+            if (finishReason && finishReason !== 'STOP' && finishReason !== 'COMPLETED') return true;
+
+            const trimmed = text.trim();
+            if (trimmed.length < 80) return false;
+            if (/[.!?…]$/.test(trimmed)) return false;
+            return true;
+        }
+
+        function mergeContinuationText(previous, continuation) {
+            if (!previous) return continuation;
+            if (!continuation) return previous;
+
+            const maxOverlap = Math.min(400, previous.length, continuation.length);
+            for (let len = maxOverlap; len > 20; len--) {
+                if (previous.slice(-len) === continuation.slice(0, len)) {
+                    return previous + continuation.slice(len);
+                }
+            }
+            return previous + continuation;
+        }
+
         async function makeAICall(promptContent) {
             const maxRetries = 2;
+            const maxOutputTokens = 8192;
+            const maxContinuationRounds = 3;
+            const continuationPrompt = 'Continue exactly where you stopped. Do not repeat any previous text.';
             const subjectSpecificFocus = activeChartFilter === 'All'
                 ? "the composite performance across Combined Mathematics, Physics, and Chemistry."
                 : `a specific, deep focus on the subject: ${activeChartFilter}. Adjust your detailed syllabus recommendations primarily to improve this subject.`;
@@ -2526,102 +2612,126 @@ Instructions:
                 headers['x-goog-api-key'] = activeAPIKey;
             }
 
-            // The current user message has already been added to aiChatHistory.
-            // Exclude it here, then append promptContent once to avoid duplication.
-            const recentHistory = aiChatHistory
-                .slice(0, -1)
-                .slice(-12)
-                .filter(entry => entry && typeof entry.text === 'string' && entry.text.trim())
-                .map(entry => ({
-                    role: entry.isAI ? 'model' : 'user',
-                    parts: [{ text: entry.text }]
-                }));
-
-            // Gemini conversation history should begin with a user turn.
-            while (recentHistory.length && recentHistory[0].role === 'model') {
-                recentHistory.shift();
-            }
-
-            const payload = {
+            const payloadBase = {
                 systemInstruction: {
                     parts: [{ text: systemPrompt }]
                 },
-                contents: [
-                    ...recentHistory,
-                    {
-                        role: 'user',
-                        parts: [{ text: promptContent }]
-                    }
-                ],
                 generationConfig: {
                     temperature: 0.35,
-                    maxOutputTokens: 2048,
+                    maxOutputTokens,
                     candidateCount: 1
                 }
             };
 
-            let delay = 1000;
+            let accumulatedText = '';
+            let partialAIResponse = null;
+            let continuationRound = 0;
 
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers,
-                        body: JSON.stringify(payload)
-                    });
+            const makeRequest = async (payload, attempt) => {
+                const requestStart = Date.now();
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
 
-                    const data = await response.json().catch(() => ({}));
+                const responseTimeMs = Date.now() - requestStart;
+                const data = await response.json().catch(() => ({}));
 
-                    if (!response.ok) {
-                        const apiMessage =
-                            data?.error?.message ||
-                            `Gemini request failed with HTTP ${response.status}.`;
+                const candidate = data?.candidates?.[0] || {};
+                const responseText = cleanGeminiTextParts(candidate?.content?.parts);
+                const promptTokenCount = data?.metadata?.tokenUsage?.inputTokens ?? data?.candidates?.[0]?.metadata?.tokenUsage?.inputTokens ?? estimateTokenCount(JSON.stringify(payload));
+                const outputTokenCount = data?.metadata?.tokenUsage?.outputTokens ?? data?.candidates?.[0]?.metadata?.tokenUsage?.outputTokens ?? estimateTokenCount(responseText);
+                const finishReason = candidate?.finishReason;
 
-                        const apiError = new Error(apiMessage);
-                        apiError.status = response.status;
-                        throw apiError;
+                console.info('Gemini response debug', {
+                    attempt,
+                    promptTokenCount,
+                    outputTokenCount,
+                    finishReason,
+                    responseTimeMs,
+                    continuationRound,
+                    payloadSize: JSON.stringify(payload).length
+                });
+
+                if (!response.ok) {
+                    const apiMessage = data?.error?.message || `Gemini request failed with HTTP ${response.status}.`;
+                    const apiError = new Error(apiMessage);
+                    apiError.status = response.status;
+                    apiError.responseTimeMs = responseTimeMs;
+                    throw apiError;
+                }
+
+                return { data, responseText, finishReason, promptTokenCount, outputTokenCount };
+            };
+
+            while (continuationRound < maxContinuationRounds) {
+                const contents = buildGeminiConversationContents(
+                    continuationRound === 0 ? promptContent : continuationPrompt,
+                    partialAIResponse
+                );
+
+                const payload = {
+                    ...payloadBase,
+                    contents
+                };
+
+                let lastError = null;
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        const { data, responseText, finishReason } = await makeRequest(payload, attempt);
+
+                        if (!responseText && data?.promptFeedback?.blockReason) {
+                            throw new Error(`Gemini blocked the request: ${data.promptFeedback.blockReason}`);
+                        }
+
+                        if (!responseText) {
+                            throw new Error('Gemini returned an empty response.');
+                        }
+
+                        accumulatedText = mergeContinuationText(accumulatedText, responseText);
+
+                        if (isLikelyIncompleteResponse(accumulatedText, finishReason)) {
+                            console.warn('Gemini returned an incomplete response, requesting continuation.', {
+                                finishReason,
+                                accumulatedLength: accumulatedText.length
+                            });
+                            partialAIResponse = accumulatedText;
+                            continuationRound += 1;
+                            break;
+                        }
+
+                        return accumulatedText;
+                    } catch (err) {
+                        lastError = err;
+                        const status = Number(err?.status || 0);
+                        const retryable = status === 429 || status >= 500 || status === 0;
+
+                        console.warn(`Gemini request failed on attempt ${attempt}.`, {
+                            status,
+                            retryable,
+                            message: err.message
+                        });
+
+                        if (attempt < maxRetries && retryable) {
+                            await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+                            continue;
+                        }
+
+                        throw err;
                     }
+                }
 
-                    const blockReason = data?.promptFeedback?.blockReason;
-                    const text = data?.candidates?.[0]?.content?.parts
-                        ?.map(part => part?.text || '')
-                        .join('')
-                        .trim();
-
-                    if (text) {
-                        return text;
-                    }
-
-                    if (blockReason) {
-                        throw new Error(`Gemini blocked the request: ${blockReason}.`);
-                    }
-
-                    const finishReason = data?.candidates?.[0]?.finishReason;
-                    if (finishReason && finishReason !== 'STOP') {
-                        throw new Error(`Gemini stopped without a response: ${finishReason}.`);
-                    }
-
-                    throw new Error('Gemini returned an empty response.');
-                } catch (err) {
-                    const status = Number(err?.status || 0);
-                    const retryable =
-                        status === 429 ||
-                        status >= 500 ||
-                        status === 0;
-
-                    console.error(`Gemini request attempt ${attempt} failed:`, err);
-
-                    if (attempt < maxRetries && retryable) {
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2;
-                        continue;
-                    }
-
-                    throw err;
+                if (!partialAIResponse || continuationRound >= maxContinuationRounds) {
+                    break;
                 }
             }
 
-            throw new Error('All Gemini API attempts failed.');
+            if (accumulatedText) {
+                return accumulatedText;
+            }
+
+            throw new Error('All Gemini API attempts failed after retries and continuations.');
         }
 
         function triggerMathRender(element) {
@@ -2649,10 +2759,11 @@ Instructions:
                 .replace(/>/g, '&gt;');
 
             return escaped
-                .replace(/\n/g, '<br>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/- (.*?)(<br>|$)/g, '• $1$2');
+                .replace(/^\s*\d+\.\s+(.*)$/gm, '<strong>$&</strong>')
+                .replace(/^-\s+(.*?)(<br>|$)/gm, '• $1$2')
+                .replace(/\n/g, '<br>');
         }
 
         function saveAIChatHistory() {
@@ -2771,6 +2882,7 @@ Instructions:
             if (!query) return;
 
             inputField.value = '';
+            inputField.disabled = true;
             addChatHistory('user', query, false);
 
             const loader = document.getElementById('ai-loading');
@@ -2779,41 +2891,24 @@ Instructions:
             const aiTypingElement = createAIPlaceholderMessage();
             try {
                 const aiResponse = await makeAICall(query);
-                if (loader) loader.classList.add('hidden');
                 if (aiTypingElement) {
                     await typeAIResponse(aiTypingElement, aiResponse);
-                    aiChatHistory.push({ sender: 'ai', text: aiResponse, isAI: true, timestamp: Date.now() });
-                    saveAIChatHistory();
                 } else {
                     addChatHistory('ai', aiResponse, true);
                 }
+                aiChatHistory.push({ sender: 'ai', text: aiResponse, isAI: true, timestamp: Date.now() });
+                saveAIChatHistory();
             } catch (err) {
-                if (loader) loader.classList.add('hidden');
                 console.error('Gemini chat failed:', err);
                 const errorText = `Gemini error: ${err?.message || 'Unknown request failure.'}`;
                 if (aiTypingElement) {
                     const wrapper = aiTypingElement.closest('.flex');
                     if (wrapper) wrapper.remove();
-                    addChatHistory('ai', errorText, true);
-                } else {
-                    addChatHistory('ai', errorText, true);
                 }
-            }
-        }
-
-        function syncChartAIConsult() {
-            if (selectedMedium === 'Sinhala') {
-                if (activeChartFilter === 'All') {
-                    sendQuickPrompt("මගේ සමස්ත විෂයන් 3ෙහිම ලකුණු ප්‍රවණතාවය විශ්ලේෂණය කර කට්-ඕෆ් (Z-Score) සාමාර්ථ්‍යය තක්සේරු කරන්න.");
-                } else {
-                    sendQuickPrompt(`මම දැනට ${activeChartFilter} ලකුණු ප්‍රස්ථාරය විශ්ලේෂණය කරමින් සිටිමි. මගේ අඩුපාඩු හඳුනාගෙන, විභාගයට ඉහළ ලකුණු ලබාගැනීමට උදව් වන්න.`);
-                }
-            } else {
-                if (activeChartFilter === 'All') {
-                    sendQuickPrompt("Analyze my overall 3-subject performance trend and estimate my cut-off probability.");
-                } else {
-                    sendQuickPrompt(`I am currently reviewing my ${activeChartFilter} trend. Please analyze these grades, highlight likely syllabus weak points, and suggest high-yield revisions.`);
-                }
+                addChatHistory('ai', errorText, true);
+            } finally {
+                if (loader) loader.classList.add('hidden');
+                inputField.disabled = false;
             }
         }
 
