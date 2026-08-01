@@ -1159,8 +1159,9 @@
 
         // Supabase Endpoint Settings
         const defaultSupabaseUrl = 'https://bvnawbslzifctckurzjk.supabase.co';
-        const defaultSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDQ3NTgzMCwiZXhwIjoyMTAwMDUxODMwfQ.9kH0CKdiw0GRLAcAHAuYWTd-Y1HZJMkhIleeNOISgxs'; // Replace with your Supabase anon/public key only
+        const defaultSupabaseAnonKey = '<YOUR_SUPABASE_ANON_KEY>'; // Replace with your Supabase anon/public key only
         const geminiProxyUrl = ''; // Optional: set this to your secure server-side Gemini proxy URL if available.
+        const GEMINI_MODEL = 'gemini-2.5-flash'; // Supported stable Gemini model
 
         let currentAuthMode = 'login';
         let supabaseClient = null;
@@ -2417,7 +2418,7 @@
                 await saveProfileToCloud();
             }
 
-            showAlert("Key Saved", "Your Google Gemini API Key has been stored securely.");
+            showAlert("Key Saved", "Your Gemini API key has been saved for this dashboard.");
             checkGeminiKeyAndProceed();
         }
 
@@ -2437,74 +2438,108 @@
 
         async function makeAICall(promptContent) {
             const maxRetries = 2;
-            const subjectSpecificFocus = activeChartFilter === 'All' 
-                ? "the composite performance across Combined Mathematics, Physics, and Chemistry." 
+            const subjectSpecificFocus = activeChartFilter === 'All'
+                ? "the composite performance across Combined Mathematics, Physics, and Chemistry."
                 : `a specific, deep focus on the subject: ${activeChartFilter}. Adjust your detailed syllabus recommendations primarily to improve this subject.`;
 
             const languageConstraint = selectedMedium === 'Sinhala'
-                ? `You must construct your final answer entirely in Sinhala (සිංහල භාෂාවෙන්). You must use accurate Sri Lankan Advanced Level scientific terminology, such as:
-                  - Combined Mathematics -> සංයුක්ත ගණිතය (අනුකලනය, අවකලනය, ත්‍රිකෝණමිතිය, විද්‍යාව)
-                  - Physics -> භෞතික විද්‍යාව (යාන්ත්‍ර විද්‍යාව, ධාරා විද්‍යුතය, ආලෝකය, දෝලන හා තරංග)
-                  - Chemistry -> රසායන විද්‍යාව (කාබනික රසායනය, අකාබනික රසායනය, භෞතික රසායනය)
-                  Ensure you write encouragement in rich, clear Sinhala while formatting formula expressions cleanly in LaTeX.`
-                : `Construct your final answer in clear English. Highlight typical hurdles, common marks loss traps, and past paper revision tips relevant to the Sri Lankan Physical Science stream.`;
+                ? `You must construct your final answer entirely in Sinhala (සිංහල භාෂාවෙන්). Use accurate Sri Lankan Advanced Level scientific terminology and format formulas using LaTeX.`
+                : `Construct your final answer in clear English. Highlight typical hurdles, common marks-loss traps, and past-paper revision tips relevant to the Sri Lankan Physical Science stream.`;
 
-            const systemPrompt = `You are the ultimate Sri Lankan Advanced Level Examination Academic Coach, powered by Gemini.
-You provide precise advice, syllabus strategies, study schedules, and predictions based on the student's metrics.
-The user is in the physical science stream consisting of Combined Mathematics, Physics, and Chemistry.
+            const systemPrompt = `You are a Sri Lankan Advanced Level Examination academic coach.
+You provide precise syllabus advice, study schedules, and performance analysis for Combined Mathematics, Physics, and Chemistry.
 
-Currently, the user is looking at: ${subjectSpecificFocus}
+Current focus:
+${subjectSpecificFocus}
 
-Language Medium Constraint:
+Language requirement:
 ${languageConstraint}
 
-Student Profile Context:
-- Student Name: ${studentProfile.name}
-- Target Exam Date: 2027-08-10 (Strictly targeting August 10, 2027)
-- Target Course: ${studentProfile.course}
-- Cutoff District: ${studentProfile.district}
+Student profile:
+- Student Name: ${studentProfile.name || 'Student'}
+- Target Exam Date: ${studentProfile.year || 'Not configured'}
+- Target Course: ${studentProfile.course || 'Not configured'}
+- Cutoff District: ${studentProfile.district || 'Not configured'}
 
-All Logged exam paper scores:
+Logged paper scores:
 ${JSON.stringify(paperLogs)}
 
-Syllabus tasks and homework items:
+Tasks and homework:
 ${JSON.stringify(taskLogs)}
 
-Spaced active recall learning logs:
+Active-recall logs:
 ${JSON.stringify(recallLogs)}
 
-Analyze their strengths, weaknesses, and potential performance gaps. Directives:
-1. Speak with encouraging but highly diagnostic accuracy. Highlight how missing class exams affects their progress if they have absent marks.
-2. Refer to specific Sri Lankan syllabus constraints (e.g. Mechanics, Organic Mechanisms, Physical Chem, Integration, Electronics).
-3. Frame advice matching the Z-score and competitive environment of Colombo, Gampaha, Kandy, etc., where cutoffs are high.
-4. Always use standard LaTeX notation for mathematical formulas, symbols, and equations (e.g., wrap inline math inside $...$ and block equations inside $$...$$) to ensure perfect rendering in the chat console.
-5. Keep structural formulas and math notation cleanly rendered. Keep answers concise, actionable, and formatted beautifully in markdown. Do not mention any technical database architecture or hosting details.`;
+Instructions:
+1. Be encouraging, accurate, and practical.
+2. Mention specific syllabus areas only when relevant.
+3. Do not claim an exact Z-score or admission result unless enough verified data exists.
+4. Use standard LaTeX notation, with inline math inside $...$ and block math inside $$...$$.
+5. Keep the response concise and actionable.`;
 
-            const activeAPIKey = studentProfile.gemini_api_key || localStorage.getItem('gemini_api_key') || "";
-            const useProxy = geminiProxyUrl && geminiProxyUrl.trim().length > 0;
+            const activeAPIKey =
+                studentProfile.gemini_api_key ||
+                localStorage.getItem('gemini_api_key') ||
+                '';
+
+            const useProxy =
+                typeof geminiProxyUrl === 'string' &&
+                geminiProxyUrl.trim().length > 0;
+
             if (!useProxy && !activeAPIKey) {
-                return `⚠️ **Gemini API Key Missing**\nPlease set your Gemini API Key in the Settings tab or input it inside the AI Advisor prompt first.`;
+                throw new Error(
+                    'Gemini API key is missing. Add a valid Google AI Studio API key in Settings.'
+                );
             }
 
             const apiUrl = useProxy
-                ? geminiProxyUrl
-                : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateText?key=${encodeURIComponent(activeAPIKey)}`;
-            
+                ? geminiProxyUrl.trim()
+                : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
+
             const headers = {
                 'Content-Type': 'application/json'
             };
 
-            const promptText = `${systemPrompt}\n\nUser Prompt:\n${promptContent}`;
+            if (!useProxy) {
+                headers['x-goog-api-key'] = activeAPIKey;
+            }
+
+            // The current user message has already been added to aiChatHistory.
+            // Exclude it here, then append promptContent once to avoid duplication.
+            const recentHistory = aiChatHistory
+                .slice(0, -1)
+                .slice(-12)
+                .filter(entry => entry && typeof entry.text === 'string' && entry.text.trim())
+                .map(entry => ({
+                    role: entry.isAI ? 'model' : 'user',
+                    parts: [{ text: entry.text }]
+                }));
+
+            // Gemini conversation history should begin with a user turn.
+            while (recentHistory.length && recentHistory[0].role === 'model') {
+                recentHistory.shift();
+            }
+
             const payload = {
-                prompt: {
-                    text: promptText
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
                 },
-                temperature: 0.35,
-                maxOutputTokens: 1100,
-                candidateCount: 1
+                contents: [
+                    ...recentHistory,
+                    {
+                        role: 'user',
+                        parts: [{ text: promptContent }]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.35,
+                    maxOutputTokens: 2048,
+                    candidateCount: 1
+                }
             };
 
             let delay = 1000;
+
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
                     const response = await fetch(apiUrl, {
@@ -2513,48 +2548,58 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
                         body: JSON.stringify(payload)
                     });
 
+                    const data = await response.json().catch(() => ({}));
+
                     if (!response.ok) {
-                        const errorBody = await response.text();
-                        let extraMessage = '';
+                        const apiMessage =
+                            data?.error?.message ||
+                            `Gemini request failed with HTTP ${response.status}.`;
 
-                        try {
-                            const errorJson = JSON.parse(errorBody);
-                            extraMessage = errorJson.error?.message ? ` ${errorJson.error.message}` : '';
-                        } catch (_) {
-                            extraMessage = errorBody ? ` ${errorBody}` : '';
-                        }
-
-                        if (response.status === 400 || response.status === 403 || response.status === 401) {
-                            return `⚠️ **Gemini API Request Failed**\nThe Gemini server rejected the request with status code ${response.status}.${extraMessage}\n\nPlease verify your Gemini API key and model access, then retry.`;
-                        }
-
-                        throw new Error(`HTTP Error Status: ${response.status}.${extraMessage}`);
+                        const apiError = new Error(apiMessage);
+                        apiError.status = response.status;
+                        throw apiError;
                     }
 
-                    const data = await response.json();
-                    const text =
-                        data.outputText ||
-                        data.output_text ||
-                        data.candidates?.[0]?.content?.find(item => item.type === 'text')?.text ||
-                        data.candidates?.[0]?.content?.[0]?.text ||
-                        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-                        data.result?.outputText ||
-                        data?.text;
+                    const blockReason = data?.promptFeedback?.blockReason;
+                    const text = data?.candidates?.[0]?.content?.parts
+                        ?.map(part => part?.text || '')
+                        .join('')
+                        .trim();
 
-                    if (text) return text;
-                    throw new Error("Empty response returned from Gemini.");
+                    if (text) {
+                        return text;
+                    }
 
+                    if (blockReason) {
+                        throw new Error(`Gemini blocked the request: ${blockReason}.`);
+                    }
+
+                    const finishReason = data?.candidates?.[0]?.finishReason;
+                    if (finishReason && finishReason !== 'STOP') {
+                        throw new Error(`Gemini stopped without a response: ${finishReason}.`);
+                    }
+
+                    throw new Error('Gemini returned an empty response.');
                 } catch (err) {
-                    console.warn(`Gemini Attempt ${attempt} failed. Retrying...`, err);
-                    if (attempt < maxRetries) {
+                    const status = Number(err?.status || 0);
+                    const retryable =
+                        status === 429 ||
+                        status >= 500 ||
+                        status === 0;
+
+                    console.error(`Gemini request attempt ${attempt} failed:`, err);
+
+                    if (attempt < maxRetries && retryable) {
                         await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 1.5;
-                    } else {
-                        throw err;
+                        delay *= 2;
+                        continue;
                     }
+
+                    throw err;
                 }
             }
-            throw new Error("All Gemini API attempts failed.");
+
+            throw new Error('All Gemini API attempts failed.');
         }
 
         function triggerMathRender(element) {
@@ -2659,8 +2704,7 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
                 const typingInterval = setInterval(() => {
                     if (index < plainText.length) {
                         typed += plainText[index++];
-                        const safeText = typed.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                        contentElement.innerText = safeText + cursor;
+                        contentElement.textContent = typed + cursor;
                         contentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     } else {
                         clearInterval(typingInterval);
@@ -2723,7 +2767,8 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
                 }
             } catch (err) {
                 if (loader) loader.classList.add('hidden');
-                const errorText = "I encountered an error communicating with Gemini. Please check your internet connection or verify your Gemini API key in the Settings tab.";
+                console.error('Gemini chat failed:', err);
+                const errorText = `Gemini error: ${err?.message || 'Unknown request failure.'}`;
                 if (aiTypingElement) {
                     const wrapper = aiTypingElement.closest('.flex');
                     if (wrapper) wrapper.remove();
