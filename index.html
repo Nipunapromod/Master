@@ -1140,32 +1140,6 @@
     </div>
 
     <script>
-        // Session cookies logic
-        function setCookie(name, value, days) {
-            let expires = "";
-            if (days) {
-                let date = new Date();
-                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-                expires = "; expires=" + date.toUTCString();
-            }
-            document.cookie = name + "=" + (value || "")  + expires + "; path=/";
-        }
-
-        function getCookie(name) {
-            let nameEQ = name + "=";
-            let ca = document.cookie.split(';');
-            for(let i=0; i < ca.length; i++) {
-                let c = ca[i];
-                while (c.charAt(0)==' ') c = c.substring(1,c.length);
-                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-            }
-            return null;
-        }
-
-        function eraseCookie(name) {
-            document.cookie = name+'=; Max-Age=-99999999; path=/';
-        }
-
         // Global state structures
         let paperLogs = [];
         let taskLogs = [];
@@ -1185,14 +1159,26 @@
 
         // Supabase Endpoint Settings
         const defaultSupabaseUrl = 'https://bvnawbslzifctckurzjk.supabase.co';
-        const defaultSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDQ3NTgzMCwiZXhwIjoyMTAwMDUxODMwfQ.9kH0CKdiw0GRLAcAHAuYWTd-Y1HZJMkhIleeNOISgxs';
+        const defaultSupabaseAnonKey = '<YOUR_SUPABASE_ANON_KEY>'; // Replace with your Supabase anon/public key only
+        const geminiProxyUrl = ''; // Optional: set this to your secure server-side Gemini proxy URL if available.
 
         let currentAuthMode = 'login';
         let supabaseClient = null;
+        let aiChatHistory = [];
 
         function initSupabase() {
+            if (defaultSupabaseAnonKey.includes('<YOUR_SUPABASE_ANON_KEY>')) {
+                console.warn('Supabase anonymous key is not configured. Set defaultSupabaseAnonKey to your project anon/public key.');
+                const badge = document.getElementById('auth-database-badge');
+                if (badge) {
+                    badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1 text-amber-400"></i> Supabase anon key not configured';
+                    badge.className = "text-[9px] uppercase tracking-wider font-extrabold text-amber-400 bg-amber-500/10 py-1.5 px-3 rounded-lg border border-amber-500/20";
+                }
+                return false;
+            }
+
             try {
-                supabaseClient = supabase.createClient(defaultSupabaseUrl, defaultSupabaseKey);
+                supabaseClient = supabase.createClient(defaultSupabaseUrl, defaultSupabaseAnonKey);
                 
                 document.getElementById('auth-database-badge').innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1 text-emerald-400"></i> Secure Cloud Handshake Active';
                 document.getElementById('auth-database-badge').className = "text-[9px] uppercase tracking-wider font-extrabold text-emerald-400 bg-emerald-500/10 py-1.5 px-3 rounded-lg border border-emerald-500/20";
@@ -1237,7 +1223,10 @@
             
             if (diagBox) diagBox.classList.add('hidden');
 
-            if (supabaseClient) {
+            if (!supabaseClient) {
+                showAuthDiagError('Initialization Error', 'Supabase is not configured. Please set your anon/public key in the application source.');
+                return;
+            }
                 try {
                     if (currentAuthMode === 'register') {
                         const name = document.getElementById('auth-name').value.trim() || "Scholar";
@@ -1268,8 +1257,6 @@
                         }
 
                         currentUserSession = data.session;
-                        setCookie('al_user_session', email, 7);
-                        
                         await loadCloudData();
                         document.getElementById('auth-screen').classList.add('hidden');
                         syncProfileUI();
@@ -1279,7 +1266,15 @@
                 } catch (err) {
                     showAuthDiagError("Connection Error", "Secure server call failed. Please verify your network connections.");
                 }
-            }
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function showAuthDiagError(title, msg) {
@@ -1287,8 +1282,8 @@
             if (diagBox) {
                 diagBox.classList.remove('hidden');
                 diagBox.innerHTML = `
-                    <div class="font-bold text-red-400 mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${title}</div>
-                    <div class="leading-relaxed text-slate-300">${msg}</div>
+                    <div class="font-bold text-red-400 mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${escapeHtml(title)}</div>
+                    <div class="leading-relaxed text-slate-300">${escapeHtml(msg)}</div>
                 `;
             } else {
                 showAlert(title, msg);
@@ -1315,16 +1310,16 @@
                     }
                 }
 
-                const { data: papers } = await supabaseClient.from('papers').select('*');
+                const { data: papers } = await supabaseClient.from('papers').select('*').eq('user_id', user.id);
                 if (papers) paperLogs = papers;
 
-                const { data: tasks } = await supabaseClient.from('tasks').select('*');
+                const { data: tasks } = await supabaseClient.from('tasks').select('*').eq('user_id', user.id);
                 if (tasks) taskLogs = tasks;
 
-                const { data: classes } = await supabaseClient.from('classes').select('*');
+                const { data: classes } = await supabaseClient.from('classes').select('*').eq('user_id', user.id);
                 if (classes) classLogs = classes;
 
-                const { data: recalls } = await supabaseClient.from('recalls').select('*');
+                const { data: recalls } = await supabaseClient.from('recalls').select('*').eq('user_id', user.id);
                 if (recalls) recallLogs = recalls;
             } catch (err) {
                 console.error("Data synchronization failed:", err);
@@ -1350,40 +1345,48 @@
             }
         }
 
-        async function checkSessionCookie() {
+        async function checkSessionStatus() {
             initSupabase();
 
-            const sessionEmail = getCookie('al_user_session');
-            if (sessionEmail && supabaseClient) {
-                try {
-                    const { data: { session } } = await supabaseClient.auth.getSession();
-                    if (session) {
-                        currentUserSession = session;
-                        await loadCloudData();
-                        document.getElementById('auth-screen').classList.add('hidden');
-                        syncProfileUI();
-                        updateCoreStats();
-                        return;
-                    }
-                } catch (err) {
-                    console.warn("Auto-authenticating failed.");
+            if (!supabaseClient) {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session?.user) {
+                    currentUserSession = session;
+                    await loadCloudData();
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    syncProfileUI();
+                    updateCoreStats();
+                    return;
                 }
+            } catch (err) {
+                console.warn("Session restore failed:", err);
             }
             document.getElementById('auth-screen').classList.remove('hidden');
         }
 
-        function handleLogout() {
-            eraseCookie('al_user_session');
+        async function handleLogout() {
             currentUserSession = null;
             if (supabaseClient) {
                 try {
-                    supabaseClient.auth.signOut();
+                    await supabaseClient.auth.signOut();
                 } catch (err) {
-                    console.log("Session terminated.");
+                    console.log("Session terminated.", err);
                 }
             }
+            paperLogs = [];
+            taskLogs = [];
+            classLogs = [];
+            recallLogs = [];
             document.getElementById('auth-screen').classList.remove('hidden');
-            document.getElementById('auth-form').reset();
+            const authForm = document.getElementById('auth-form');
+            if (authForm) authForm.reset();
+            syncProfileUI();
+            updateCoreStats();
         }
 
         function toggleAbsentInput(checkbox) {
@@ -1574,7 +1577,8 @@
 
             if (supabaseClient) {
                 try {
-                    const { error } = await supabaseClient.from('tasks').update({ done: nextDone }).eq('id', id);
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { error } = await supabaseClient.from('tasks').update({ done: nextDone }).eq('id', id).eq('user_id', user.id);
                     if (!error) {
                         taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
                     }
@@ -1588,7 +1592,8 @@
         async function deleteTask(id) {
             if (supabaseClient) {
                 try {
-                    const { error } = await supabaseClient.from('tasks').delete().eq('id', id);
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { error } = await supabaseClient.from('tasks').delete().eq('id', id).eq('user_id', user.id);
                     if (!error) {
                         taskLogs = taskLogs.filter(t => t.id !== id);
                     }
@@ -1637,7 +1642,8 @@
         async function deleteClass(id) {
             if (supabaseClient) {
                 try {
-                    const { error } = await supabaseClient.from('classes').delete().eq('id', id);
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { error } = await supabaseClient.from('classes').delete().eq('id', id).eq('user_id', user.id);
                     if (!error) {
                         classLogs = classLogs.filter(c => c.id !== id);
                     }
@@ -1699,7 +1705,8 @@
         async function deletePaper(id) {
             if (supabaseClient) {
                 try {
-                    const { error } = await supabaseClient.from('papers').delete().eq('id', id);
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { error } = await supabaseClient.from('papers').delete().eq('id', id).eq('user_id', user.id);
                     if (!error) {
                         paperLogs = paperLogs.filter(p => p.id !== id);
                     }
@@ -2212,29 +2219,48 @@
             const topic = document.getElementById('recall-topic').value;
             const date = document.getElementById('recall-date').value;
 
+            if (!subject || !topic || !date) {
+                showAlert('Validation Error', 'Please enter a subject, topic, and study date.');
+                return;
+            }
+
+            let newRecallItem = {
+                id: 'local_' + Date.now(),
+                subject,
+                topic,
+                date_studied: date,
+                reviewed_count: 0
+            };
+
             if (supabaseClient) {
                 try {
                     const { data: { user } } = await supabaseClient.auth.getUser();
                     const { data, error } = await supabaseClient.from('recalls').insert([
                         { user_id: user.id, subject, topic, date_studied: date, reviewed_count: 0 }
                     ]).select();
-                    if (!error && data) {
+                    if (!error && data?.[0]) {
                         recallLogs.push(data[0]);
+                        document.getElementById('forgetting-form').reset();
+                        renderRecallPlanner();
+                        updateCoreStats();
+                        showAlert('Spaced Loop Added', `Recall loops mapped for "${topic}".`);
+                        return;
                     }
                 } catch (err) {
-                    console.warn("Bypassed dynamic recall cloud sync.");
+                    console.warn("Bypassed dynamic recall cloud sync.", err);
                 }
             }
 
+            recallLogs.push(newRecallItem);
             document.getElementById('forgetting-form').reset();
-            renderRecallTopic(topic, subject, date);
+            renderRecallPlanner();
+            updateCoreStats();
+            showAlert('Spaced Loop Added', `Recall loops mapped for "${topic}" in offline mode.`);
         }
 
         function renderRecallTopic(topic, subject, date) {
-            recallLogs.push({ id: 'local_' + Date.now(), subject, topic, date_studied: date, reviewed_count: 0 });
             renderRecallPlanner();
             updateCoreStats();
-            showAlert('Spaced Loop Added', `Recall loops mapped for "${topic}".`);
         }
 
         async function advanceRecallStage(id) {
@@ -2245,7 +2271,8 @@
 
             if (supabaseClient) {
                 try {
-                    const { error } = await supabaseClient.from('recalls').update({ reviewed_count: nextCount }).eq('id', id);
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { error } = await supabaseClient.from('recalls').update({ reviewed_count: nextCount }).eq('id', id).eq('user_id', user.id);
                     if (!error) {
                         recallLogs = recallLogs.map(r => r.id === id ? { ...r, reviewed_count: nextCount, reviewedCount: nextCount } : r);
                     }
@@ -2262,7 +2289,8 @@
         async function deleteRecallItem(id) {
             if (supabaseClient) {
                 try {
-                    const { error } = await supabaseClient.from('recalls').delete().eq('id', id);
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { error } = await supabaseClient.from('recalls').delete().eq('id', id).eq('user_id', user.id);
                     if (!error) {
                         recallLogs = recallLogs.filter(r => r.id !== id);
                     }
@@ -2453,15 +2481,24 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
 5. Keep structural formulas and math notation cleanly rendered. Keep answers concise, actionable, and formatted beautifully in markdown. Do not mention any technical database architecture or hosting details.`;
 
             const activeAPIKey = studentProfile.gemini_api_key || localStorage.getItem('gemini_api_key') || "";
-            if (!activeAPIKey) {
-                return `⚠️ **Gemini API Key Missing**
-Please set your Gemini API Key in the Settings tab or input it inside the AI Advisor prompt first.`;
+            const useProxy = geminiProxyUrl && geminiProxyUrl.trim().length > 0;
+            if (!useProxy && !activeAPIKey) {
+                return `⚠️ **Gemini API Key Missing**\nPlease set your Gemini API Key in the Settings tab or input it inside the AI Advisor prompt first.`;
             }
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta2/models/gemini-2.0-flash:generateText?key=${activeAPIKey}`;
+            const apiUrl = useProxy
+                ? geminiProxyUrl
+                : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateText?key=${encodeURIComponent(activeAPIKey)}`;
             
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            const promptText = `${systemPrompt}\n\nUser Prompt:\n${promptContent}`;
             const payload = {
-                prompt: `${systemPrompt}\n\n${promptContent}`,
+                prompt: {
+                    text: promptText
+                },
                 temperature: 0.35,
                 maxOutputTokens: 1100,
                 candidateCount: 1
@@ -2472,7 +2509,7 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
                 try {
                     const response = await fetch(apiUrl, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers,
                         body: JSON.stringify(payload)
                     });
 
@@ -2488,8 +2525,7 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
                         }
 
                         if (response.status === 400 || response.status === 403 || response.status === 401) {
-                            return `⚠️ **Gemini API Request Failed**
-                            \nThe Gemini server rejected the request with status code ${response.status}.${extraMessage}\n\nPlease verify your Gemini API key and model access, then retry.`;
+                            return `⚠️ **Gemini API Request Failed**\nThe Gemini server rejected the request with status code ${response.status}.${extraMessage}\n\nPlease verify your Gemini API key and model access, then retry.`;
                         }
 
                         throw new Error(`HTTP Error Status: ${response.status}.${extraMessage}`);
@@ -2498,9 +2534,10 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
                     const data = await response.json();
                     const text =
                         data.outputText ||
+                        data.output_text ||
+                        data.candidates?.[0]?.content?.find(item => item.type === 'text')?.text ||
                         data.candidates?.[0]?.content?.[0]?.text ||
                         data.candidates?.[0]?.content?.parts?.[0]?.text ||
-                        data.candidates?.[0]?.content?.find(item => item.type === 'text')?.text ||
                         data.result?.outputText ||
                         data?.text;
 
@@ -2539,11 +2576,51 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
         }
 
         function formatMessageText(text) {
-            return text
+            const escaped = String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            return escaped
                 .replace(/\n/g, '<br>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
                 .replace(/- (.*?)(<br>|$)/g, '• $1$2');
+        }
+
+        function saveAIChatHistory() {
+            try {
+                localStorage.setItem('almaster_ai_history', JSON.stringify(aiChatHistory.slice(-60)));
+            } catch (err) {
+                console.warn('Unable to persist AI chat history.', err);
+            }
+        }
+
+        function loadAIChatHistory() {
+            try {
+                const stored = localStorage.getItem('almaster_ai_history');
+                aiChatHistory = stored ? JSON.parse(stored) : [];
+            } catch (err) {
+                aiChatHistory = [];
+                console.warn('Unable to restore AI chat history.', err);
+            }
+            renderChatHistory();
+        }
+
+        function addChatHistory(sender, text, isAI = false) {
+            if (!text) return;
+            const safeText = String(text);
+            aiChatHistory.push({ sender, text: safeText, isAI, timestamp: Date.now() });
+            saveAIChatHistory();
+            appendMessage(sender, safeText, isAI);
+        }
+
+        function renderChatHistory() {
+            const chatOutput = document.getElementById('ai-chat-output');
+            if (!chatOutput) return;
+            chatOutput.innerHTML = '';
+            aiChatHistory.forEach(entry => appendMessage(entry.sender, entry.text, entry.isAI));
+            chatOutput.scrollTop = chatOutput.scrollHeight;
         }
 
         function createAIPlaceholderMessage() {
@@ -2628,7 +2705,7 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
             if (!query) return;
 
             inputField.value = '';
-            appendMessage('user', query, false);
+            addChatHistory('user', query, false);
 
             const loader = document.getElementById('ai-loading');
             if (loader) loader.classList.remove('hidden');
@@ -2639,17 +2716,20 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
                 if (loader) loader.classList.add('hidden');
                 if (aiTypingElement) {
                     await typeAIResponse(aiTypingElement, aiResponse);
+                    aiChatHistory.push({ sender: 'ai', text: aiResponse, isAI: true, timestamp: Date.now() });
+                    saveAIChatHistory();
                 } else {
-                    appendMessage('ai', aiResponse, true);
+                    addChatHistory('ai', aiResponse, true);
                 }
             } catch (err) {
                 if (loader) loader.classList.add('hidden');
+                const errorText = "I encountered an error communicating with Gemini. Please check your internet connection or verify your Gemini API key in the Settings tab.";
                 if (aiTypingElement) {
-                    aiTypingElement.innerHTML = formatMessageText("I encountered an error communicating with Gemini. Please check your internet connection or verify your Gemini API key in the Settings tab.");
-                    aiTypingElement.classList.remove('text-slate-400');
-                    aiTypingElement.classList.add('text-slate-300');
+                    const wrapper = aiTypingElement.closest('.flex');
+                    if (wrapper) wrapper.remove();
+                    addChatHistory('ai', errorText, true);
                 } else {
-                    appendMessage('ai', "I encountered an error communicating with Gemini. Please check your internet connection or verify your Gemini API key in the Settings tab.", true);
+                    addChatHistory('ai', errorText, true);
                 }
             }
         }
@@ -2696,6 +2776,8 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
         function clearChatHistory() {
             const chatOutput = document.getElementById('ai-chat-output');
             if (!chatOutput) return;
+            aiChatHistory = [];
+            saveAIChatHistory();
 
             if (selectedMedium === 'Sinhala') {
                 document.getElementById('ai-loader-text').innerText = "Mastermind is analyzing your data...";
@@ -2957,7 +3039,8 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
         window.saveGeminiApiKey = saveGeminiApiKey;
 
         window.onload = function() {
-            checkSessionCookie();
+            checkSessionStatus();
+            loadAIChatHistory();
             generateNewQuote();
 
             if ('serviceWorker' in navigator) {
