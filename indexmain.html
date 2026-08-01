@@ -1479,7 +1479,10 @@
                 pendingAlert.innerText = 'No Spaced Logs';
                 return;
             }
-            const pending = recallLogs.filter(r => r.reviewedCount < 4).length;
+            const pending = recallLogs.filter(r => {
+                const reviewed = r.reviewed_count ?? r.reviewedCount ?? 0;
+                return reviewed < 4;
+            }).length;
             pendingAlert.innerText = `${pending} Concept(s) Pending`;
         }
 
@@ -2159,6 +2162,7 @@
             const subject = document.getElementById('recall-subject').value;
             const topic = document.getElementById('recall-topic').value;
             const date = document.getElementById('recall-date').value;
+            let addedRecall = null;
 
             if (supabaseClient) {
                 try {
@@ -2167,15 +2171,23 @@
                         { user_id: user.id, subject, topic, date_studied: date, reviewed_count: 0 }
                     ]).select();
                     if (!error && data) {
-                        recallLogs.push(data[0]);
+                        addedRecall = data[0];
+                        recallLogs.push(addedRecall);
                     }
                 } catch (err) {
                     console.warn("Bypassed dynamic recall cloud sync.");
                 }
             }
 
+            if (!addedRecall) {
+                const localRecall = { id: 'local_' + Date.now(), subject, topic, date_studied: date, reviewed_count: 0 };
+                recallLogs.push(localRecall);
+            }
+
             document.getElementById('forgetting-form').reset();
-            renderRecallTopic(topic, subject, date);
+            renderRecallPlanner();
+            updateCoreStats();
+            showAlert('Spaced Loop Added', `Recall loops mapped for "${topic}".`);
         }
 
         function renderRecallTopic(topic, subject, date) {

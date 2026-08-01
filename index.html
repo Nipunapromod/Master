@@ -2461,14 +2461,21 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeAPIKey}`;
             
             const payload = {
-                systemInstruction: {
-                    role: "user",
-                    parts: [{ text: systemPrompt }]
+                prompt: {
+                    messages: [
+                        {
+                            author: "system",
+                            content: [{ type: "text", text: systemPrompt }]
+                        },
+                        {
+                            author: "user",
+                            content: [{ type: "text", text: promptContent }]
+                        }
+                    ]
                 },
-                contents: [{
-                    role: "user",
-                    parts: [{ text: promptContent }]
-                }]
+                temperature: 0.35,
+                maxOutputTokens: 1100,
+                candidateCount: 1
             };
 
             let delay = 1000;
@@ -2497,7 +2504,14 @@ The Gemini server rejected the request with status code ${response.status}.
                     }
 
                     const data = await response.json();
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const text =
+                        data.outputText ||
+                        data.candidates?.[0]?.content?.[0]?.text ||
+                        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+                        data.candidates?.[0]?.content?.find(item => item.type === 'text')?.text ||
+                        data.result?.outputText ||
+                        data?.text;
+
                     if (text) return text;
                     throw new Error("Empty response returned from Gemini.");
 
@@ -2679,6 +2693,12 @@ The Gemini server rejected the request with status code ${response.status}.
                 inputEl.value = promptText;
                 submitAIChat();
             }
+        }
+
+        function toggleChatHistory() {
+            const chatOutput = document.getElementById('ai-chat-output');
+            if (!chatOutput) return;
+            chatOutput.classList.toggle('hidden');
         }
 
         function clearChatHistory() {
