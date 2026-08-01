@@ -1773,7 +1773,8 @@
             const dataset = ctx.dataset;
             if (dataset && dataset.data) {
                 for (let i = idx0 + 1; i < idx1; i++) {
-                    if (dataset.data[i] === null) {
+                    const dataPoint = dataset.data[i];
+                    if (dataPoint === null || (dataPoint && dataPoint.y === null)) {
                         return true;
                     }
                 }
@@ -1782,7 +1783,7 @@
         };
 
         const gapSegmentDash = (ctx) => {
-            return isGapSegment(ctx) ? [4, 4] : undefined;
+            return isGapSegment(ctx) ? [6, 6] : undefined;
         };
 
         function resetChartZoom() {
@@ -1922,7 +1923,12 @@
                 return uniqueLabels.map(label => {
                     const match = subjectPapers.find(p => p.type === label);
                     if (!match) return null;
-                    return match.absent ? null : match.marks;
+                    // Preserve absent papers as point objects with y:null so Chart.js can still render a gap.
+                    return {
+                        x: label,
+                        y: match.absent ? null : match.marks,
+                        absent: !!match.absent
+                    };
                 });
             };
 
@@ -2014,6 +2020,22 @@
                                 font: {
                                     weight: 'bold',
                                     size: 11
+                                }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    const raw = context.raw;
+                                    if (raw && raw.absent) {
+                                        return `${context.dataset.label}: Absent`;
+                                    }
+                                    if (context.parsed && context.parsed.y === null) {
+                                        return `${context.dataset.label}: Absent`;
+                                    }
+                                    return `${context.dataset.label}: ${context.parsed.y}%`;
                                 }
                             }
                         },
