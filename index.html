@@ -1168,7 +1168,7 @@
         let aiChatHistory = [];
 
         function initSupabase() {
-            if (defaultSupabaseAnonKey.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0NzU4MzAsImV4cCI6MjEwMDA1MTgzMH0.YGZi3_wHdzHxoQi8KaPlnjQ0NJ7fESi5rGg3MT5gN3U')) {
+            if (defaultSupabaseAnonKey.includes('<YOUR_SUPABASE_ANON_KEY>')) {
                 console.warn('Supabase anonymous key is not configured. Set defaultSupabaseAnonKey to your project anon/public key.');
                 const badge = document.getElementById('auth-database-badge');
                 if (badge) {
