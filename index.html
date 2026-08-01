@@ -2458,21 +2458,10 @@ Analyze their strengths, weaknesses, and potential performance gaps. Directives:
 Please set your Gemini API Key in the Settings tab or input it inside the AI Advisor prompt first.`;
             }
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeAPIKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta2/models/gemini-2.0-flash:generateText?key=${activeAPIKey}`;
             
             const payload = {
-                prompt: {
-                    messages: [
-                        {
-                            author: "system",
-                            content: [{ type: "text", text: systemPrompt }]
-                        },
-                        {
-                            author: "user",
-                            content: [{ type: "text", text: promptContent }]
-                        }
-                    ]
-                },
+                prompt: `${systemPrompt}\n\n${promptContent}`,
                 temperature: 0.35,
                 maxOutputTokens: 1100,
                 candidateCount: 1
@@ -2487,20 +2476,23 @@ Please set your Gemini API Key in the Settings tab or input it inside the AI Adv
                         body: JSON.stringify(payload)
                     });
 
-                    if (response.status === 400 || response.status === 403 || response.status === 401) {
-                        return `⚠️ **Gemini API Key Invalid or Rejected**
-                        
-The Gemini server rejected the request with status code ${response.status}. 
-
-**How to Fix This:**
-1. Generate a valid, free key on your [Google AI Studio Console](https://aistudio.google.com/).
-2. Go to the **Settings** tab on the left sidebar.
-3. Paste your fresh key under **Google Gemini API Key** and click **Save Profile Changes**.
-4. Retry your request.`;
-                    }
-
                     if (!response.ok) {
-                        throw new Error(`HTTP Error Status: ${response.status}`);
+                        const errorBody = await response.text();
+                        let extraMessage = '';
+
+                        try {
+                            const errorJson = JSON.parse(errorBody);
+                            extraMessage = errorJson.error?.message ? ` ${errorJson.error.message}` : '';
+                        } catch (_) {
+                            extraMessage = errorBody ? ` ${errorBody}` : '';
+                        }
+
+                        if (response.status === 400 || response.status === 403 || response.status === 401) {
+                            return `⚠️ **Gemini API Request Failed**
+                            \nThe Gemini server rejected the request with status code ${response.status}.${extraMessage}\n\nPlease verify your Gemini API key and model access, then retry.`;
+                        }
+
+                        throw new Error(`HTTP Error Status: ${response.status}.${extraMessage}`);
                     }
 
                     const data = await response.json();
