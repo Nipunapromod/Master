@@ -1159,7 +1159,7 @@
 
         // Supabase Endpoint Settings
         const defaultSupabaseUrl = 'https://bvnawbslzifctckurzjk.supabase.co';
-        const defaultSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDQ3NTgzMCwiZXhwIjoyMTAwMDUxODMwfQ.9kH0CKdiw0GRLAcAHAuYWTd-Y1HZJMkhIleeNOISgxs'; // Replace with your Supabase anon/public key only
+        const defaultSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0NzU4MzAsImV4cCI6MjEwMDA1MTgzMH0.YGZi3_wHdzHxoQi8KaPlnjQ0NJ7fESi5rGg3MT5gN3U'; // Replace with your Supabase anon/public key only
         const geminiProxyUrl = ''; // Optional: set this to your secure server-side Gemini proxy URL if available.
         const GEMINI_MODEL = 'gemini-2.5-flash'; // Supported stable Gemini model
 
@@ -1168,7 +1168,7 @@
         let aiChatHistory = [];
 
         function initSupabase() {
-            if (defaultSupabaseAnonKey.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDQ3NTgzMCwiZXhwIjoyMTAwMDUxODMwfQ.9kH0CKdiw0GRLAcAHAuYWTd-Y1HZJMkhIleeNOISgxs')) {
+            if (defaultSupabaseAnonKey.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0NzU4MzAsImV4cCI6MjEwMDA1MTgzMH0.YGZi3_wHdzHxoQi8KaPlnjQ0NJ7fESi5rGg3MT5gN3U')) {
                 console.warn('Supabase anonymous key is not configured. Set defaultSupabaseAnonKey to your project anon/public key.');
                 const badge = document.getElementById('auth-database-badge');
                 if (badge) {
