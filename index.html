@@ -2,7 +2,8 @@
 <html lang="en" class="h-full bg-slate-950 text-slate-100">
 <head>
     <meta charset="UTF-8">
-    <meta ([ai.google.dev](https://ai.google.dev/gemini-api/docs/models?utm_source=chatgpt.com))h=device-width, initial-scale=1.0">\n    <title>A/L Mastermind Dashboard v5.7</title>
+    <meta ([ai.google.dev](https://ai.google.dev/gemini-api/docs/models?utm_source=chatgpt.com))h=device-width, initial-scale=1.0">
+    <title>A/L Mastermind Dashboard v5.7</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4c1d95">
     <meta name="mobile-web-app-capable" content="yes">
@@ -539,7 +540,7 @@
                     <p class="text-xs text-slate-400">Deep syllabus diagnostics, marks analysis, and customized study guidance.</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span id="ai-model-badge" class="text-[10px] font-bold text-slate-500">Gemini 3.6 Flash</span>
+                    <span id="ai-model-badge" class="text-[10px] font-bold text-slate-500">Gemini 2.5 Flash</span>
                     <button onclick="clearChatHistory()" class="text-xs text-slate-500 hover:text-slate-300 font-bold transition flex items-center space-x-1"><i class="fa-solid fa-trash-can"></i><span>Reset Advisor Chat</span></button>
                 </div>
             </div>
@@ -710,7 +711,8 @@ const defaultSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ
 const geminiProxyUrl = '';
 
 // Current stable Flash model in the Google Gemini API catalog.
-const GEMINI_MODEL = 'gemini-3.6-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_FALLBACK_MODEL = 'gemini-3.1-flash-lite';
 
 const AI_MAX_OUTPUT_TOKENS = 2048;
 const AI_MAX_SUMMARY_TURNS = 10;
@@ -2108,16 +2110,33 @@ async function requestGemini(apiUrl, headers, payload) {
         }
 
         const candidate = data?.candidates?.[0];
-        if (!candidate) {
-            const reason = data?.promptFeedback?.blockReason || data?.error?.message || 'Gemini returned no candidate response.';
-            throw new Error(reason);
+        const finishReason = candidate?.finishReason || 'UNKNOWN';
+        const assistantText = candidate?.content?.parts?.map(part => String(part?.text || '')).join('').trim() || '';
+
+        // Gemini can occasionally return HTTP 200 with an empty candidate and
+        // finishReason=MALFORMED_RESPONSE. Do not convert that into a normal
+        // "empty response" error because the caller needs to retry/fallback.
+        if (!assistantText && finishReason === 'MALFORMED_RESPONSE') {
+            const malformedError = new Error('Gemini returned MALFORMED_RESPONSE.');
+            malformedError.status = 502;
+            malformedError.code = 'MALFORMED_RESPONSE';
+            malformedError.finishReason = finishReason;
+            malformedError.rawResponse = data;
+            throw malformedError;
         }
 
-        const assistantText = candidate?.content?.parts?.map(part => String(part?.text || '')).join('').trim() || '';
-        const finishReason = candidate?.finishReason || 'STOP';
+        if (!candidate) {
+            const reason = data?.promptFeedback?.blockReason || data?.error?.message || 'Gemini returned no candidate response.';
+            const noCandidateError = new Error(reason);
+            noCandidateError.status = 502;
+            throw noCandidateError;
+        }
 
         if (!assistantText) {
-            throw new Error(`Gemini returned an empty response. Finish reason: ${finishReason}`);
+            const emptyError = new Error(`Gemini returned an empty response. Finish reason: ${finishReason}`);
+            emptyError.status = 502;
+            emptyError.finishReason = finishReason;
+            throw emptyError;
         }
 
         return {
@@ -2187,68 +2206,108 @@ Important instructions:
         throw new Error('Gemini API key is missing. Add your key in Settings or the AI setup screen.');
     }
 
-    const apiUrl = useProxy
-        ? geminiProxyUrl.trim()
-        : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
-
     const headers = { 'Content-Type': 'application/json' };
     if (!useProxy) headers['x-goog-api-key'] = activeAPIKey;
 
-    const makePayload = (prompt, partialAI = null) => ({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: buildGeminiConversationContents(prompt, partialAI),
-        generationConfig: {
-            temperature: 0.7,
-            topP: 0.95,
-            topK: 40,
-            maxOutputTokens: AI_MAX_OUTPUT_TOKENS,
-            candidateCount: 1
-        }
-    });
+    const modelsToTry = useProxy
+        ? [GEMINI_MODEL]
+        : [GEMINI_MODEL, GEMINI_FALLBACK_MODEL];
 
-    let assistantText = '';
-    let partialAIResponse = null;
+    let lastError = null;
 
-    for (let round = 0; round < AI_MAX_CONTINUATION_ROUNDS; round++) {
-        const prompt = round === 0 ? promptContent : AI_CONTINUATION_PROMPT;
-        const payload = makePayload(prompt, partialAIResponse);
-        let responseData = null;
+    for (const modelName of modelsToTry) {
+        const apiUrl = useProxy
+            ? geminiProxyUrl.trim()
+            : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`;
 
-        for (let attempt = 1; attempt <= AI_MAX_RETRY_ATTEMPTS; attempt++) {
-            try {
-                responseData = await requestGemini(apiUrl, headers, payload);
-                break;
-            } catch (err) {
-                const status = Number(err?.status || 0);
-                const retryable = AI_RETRY_STATUS_CODES.has(status) || err?.name === 'TypeError';
+        // First attempt: full conversation context.
+        // If Gemini reports MALFORMED_RESPONSE, the retry path below uses a
+        // reduced context payload. This avoids repeatedly sending a malformed
+        // conversation structure when the model/backend is having trouble.
+        const makePayload = (prompt, partialAI = null, simplified = false) => {
+            const contents = simplified
+                ? [{ role: 'user', parts: [{ text: String(prompt).trim() }] }]
+                : buildGeminiConversationContents(prompt, partialAI);
 
-                console.warn('[Gemini] Request failed:', {
-                    attempt,
-                    status,
-                    retryable,
-                    message: err?.message
-                });
-
-                if (attempt < AI_MAX_RETRY_ATTEMPTS && retryable) {
-                    await new Promise(resolve => setTimeout(resolve, 700 * Math.pow(2, attempt - 1)));
-                    continue;
+            return {
+                systemInstruction: simplified ? undefined : { parts: [{ text: systemPrompt }] },
+                contents,
+                generationConfig: {
+                    temperature: 0.7,
+                    topP: 0.95,
+                    topK: 40,
+                    maxOutputTokens: 1024,
+                    candidateCount: 1
                 }
+            };
+        };
 
-                throw err;
+        let assistantText = '';
+        let partialAIResponse = null;
+
+        for (let round = 0; round < AI_MAX_CONTINUATION_ROUNDS; round++) {
+            const prompt = round === 0 ? promptContent : AI_CONTINUATION_PROMPT;
+            let responseData = null;
+            let simplified = false;
+
+            for (let attempt = 1; attempt <= AI_MAX_RETRY_ATTEMPTS; attempt++) {
+                try {
+                    const payload = makePayload(prompt, partialAIResponse, simplified);
+                    responseData = await requestGemini(apiUrl, headers, payload);
+                    break;
+                } catch (err) {
+                    lastError = err;
+                    const status = Number(err?.status || 0);
+                    const malformed = err?.code === 'MALFORMED_RESPONSE';
+                    const retryable = malformed || AI_RETRY_STATUS_CODES.has(status) || err?.name === 'TypeError';
+
+                    console.warn('[Gemini] Request failed:', {
+                        model: modelName,
+                        attempt,
+                        status,
+                        malformed,
+                        simplified,
+                        message: err?.message
+                    });
+
+                    if (attempt < AI_MAX_RETRY_ATTEMPTS && retryable) {
+                        // For MALFORMED_RESPONSE, immediately retry once with
+                        // only the current user prompt and a lower token budget.
+                        if (malformed) simplified = true;
+                        await new Promise(resolve => setTimeout(resolve, 700 * Math.pow(2, attempt - 1)));
+                        continue;
+                    }
+
+                    break;
+                }
             }
+
+            if (!responseData) break;
+
+            assistantText = mergeAssistantText(assistantText, responseData.text);
+            const incomplete = isLikelyIncompleteResponse(assistantText, responseData.finishReason);
+
+            if (!incomplete) {
+                const badge = document.getElementById('ai-model-badge');
+                if (badge) badge.innerText = modelName;
+                return assistantText;
+            }
+
+            partialAIResponse = assistantText;
         }
 
-        if (!responseData) throw new Error('Gemini did not return a response.');
+        // If the primary model failed with a malformed/empty response, move on
+        // to the fallback model rather than showing the user a dead-end error.
+        if (lastError?.code === 'MALFORMED_RESPONSE' || lastError?.status === 502) {
+            continue;
+        }
 
-        assistantText = mergeAssistantText(assistantText, responseData.text);
-        const incomplete = isLikelyIncompleteResponse(assistantText, responseData.finishReason);
-
-        if (!incomplete) return assistantText;
-
-        partialAIResponse = assistantText;
+        // For authentication, permission, invalid request, or quota errors,
+        // a model switch will not fix the underlying problem.
+        break;
     }
 
-    return assistantText;
+    throw lastError || new Error('Gemini did not return a usable response.');
 }
 
 async function submitAIChat(event) {
@@ -2294,7 +2353,8 @@ async function submitAIChat(event) {
 
         if (status === 400) errorMessage = 'Gemini rejected the request. Check your API key or request configuration.';
         else if (status === 401 || status === 403) errorMessage = 'Gemini authentication failed. Check that your API key is valid and enabled.';
-        else if (status === 404) errorMessage = `The configured Gemini model (${GEMINI_MODEL}) was not found or is unavailable for your API project.`;
+        else if (status === 404) errorMessage = `The configured Gemini model could not be reached. The advisor automatically tries a fallback model when possible.`;
+        else if (status === 502 && err?.code === 'MALFORMED_RESPONSE') errorMessage = 'Gemini returned a malformed empty response. The advisor retried the request and attempted a fallback model, but both attempts failed.';
         else if (status === 429) errorMessage = 'Gemini rate limit reached. Please wait a moment and try again.';
         else if (status >= 500) errorMessage = 'Google Gemini is temporarily unavailable. Please try again later.';
         else if (err?.message) errorMessage = err.message;
