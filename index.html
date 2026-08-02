@@ -1161,7 +1161,7 @@
         const defaultSupabaseUrl = 'https://bvnawbslzifctckurzjk.supabase.co';
         const defaultSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bmF3YnNsemlmY3Rja3VyemprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0NzU4MzAsImV4cCI6MjEwMDA1MTgzMH0.YGZi3_wHdzHxoQi8KaPlnjQ0NJ7fESi5rGg3MT5gN3U'; // Replace with your Supabase anon/public key only
         const geminiProxyUrl = ''; // Optional: set this to your secure server-side Gemini proxy URL if available.
-        const GEMINI_MODEL = 'gemini-2.5-flash'; // Supported stable Gemini model
+        const GEMINI_MODEL = 'gemini-2.0-flash'; // Broadly available Gemini model
 
         let currentAuthMode = 'login';
         let supabaseClient = null;
@@ -2677,82 +2677,57 @@
             aiRequestInFlight = true;
 
             const requestStart = Date.now();
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(payload),
-                signal
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.text().catch(() => '');
-                const apiMessage = errorBody || `Gemini returned HTTP ${response.status}`;
-                const apiError = new Error(apiMessage);
-                apiError.status = response.status;
-                throw apiError;
-            }
-
-            if (!response.body) {
-                throw new Error('Gemini stream response did not include a readable body.');
-            }
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let assistantText = '';
-            let finishReason = 'STOP';
-            let promptTokens = 0;
-            let completionTokens = 0;
-            let responseSize = 0;
-
-            const processEvent = (event) => {
-                const chunkText = extractStreamText(event);
-                if (chunkText) {
-                    assistantText += chunkText;
-                    responseSize += chunkText.length;
-                    updateStreamingPlaceholder(assistantText);
+            const timeoutId = setTimeout(() => {
+                if (aiRequestAbortController) {
+                    aiRequestAbortController.abort();
                 }
-                const eventFinish = extractFinishReason(event);
-                if (eventFinish) finishReason = eventFinish;
-                const tokenUsage = extractTokenUsage(event);
-                if (tokenUsage) {
-                    if (tokenUsage.promptTokens != null) promptTokens = tokenUsage.promptTokens;
-                    if (tokenUsage.completionTokens != null) completionTokens = tokenUsage.completionTokens;
-                }
-            };
+            }, 30000);
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                let newlineIndex;
-                while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-                    const rawLine = buffer.slice(0, newlineIndex).trim();
-                    buffer = buffer.slice(newlineIndex + 1);
-                    if (!rawLine) continue;
-                    const cleanedLine = rawLine.startsWith('data:') ? rawLine.slice(5).trim() : rawLine;
-                    try {
-                        const event = JSON.parse(cleanedLine);
-                        processEvent(event);
-                    } catch (parseErr) {
-                        console.warn('[Gemini] stream parse failure', parseErr, cleanedLine);
-                    }
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        ...headers,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload),
+                    signal
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text().catch(() => '');
+                    const apiMessage = errorBody || `Gemini returned HTTP ${response.status}`;
+                    const apiError = new Error(apiMessage);
+                    apiError.status = response.status;
+                    throw apiError;
                 }
+
+                const data = await response.json().catch(() => null);
+                const candidate = data?.candidates?.[0];
+                const assistantText = candidate?.content?.parts?.map(part => String(part?.text || '')).join('') || '';
+                const finishReason = candidate?.finishReason || 'STOP';
+                const promptTokens = data?.usageMetadata?.promptTokenCount ?? 0;
+                const completionTokens = data?.usageMetadata?.candidatesTokenCount ?? 0;
+
+                return {
+                    text: assistantText,
+                    finishReason,
+                    promptTokens,
+                    completionTokens,
+                    latency: Date.now() - requestStart,
+                    responseSize: assistantText.length
+                };
+            } catch (err) {
+                if (err?.name === 'AbortError') {
+                    const timeoutError = new Error('The AI request timed out. Please try again.');
+                    timeoutError.status = 408;
+                    throw timeoutError;
+                }
+                throw err;
+            } finally {
+                clearTimeout(timeoutId);
+                aiRequestInFlight = false;
             }
-
-            const leftover = buffer.trim();
-            if (leftover) {
-                try {
-                    const event = JSON.parse(leftover);
-                    processEvent(event);
-                } catch (parseErr) {
-                    console.warn('[Gemini] final stream parse failure', parseErr, leftover);
-                }
-            }
-
-            aiRequestInFlight = false;
-            const latency = Date.now() - requestStart;
-            return { text: assistantText, finishReason, promptTokens, completionTokens, latency, responseSize };
         }
 
         async function makeAICall(promptContent) {
@@ -2803,7 +2778,7 @@ Instructions:
 
             const apiUrl = useProxy
                 ? geminiProxyUrl.trim()
-                : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContentStream`;
+                : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`;
 
             const headers = {
                 'Content-Type': 'application/json'
@@ -2898,6 +2873,10 @@ Instructions:
 
             try {
                 const aiResponse = await makeAICall(prompt);
+                if (!aiResponse || !String(aiResponse).trim()) {
+                    throw new Error('The AI returned an empty response. Please try again.');
+                }
+
                 if (loader) loader.classList.add('hidden');
                 if (currentAIPlaceholderContent) {
                     currentAIPlaceholderContent.innerHTML = formatMessageText(aiResponse);
