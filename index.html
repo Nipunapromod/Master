@@ -2436,26 +2436,68 @@
             document.getElementById('ai-lang-selection-screen').classList.remove('hidden');
         }
 
+        function detectQuestionSubject(text) {
+            const query = String(text || '').toLowerCase();
+
+            const subjectRules = {
+                'Combined Mathematics': [
+                    /\bmaths?\b/, /\bmathematics\b/, /\balgebra\b/, /\bcalculus\b/,
+                    /\bderivative\b/, /\bdifferentiat/, /\bintegrat/, /\blimit\b/,
+                    /\btrigonometry\b/, /\bsin\b/, /\bcos\b/, /\btan\b/,
+                    /\bvector\b/, /\bmatrix\b/, /\bcomplex number/, /\blogarithm/,
+                    /ගණිත/, /අවකල/, /අනුකල/, /සීමා/, /ත්‍රිකෝණමිත/
+                ],
+                'Physics': [
+                    /\bphysics\b/, /\bmechanics\b/, /\bforce\b/, /\bvelocity\b/,
+                    /\bacceleration\b/, /\bmomentum\b/, /\bprojectile\b/,
+                    /\belectric/, /\bvoltage\b/, /\bcurrent\b/, /\bcircuit\b/,
+                    /\bwave\b/, /\boptics\b/, /\bmagnetic/, /භෞතික/, /බලය/,
+                    /වේගය/, /ත්වරණ/, /විදුලි/, /ධාරාව/
+                ],
+                'Chemistry': [
+                    /\bchemistry\b/, /\batom\b/, /\bmolecule\b/, /\bmole\b/,
+                    /\bmolar\b/, /\breaction\b/, /\bacid\b/, /\bbase\b/,
+                    /\borganic\b/, /\binorganic\b/, /\bequilibrium\b/,
+                    /\benthalpy\b/, /\boxidation\b/, /\breduction\b/, /\bbond\b/,
+                    /රසායන/, /පරමාණු/, /අණු/, /මවුල/, /අම්ල/, /භස්ම/, /කාබනික/, /අකාබනික/
+                ]
+            };
+
+            let bestSubject = '';
+            let bestScore = 0;
+
+            Object.entries(subjectRules).forEach(([subject, rules]) => {
+                const score = rules.reduce((total, rule) => total + (rule.test(query) ? 1 : 0), 0);
+                if (score > bestScore) {
+                    bestSubject = subject;
+                    bestScore = score;
+                }
+            });
+
+            if (bestScore > 0) return bestSubject;
+            return activeChartFilter !== 'All' ? activeChartFilter : 'General';
+        }
+
+        function isStudentDataRequest(text) {
+            const query = String(text || '').toLowerCase();
+            return /marks?|scores?|grade|performance|progress|trend|paper|z[- ]?score|cut[- ]?off|admission|district|task|schedule|study plan|revision plan|recall|weakness|strength|ලකුණු|ප්‍රගතිය|කාලසටහන|අධ්‍යයන සැලැස්ම/.test(query);
+        }
+
         async function makeAICall(promptContent) {
             const maxRetries = 2;
-            const subjectSpecificFocus = activeChartFilter === 'All'
-                ? "the composite performance across Combined Mathematics, Physics, and Chemistry."
-                : `a specific, deep focus on the subject: ${activeChartFilter}. Adjust your detailed syllabus recommendations primarily to improve this subject.`;
+            const detectedSubject = detectQuestionSubject(promptContent);
+            const includeStudentData = isStudentDataRequest(promptContent);
+
+            const subjectSpecificFocus = detectedSubject === 'General'
+                ? 'Answer only the current user question. Do not introduce Combined Mathematics, Physics, or Chemistry unless the question requires it.'
+                : `The current question is mainly about ${detectedSubject}. Stay inside this subject. Do not discuss the other A/L subjects unless the user explicitly asks for a comparison or connection.`;
 
             const languageConstraint = selectedMedium === 'Sinhala'
-                ? `You must construct your final answer entirely in Sinhala (සිංහල භාෂාවෙන්). Use accurate Sri Lankan Advanced Level scientific terminology and format formulas using LaTeX.`
-                : `Construct your final answer in clear English. Highlight typical hurdles, common marks-loss traps, and past-paper revision tips relevant to the Sri Lankan Physical Science stream.`;
+                ? `Answer entirely in clear Sinhala. Keep standard scientific symbols, formulas, units, and accepted English technical terms when they improve accuracy.`
+                : `Answer in clear, simple English using accurate Sri Lankan A/L terminology.`;
 
-            const systemPrompt = `You are a Sri Lankan Advanced Level Examination academic coach.
-You provide precise syllabus advice, study schedules, and performance analysis for Combined Mathematics, Physics, and Chemistry.
-
-Current focus:
-${subjectSpecificFocus}
-
-Language requirement:
-${languageConstraint}
-
-Student profile:
+            const studentContext = includeStudentData
+                ? `Student profile:
 - Student Name: ${studentProfile.name || 'Student'}
 - Target Exam Date: ${studentProfile.year || 'Not configured'}
 - Target Course: ${studentProfile.course || 'Not configured'}
@@ -2468,14 +2510,38 @@ Tasks and homework:
 ${JSON.stringify(taskLogs)}
 
 Active-recall logs:
-${JSON.stringify(recallLogs)}
+${JSON.stringify(recallLogs)}`
+                : `Student records are intentionally omitted because this is a direct question. Do not invent or discuss marks, schedules, Z-scores, study plans, or performance data.`;
 
-Instructions:
-1. Be encouraging, accurate, and practical.
-2. Mention specific syllabus areas only when relevant.
-3. Do not claim an exact Z-score or admission result unless enough verified data exists.
-4. Use standard LaTeX notation, with inline math inside $...$ and block math inside $$...$$.
-5. Keep the response concise and actionable.`;
+            const responseMode = includeStudentData
+                ? `This is a student-data or planning request. Use only the relevant supplied records and give a focused, practical analysis.`
+                : `This is a direct question. Start with the answer immediately. Do not add greetings, motivation, study plans, exam tips, unrelated definitions, or extra subject content.`;
+
+            const systemPrompt = `You are Mastermind AI, a precise Sri Lankan Advanced Level tutor.
+
+Current subject rule:
+${subjectSpecificFocus}
+
+Language rule:
+${languageConstraint}
+
+Response mode:
+${responseMode}
+
+Available context:
+${studentContext}
+
+Strict answer rules:
+1. Answer exactly what the latest user message asks. The latest message has higher priority than older chat history.
+2. Never mix subjects unnecessarily. A mathematics question gets a mathematics answer only; a chemistry question gets a chemistry answer only; a physics question gets a physics answer only.
+3. Use advanced subject knowledge but explain it with easy words and the fewest useful steps.
+4. For a simple fact, use 1-3 short sentences. For a calculation, show: formula, substitution, final answer. For an explanation, normally stay under 6 short bullet points.
+5. Do not repeat the question. Do not add a conclusion that merely repeats the answer.
+6. Include examples, common mistakes, exam tips, or background theory only when requested or essential to understand the answer.
+7. Use standard LaTeX: inline math inside $...$ and block math inside $$...$$.
+8. State uncertainty briefly instead of guessing. Ask one clarification only when the problem cannot be solved without missing information.
+9. Never claim an exact Z-score, rank, cutoff, or admission result without enough verified data.
+10. Keep the response compact, accurate, clean, and directly useful.`;
 
             const activeAPIKey =
                 studentProfile.gemini_api_key ||
@@ -2508,7 +2574,7 @@ Instructions:
             // Exclude it here, then append promptContent once to avoid duplication.
             const recentHistory = aiChatHistory
                 .slice(0, -1)
-                .slice(-12)
+                .slice(-8)
                 .filter(entry => entry && typeof entry.text === 'string' && entry.text.trim())
                 .map(entry => ({
                     role: entry.isAI ? 'model' : 'user',
@@ -2532,8 +2598,8 @@ Instructions:
                     }
                 ],
                 generationConfig: {
-                    temperature: 0.35,
-                    maxOutputTokens: 16384,
+                    temperature: 0.2,
+                    maxOutputTokens: 2048,
                     candidateCount: 1
                 }
             };
