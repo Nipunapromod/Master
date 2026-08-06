@@ -117,7 +117,19 @@
     </script>
 
     <div id="auth-screen" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-md w-full space-y-6 shadow-2xl glow-indigo">
+        <div class="relative bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-md w-full space-y-6 shadow-2xl glow-indigo overflow-hidden">
+            <!-- Login / registration loading overlay -->
+            <div id="auth-loading-overlay" class="hidden absolute inset-0 z-30 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6">
+                <div class="relative mb-4">
+                    <div class="absolute inset-0 rounded-full bg-brand-500/25 animate-ping"></div>
+                    <div class="relative w-16 h-16 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center shadow-xl shadow-brand-500/25">
+                        <i class="fa-solid fa-circle-notch animate-spin text-2xl text-white"></i>
+                    </div>
+                </div>
+                <h3 id="auth-loading-title" class="text-sm font-extrabold text-white">Signing In</h3>
+                <p id="auth-loading-message" class="mt-1 text-[11px] text-slate-400">Connecting securely to your account...</p>
+            </div>
+
             <div class="text-center space-y-2">
                 <div class="bg-gradient-to-tr from-brand-600 to-indigo-500 p-4 rounded-2xl inline-block shadow-lg shadow-brand-500/20">
                     <i class="fa-solid fa-graduation-cap text-3xl text-white"></i>
@@ -219,8 +231,10 @@
                 </div>
 
                 <div class="flex gap-2">
-                    <button type="submit" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition duration-200 shadow-lg shadow-brand-600/20">
-                        <span id="auth-submit-label">Log In</span> <i class="fa-solid fa-arrow-right-to-bracket ml-1"></i>
+                    <button id="auth-submit-button" type="submit" class="flex-1 bg-brand-600 hover:bg-brand-500 disabled:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-80 text-white font-bold py-3 px-4 rounded-xl text-xs transition duration-200 shadow-lg shadow-brand-600/20 flex items-center justify-center gap-2">
+                        <i id="auth-submit-spinner" class="hidden fa-solid fa-circle-notch animate-spin"></i>
+                        <span id="auth-submit-label">Sign In</span>
+                        <i id="auth-submit-icon" class="fa-solid fa-arrow-right-to-bracket"></i>
                     </button>
                 </div>
             </form>
@@ -244,7 +258,7 @@
                 <h1 class="text-lg font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-indigo-300">
                     A/L MASTERMIND
                 </h1>
-                <p class="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Sri Lankan A/L Exam Hub</p>
+                <p class="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Sri Lankan A/L Exam Hub<br>(Same features are not working, Developing...)</p>
             </div>
         </div>
 
@@ -1196,7 +1210,53 @@
             return false;
         }
 
+        let authRequestInProgress = false;
+
+        function setAuthLoading(isLoading) {
+            authRequestInProgress = isLoading;
+
+            const submitButton = document.getElementById('auth-submit-button');
+            const submitLabel = document.getElementById('auth-submit-label');
+            const submitSpinner = document.getElementById('auth-submit-spinner');
+            const submitIcon = document.getElementById('auth-submit-icon');
+            const loadingOverlay = document.getElementById('auth-loading-overlay');
+            const loadingTitle = document.getElementById('auth-loading-title');
+            const loadingMessage = document.getElementById('auth-loading-message');
+            const tabLogin = document.getElementById('auth-tab-login');
+            const tabRegister = document.getElementById('auth-tab-register');
+            const form = document.getElementById('auth-form');
+
+            const isRegistering = currentAuthMode === 'register';
+            const idleLabel = isRegistering ? 'Create Account' : 'Sign In';
+            const loadingLabel = isRegistering ? 'Creating Account...' : 'Signing In...';
+
+            if (submitButton) submitButton.disabled = isLoading;
+            if (submitLabel) submitLabel.innerText = isLoading ? loadingLabel : idleLabel;
+            if (submitSpinner) submitSpinner.classList.toggle('hidden', !isLoading);
+            if (submitIcon) submitIcon.classList.toggle('hidden', isLoading);
+            if (loadingOverlay) loadingOverlay.classList.toggle('hidden', !isLoading);
+
+            if (loadingTitle) {
+                loadingTitle.innerText = isRegistering ? 'Creating Your Account' : 'Signing You In';
+            }
+            if (loadingMessage) {
+                loadingMessage.innerText = isRegistering
+                    ? 'Setting up your secure student profile...'
+                    : 'Connecting securely to your account...';
+            }
+
+            if (tabLogin) tabLogin.disabled = isLoading;
+            if (tabRegister) tabRegister.disabled = isLoading;
+
+            if (form) {
+                form.querySelectorAll('input, select').forEach(control => {
+                    control.disabled = isLoading;
+                });
+            }
+        }
+
         function toggleAuthMode(mode) {
+            if (authRequestInProgress) return;
             currentAuthMode = mode;
             const regFields = document.getElementById('register-fields');
             const submitLbl = document.getElementById('auth-submit-label');
@@ -1218,55 +1278,65 @@
 
         async function handleAuthSubmit(event) {
             event.preventDefault();
+            if (authRequestInProgress) return;
+
             const email = document.getElementById('auth-email').value.trim().toLowerCase();
             const password = document.getElementById('auth-password').value;
             const diagBox = document.getElementById('auth-diagnostics');
-            
+
             if (diagBox) diagBox.classList.add('hidden');
 
             if (!supabaseClient) {
                 showAuthDiagError('Initialization Error', 'Supabase is not configured. Please set your anon/public key in the application source.');
                 return;
             }
-                try {
-                    if (currentAuthMode === 'register') {
-                        const name = document.getElementById('auth-name').value.trim() || "Scholar";
-                        const course = document.getElementById('auth-course').value;
-                        const district = document.getElementById('auth-district').value;
-                        const registerGeminiKey = document.getElementById('register-gemini-key').value.trim();
 
-                        const { data, error } = await supabaseClient.auth.signUp({ email, password });
-                        if (error) {
-                            showAuthDiagError("Registration Failed", error.message);
-                            return;
-                        }
+            setAuthLoading(true);
+            let switchToLoginAfterRequest = false;
 
-                        if (data?.user) {
-                            const { error: profileErr } = await supabaseClient.from('profiles').upsert([
-                                { id: data.user.id, name, year: "2027-08-10", course, district, gemini_api_key: registerGeminiKey }
-                            ]);
-                            if (profileErr) console.error("Profile load failed:", profileErr);
-                        }
+            try {
+                if (currentAuthMode === 'register') {
+                    const name = document.getElementById('auth-name').value.trim() || "Scholar";
+                    const course = document.getElementById('auth-course').value;
+                    const district = document.getElementById('auth-district').value;
+                    const registerGeminiKey = document.getElementById('register-gemini-key').value.trim();
 
-                        showAlert("Success!", "Your profile has been created successfully. Please sign in now.");
-                        toggleAuthMode('login');
-                    } else {
-                        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                        if (error) {
-                            showAuthDiagError("Failed Sign In", error.message);
-                            return;
-                        }
-
-                        currentUserSession = data.session;
-                        await loadCloudData();
-                        document.getElementById('auth-screen').classList.add('hidden');
-                        syncProfileUI();
-                        updateCoreStats();
-                        showAlert('Cloud Connected', `Successfully connected to secure data cloud!`);
+                    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                    if (error) {
+                        showAuthDiagError("Registration Failed", error.message);
+                        return;
                     }
-                } catch (err) {
-                    showAuthDiagError("Connection Error", "Secure server call failed. Please verify your network connections.");
+
+                    if (data?.user) {
+                        const { error: profileErr } = await supabaseClient.from('profiles').upsert([
+                            { id: data.user.id, name, year: "2027-08-10", course, district, gemini_api_key: registerGeminiKey }
+                        ]);
+                        if (profileErr) console.error("Profile load failed:", profileErr);
+                    }
+
+                    showAlert("Success!", "Your profile has been created successfully. Please sign in now.");
+                    switchToLoginAfterRequest = true;
+                } else {
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if (error) {
+                        showAuthDiagError("Failed Sign In", error.message);
+                        return;
+                    }
+
+                    currentUserSession = data.session;
+                    await loadCloudData();
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    syncProfileUI();
+                    updateCoreStats();
+                    showAlert('Cloud Connected', 'Successfully connected to secure data cloud!');
                 }
+            } catch (err) {
+                console.error('Authentication request failed:', err);
+                showAuthDiagError("Connection Error", "Secure server call failed. Please verify your network connection.");
+            } finally {
+                setAuthLoading(false);
+                if (switchToLoginAfterRequest) toggleAuthMode('login');
+            }
         }
 
         function escapeHtml(value) {
@@ -1810,8 +1880,8 @@
                 // So Y ratio = 1 - (Score / 100)
                 grad.addColorStop(0, '#10b981');    // 100% -> Green
                 grad.addColorStop(0.25, '#10b981'); // 75% -> Green
-                grad.addColorStop(0.35, '#fbbf24'); // 65% -> Yellow
-                grad.addColorStop(0.45, '#f97316'); // 55% -> Orange
+                grad.addColorStop(0.35, '#10b39a'); // 65% -> lightgreen
+                grad.addColorStop(0.45, '#fbbf24'); // 55% -> yellow
                 grad.addColorStop(0.70, '#f43f5e'); // Under 55% -> Red
                 grad.addColorStop(1, '#f43f5e');    // 0% -> Red
                 
@@ -2436,26 +2506,68 @@
             document.getElementById('ai-lang-selection-screen').classList.remove('hidden');
         }
 
+        function detectQuestionSubject(text) {
+            const query = String(text || '').toLowerCase();
+
+            const subjectRules = {
+                'Combined Mathematics': [
+                    /\bmaths?\b/, /\bmathematics\b/, /\balgebra\b/, /\bcalculus\b/,
+                    /\bderivative\b/, /\bdifferentiat/, /\bintegrat/, /\blimit\b/,
+                    /\btrigonometry\b/, /\bsin\b/, /\bcos\b/, /\btan\b/,
+                    /\bvector\b/, /\bmatrix\b/, /\bcomplex number/, /\blogarithm/,
+                    /ගණිත/, /අවකල/, /අනුකල/, /සීමා/, /ත්‍රිකෝණමිත/
+                ],
+                'Physics': [
+                    /\bphysics\b/, /\bmechanics\b/, /\bforce\b/, /\bvelocity\b/,
+                    /\bacceleration\b/, /\bmomentum\b/, /\bprojectile\b/,
+                    /\belectric/, /\bvoltage\b/, /\bcurrent\b/, /\bcircuit\b/,
+                    /\bwave\b/, /\boptics\b/, /\bmagnetic/, /භෞතික/, /බලය/,
+                    /වේගය/, /ත්වරණ/, /විදුලි/, /ධාරාව/
+                ],
+                'Chemistry': [
+                    /\bchemistry\b/, /\batom\b/, /\bmolecule\b/, /\bmole\b/,
+                    /\bmolar\b/, /\breaction\b/, /\bacid\b/, /\bbase\b/,
+                    /\borganic\b/, /\binorganic\b/, /\bequilibrium\b/,
+                    /\benthalpy\b/, /\boxidation\b/, /\breduction\b/, /\bbond\b/,
+                    /රසායන/, /පරමාණු/, /අණු/, /මවුල/, /අම්ල/, /භස්ම/, /කාබනික/, /අකාබනික/
+                ]
+            };
+
+            let bestSubject = '';
+            let bestScore = 0;
+
+            Object.entries(subjectRules).forEach(([subject, rules]) => {
+                const score = rules.reduce((total, rule) => total + (rule.test(query) ? 1 : 0), 0);
+                if (score > bestScore) {
+                    bestSubject = subject;
+                    bestScore = score;
+                }
+            });
+
+            if (bestScore > 0) return bestSubject;
+            return activeChartFilter !== 'All' ? activeChartFilter : 'General';
+        }
+
+        function isStudentDataRequest(text) {
+            const query = String(text || '').toLowerCase();
+            return /marks?|scores?|grade|performance|progress|trend|paper|z[- ]?score|cut[- ]?off|admission|district|task|schedule|study plan|revision plan|recall|weakness|strength|ලකුණු|ප්‍රගතිය|කාලසටහන|අධ්‍යයන සැලැස්ම/.test(query);
+        }
+
         async function makeAICall(promptContent) {
             const maxRetries = 2;
-            const subjectSpecificFocus = activeChartFilter === 'All'
-                ? "the composite performance across Combined Mathematics, Physics, and Chemistry."
-                : `a specific, deep focus on the subject: ${activeChartFilter}. Adjust your detailed syllabus recommendations primarily to improve this subject.`;
+            const detectedSubject = detectQuestionSubject(promptContent);
+            const includeStudentData = isStudentDataRequest(promptContent);
+
+            const subjectSpecificFocus = detectedSubject === 'General'
+                ? 'Answer only the current user question. Do not introduce Combined Mathematics, Physics, or Chemistry unless the question requires it.'
+                : `The current question is mainly about ${detectedSubject}. Stay inside this subject. Do not discuss the other A/L subjects unless the user explicitly asks for a comparison or connection.`;
 
             const languageConstraint = selectedMedium === 'Sinhala'
-                ? `You must construct your final answer entirely in Sinhala (සිංහල භාෂාවෙන්). Use accurate Sri Lankan Advanced Level scientific terminology and format formulas using LaTeX.`
-                : `Construct your final answer in clear English. Highlight typical hurdles, common marks-loss traps, and past-paper revision tips relevant to the Sri Lankan Physical Science stream.`;
+                ? `Answer entirely in clear Sinhala. Keep standard scientific symbols, formulas, units, and accepted English technical terms when they improve accuracy.`
+                : `Answer in clear, simple English using accurate Sri Lankan A/L terminology.`;
 
-            const systemPrompt = `You are a Sri Lankan Advanced Level Examination academic coach.
-You provide precise syllabus advice, study schedules, and performance analysis for Combined Mathematics, Physics, and Chemistry.
-
-Current focus:
-${subjectSpecificFocus}
-
-Language requirement:
-${languageConstraint}
-
-Student profile:
+            const studentContext = includeStudentData
+                ? `Student profile:
 - Student Name: ${studentProfile.name || 'Student'}
 - Target Exam Date: ${studentProfile.year || 'Not configured'}
 - Target Course: ${studentProfile.course || 'Not configured'}
@@ -2468,14 +2580,38 @@ Tasks and homework:
 ${JSON.stringify(taskLogs)}
 
 Active-recall logs:
-${JSON.stringify(recallLogs)}
+${JSON.stringify(recallLogs)}`
+                : `Student records are intentionally omitted because this is a direct question. Do not invent or discuss marks, schedules, Z-scores, study plans, or performance data.`;
 
-Instructions:
-1. Be encouraging, accurate, and practical.
-2. Mention specific syllabus areas only when relevant.
-3. Do not claim an exact Z-score or admission result unless enough verified data exists.
-4. Use standard LaTeX notation, with inline math inside $...$ and block math inside $$...$$.
-5. Keep the response concise and actionable.`;
+            const responseMode = includeStudentData
+                ? `This is a student-data or planning request. Use only the relevant supplied records and give a focused, practical analysis.`
+                : `This is a direct question. Start with the answer immediately. Do not add greetings, motivation, study plans, exam tips, unrelated definitions, or extra subject content.`;
+
+            const systemPrompt = `You are Mastermind AI, a precise Sri Lankan Advanced Level tutor.
+
+Current subject rule:
+${subjectSpecificFocus}
+
+Language rule:
+${languageConstraint}
+
+Response mode:
+${responseMode}
+
+Available context:
+${studentContext}
+
+Strict answer rules:
+1. Answer exactly what the latest user message asks. The latest message has higher priority than older chat history.
+2. Never mix subjects unnecessarily. A mathematics question gets a mathematics answer only; a chemistry question gets a chemistry answer only; a physics question gets a physics answer only.
+3. Use advanced subject knowledge but explain it with easy words and the fewest useful steps.
+4. For a simple fact, use 1-3 short sentences. For a calculation, show: formula, substitution, final answer. For an explanation, normally stay under 6 short bullet points.
+5. Do not repeat the question. Do not add a conclusion that merely repeats the answer.
+6. Include examples, common mistakes, exam tips, or background theory only when requested or essential to understand the answer.
+7. Use standard LaTeX: inline math inside $...$ and block math inside $$...$$.
+8. State uncertainty briefly instead of guessing. Ask one clarification only when the problem cannot be solved without missing information.
+9. Never claim an exact Z-score, rank, cutoff, or admission result without enough verified data.
+10. Keep the response compact, accurate, clean, and directly useful.`;
 
             const activeAPIKey =
                 studentProfile.gemini_api_key ||
@@ -2508,7 +2644,7 @@ Instructions:
             // Exclude it here, then append promptContent once to avoid duplication.
             const recentHistory = aiChatHistory
                 .slice(0, -1)
-                .slice(-12)
+                .slice(-8)
                 .filter(entry => entry && typeof entry.text === 'string' && entry.text.trim())
                 .map(entry => ({
                     role: entry.isAI ? 'model' : 'user',
@@ -2532,7 +2668,7 @@ Instructions:
                     }
                 ],
                 generationConfig: {
-                    temperature: 0.35,
+                    temperature: 0.2,
                     maxOutputTokens: 2048,
                     candidateCount: 1
                 }
