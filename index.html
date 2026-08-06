@@ -73,6 +73,183 @@
         .tab-btn, .mobile-tab-btn {
             cursor: pointer;
         }
+    
+
+        /* ===== Stability / responsive hardening layer ===== */
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            min-height: 100dvh;
+            min-height: -webkit-fill-available;
+            overscroll-behavior: none;
+        }
+
+        header, main, aside, section, .tab-pane, .grid, .flex, .overflow-x-auto {
+            min-width: 0;
+        }
+
+        main {
+            overscroll-behavior-y: contain;
+            scroll-behavior: auto;
+            padding-bottom: max(6rem, env(safe-area-inset-bottom));
+        }
+
+        header {
+            padding-top: max(1rem, env(safe-area-inset-top));
+            padding-left: max(1rem, env(safe-area-inset-left));
+            padding-right: max(1rem, env(safe-area-inset-right));
+        }
+
+        button, input, select, textarea, a {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button, [role="button"], input[type="checkbox"], input[type="radio"] {
+            touch-action: manipulation;
+        }
+
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
+            outline: 2px solid #a78bfa;
+            outline-offset: 2px;
+        }
+
+        #task-list-container, #classes-list-container {
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+        }
+
+        #marksChart, #chatSideChart {
+            display: block;
+            max-width: 100%;
+        }
+
+        #marksChart {
+            min-height: 0;
+        }
+
+        .task-time-row, .class-time-row {
+            width: 100%;
+            max-width: 100%;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .task-time-row select, .class-time-row select {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        @media (max-width: 767px) {
+            main {
+                padding-left: max(0.75rem, env(safe-area-inset-left));
+                padding-right: max(0.75rem, env(safe-area-inset-right));
+                padding-bottom: max(6rem, env(safe-area-inset-bottom));
+            }
+
+            header {
+                gap: 0.75rem;
+            }
+
+            header > div:last-child {
+                min-width: 0;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                gap: 0.35rem;
+            }
+
+            header h1 {
+                font-size: 0.95rem;
+            }
+
+            header p {
+                max-width: 42vw;
+                line-height: 1.15;
+            }
+
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+
+            button, [role="button"] {
+                min-height: 44px;
+                min-width: 44px;
+            }
+
+            .task-time-row, .class-time-row {
+                row-gap: 0.35rem;
+                column-gap: 0.25rem;
+            }
+
+            .task-time-row select, .class-time-row select {
+                flex: 1 1 3.4rem;
+            }
+
+            #marksChart {
+                min-height: 250px;
+            }
+
+            #tab-content-ai {
+                height: calc(100dvh - 9rem);
+                min-height: 0;
+            }
+        }
+
+        @media (max-width: 360px) {
+            main {
+                padding-left: max(0.5rem, env(safe-area-inset-left));
+                padding-right: max(0.5rem, env(safe-area-inset-right));
+            }
+
+            .rounded-3xl, .rounded-2xl {
+                border-radius: 1rem;
+            }
+
+            .task-time-row, .class-time-row {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .task-time-row > span, .class-time-row > span {
+                display: none;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 520px) {
+            main {
+                padding-top: 0.75rem;
+                padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+            }
+
+            #tab-content-ai {
+                height: calc(100dvh - 7rem);
+            }
+        }
+
+        @media (min-width: 1920px) {
+            main {
+                padding-left: 4rem;
+                padding-right: 4rem;
+            }
+
+            aside {
+                width: 18rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
     </style>
 </head>
 <body class="h-full flex flex-col font-sans overflow-hidden">
@@ -2669,7 +2846,7 @@ Strict answer rules:
                 ],
                 generationConfig: {
                     temperature: 0.2,
-                    maxOutputTokens: 2048,
+                    maxOutputTokens: 16384,
                     candidateCount: 1
                 }
             };
@@ -3231,5 +3408,1938 @@ Strict answer rules:
             }
         }
     </script>
+
+
+    <script>
+        /* ======================================================================
+           A/L MASTERMIND - Stability & Reliability Layer
+           Keeps the existing UI and feature set, but hardens storage, sync,
+           task/class CRUD, notifications, responsive behavior and rendering.
+           ====================================================================== */
+        (() => {
+            'use strict';
+
+            const STABILITY_SCHEMA_VERSION = 2;
+            const STABILITY_LOCAL_PREFIX = 'almastermind:stability:v2:';
+            const STABILITY_BACKUP_SUFFIX = ':backup';
+            const STABILITY_MAX_VISIBLE_TASKS = 80;
+            const STABILITY_MAX_VISIBLE_CLASSES = 50;
+            const STABILITY_RENDER_CHUNK = 80;
+            const STABILITY_NETWORK_RETRIES = 3;
+            const STABILITY_CACHE_WRITE_DELAY = 180;
+            const STABILITY_NOTIFICATION_LEDGER_LIMIT = 100;
+            const STABILITY_RETRY_BASE_DELAY = 900;
+            const STABILITY_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+            let stabilityStorageReady = false;
+            let stabilityMemoryStore = new Map();
+            let stabilityCacheWriteTimer = null;
+            let stabilityPendingRetryTimer = null;
+            let stabilityNotificationTimer = null;
+            let stabilityInitialized = false;
+            let stabilityTaskSaveInProgress = false;
+            let stabilityClassSaveInProgress = false;
+            let stabilityEditingTaskId = null;
+            let stabilityEditingClassId = null;
+            let stabilityTaskRenderLimit = STABILITY_MAX_VISIBLE_TASKS;
+            let stabilityClassRenderLimit = STABILITY_MAX_VISIBLE_CLASSES;
+            let stabilityResizeFrame = null;
+            let stabilityFilterTimer = null;
+            let stabilityMainScrollPosition = 0;
+            let stabilityTaskDomCache = new Map();
+            let stabilityClassDomCache = new Map();
+            let stabilityCache = {
+                schemaVersion: STABILITY_SCHEMA_VERSION,
+                tasks: [],
+                classes: [],
+                pendingOps: [],
+                notificationLedger: [],
+                updatedAt: new Date().toISOString()
+            };
+
+            const stabilityHasNotificationAPI = typeof window !== 'undefined' && 'Notification' in window;
+
+            function stabilityUuid(prefix = 'local') {
+                try {
+                    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                        return window.crypto.randomUUID();
+                    }
+                } catch (_) {}
+                return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+            }
+
+            function stabilitySafeString(value, fallback = '') {
+                if (value === null || value === undefined) return fallback;
+                return String(value);
+            }
+
+            function stabilityNormalizeText(value) {
+                return stabilitySafeString(value).replace(/\s+/g, ' ').trim();
+            }
+
+            function stabilityNormalizeId(value) {
+                const str = stabilitySafeString(value).trim();
+                return str || stabilityUuid();
+            }
+
+            function stabilityDateIsValid(value) {
+                const text = stabilitySafeString(value).trim();
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+                const [year, month, day] = text.split('-').map(Number);
+                if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return false;
+                const date = new Date(year, month - 1, day);
+                return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+            }
+
+            function stabilityDateSortKey(value) {
+                return stabilityDateIsValid(value) ? value : '9999-99-99';
+            }
+
+            function stabilityParse12Hour(hour, ampm) {
+                const h = Number.parseInt(hour, 10);
+                const period = stabilitySafeString(ampm).toUpperCase();
+                if (!Number.isInteger(h) || h < 1 || h > 12 || !['AM', 'PM'].includes(period)) return null;
+                return ((h % 12) + (period === 'PM' ? 12 : 0)) * 60;
+            }
+
+            function stabilityParseTimePart(hourText, minuteText, ampmText) {
+                const hour = Number.parseInt(hourText, 10);
+                const minute = Number.parseInt(minuteText ?? '0', 10);
+                const period = stabilitySafeString(ampmText).toUpperCase();
+                if (!Number.isInteger(hour) || hour < 1 || hour > 12) return null;
+                if (!Number.isInteger(minute) || minute < 0 || minute > 59) return null;
+                if (!['AM', 'PM'].includes(period)) return null;
+                return ((hour % 12) + (period === 'PM' ? 12 : 0)) * 60 + minute;
+            }
+
+            function stabilityFormatTimeRange(startH, startAM, endH, endAM) {
+                return `${String(startH).padStart(2, '0')}:00 ${stabilitySafeString(startAM).toUpperCase()} - ${String(endH).padStart(2, '0')}:00 ${stabilitySafeString(endAM).toUpperCase()}`;
+            }
+
+            function stabilityFormatDetailedTimeRange(startH, startM, startAM, endH, endM, endAM) {
+                return `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')} ${stabilitySafeString(startAM).toUpperCase()} - ${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')} ${stabilitySafeString(endAM).toUpperCase()}`;
+            }
+
+            function stabilityParseTaskTime(timeText) {
+                const text = stabilitySafeString(timeText).trim();
+                const match = text.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+                if (!match) return null;
+                const start = stabilityParseTimePart(match[1], match[2] ?? '00', match[3]);
+                const end = stabilityParseTimePart(match[4], match[5] ?? '00', match[6]);
+                if (start === null || end === null || start === end) return null;
+                return { startMinutes: start, endMinutes: end, crossesMidnight: end < start };
+            }
+
+            function stabilityParseClassTime(timeText) {
+                const parsed = stabilityParseTaskTime(timeText);
+                return parsed;
+            }
+
+            function stabilityNormalizeTask(record) {
+                if (!record || typeof record !== 'object') return null;
+                const name = stabilityNormalizeText(record.name);
+                const date = stabilitySafeString(record.date).trim();
+                const time = stabilityNormalizeText(record.time);
+                if (!name || !stabilityDateIsValid(date) || !stabilityParseTaskTime(time)) return null;
+                return {
+                    id: stabilityNormalizeId(record.id),
+                    user_id: record.user_id || undefined,
+                    name,
+                    date,
+                    time,
+                    done: Boolean(record.done)
+                };
+            }
+
+            function stabilityNormalizeClass(record) {
+                if (!record || typeof record !== 'object') return null;
+                const name = stabilityNormalizeText(record.name);
+                const day = stabilitySafeString(record.day).trim();
+                const time = stabilityNormalizeText(record.time);
+                if (!name || !STABILITY_DAY_NAMES.includes(day) || !stabilityParseClassTime(time)) return null;
+                return {
+                    id: stabilityNormalizeId(record.id),
+                    user_id: record.user_id || undefined,
+                    name,
+                    day,
+                    time
+                };
+            }
+
+            function stabilityDedupeById(records, normalizer) {
+                const seen = new Map();
+                for (const record of Array.isArray(records) ? records : []) {
+                    const normalized = normalizer(record);
+                    if (!normalized) continue;
+                    seen.set(normalized.id, normalized);
+                }
+                return [...seen.values()];
+            }
+
+            function stabilityGetUserId() {
+                return currentUserSession?.user?.id || null;
+            }
+
+            function stabilityStorageKey() {
+                return `${STABILITY_LOCAL_PREFIX}${stabilityGetUserId() || 'guest'}`;
+            }
+
+            function stabilityDetectStorage() {
+                try {
+                    const testKey = `${STABILITY_LOCAL_PREFIX}__test__`;
+                    window.localStorage.setItem(testKey, '1');
+                    window.localStorage.removeItem(testKey);
+                    stabilityStorageReady = true;
+                } catch (err) {
+                    stabilityStorageReady = false;
+                    console.warn('LocalStorage is unavailable; using memory fallback.', err);
+                }
+            }
+
+            function stabilityRawGet(key) {
+                try {
+                    if (stabilityStorageReady) return window.localStorage.getItem(key);
+                } catch (err) {
+                    console.warn('LocalStorage read failed; using memory fallback.', err);
+                    stabilityStorageReady = false;
+                }
+                return stabilityMemoryStore.has(key) ? stabilityMemoryStore.get(key) : null;
+            }
+
+            function stabilityRawSet(key, value) {
+                try {
+                    if (stabilityStorageReady) {
+                        window.localStorage.setItem(key, value);
+                        return true;
+                    }
+                } catch (err) {
+                    console.warn('LocalStorage write failed; switching to memory fallback.', err);
+                    stabilityStorageReady = false;
+                }
+                stabilityMemoryStore.set(key, value);
+                return true;
+            }
+
+            function stabilityRawRemove(key) {
+                try {
+                    if (stabilityStorageReady) {
+                        window.localStorage.removeItem(key);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('LocalStorage remove failed.', err);
+                }
+                stabilityMemoryStore.delete(key);
+            }
+
+            function stabilityDefaultCache() {
+                return {
+                    schemaVersion: STABILITY_SCHEMA_VERSION,
+                    tasks: [],
+                    classes: [],
+                    pendingOps: [],
+                    notificationLedger: [],
+                    updatedAt: new Date().toISOString()
+                };
+            }
+
+            function stabilityMigrateCache(parsed) {
+                const source = parsed && typeof parsed === 'object' ? parsed : {};
+                const tasks = stabilityDedupeById(source.tasks, stabilityNormalizeTask);
+                const classes = stabilityDedupeById(source.classes, stabilityNormalizeClass);
+                const pendingOps = Array.isArray(source.pendingOps) ? source.pendingOps.filter(op => op && typeof op === 'object') : [];
+                const notificationLedger = Array.isArray(source.notificationLedger)
+                    ? source.notificationLedger.filter(Boolean).map(String).slice(-STABILITY_NOTIFICATION_LEDGER_LIMIT)
+                    : [];
+
+                return {
+                    schemaVersion: STABILITY_SCHEMA_VERSION,
+                    tasks,
+                    classes,
+                    pendingOps,
+                    notificationLedger,
+                    updatedAt: source.updatedAt || new Date().toISOString()
+                };
+            }
+
+            function stabilityLoadCache() {
+                const key = stabilityStorageKey();
+                const raw = stabilityRawGet(key);
+                if (!raw) {
+                    stabilityCache = stabilityDefaultCache();
+                    stabilityCache.tasks = [...taskLogs];
+                    stabilityCache.classes = [...classLogs];
+                    return stabilityCache;
+                }
+
+                try {
+                    const parsed = JSON.parse(raw);
+                    stabilityCache = stabilityMigrateCache(parsed);
+                } catch (err) {
+                    const backupKey = `${key}${STABILITY_BACKUP_SUFFIX}`;
+                    stabilityRawSet(backupKey, raw);
+                    stabilityRawRemove(key);
+                    stabilityCache = stabilityDefaultCache();
+                    console.warn('Corrupted dashboard cache recovered automatically.', err);
+                    stabilityNotify('Storage Recovery', 'A damaged local data cache was recovered safely. Your cloud data was not deleted.');
+                }
+
+                stabilityCache.tasks = stabilityDedupeById(stabilityCache.tasks, stabilityNormalizeTask);
+                stabilityCache.classes = stabilityDedupeById(stabilityCache.classes, stabilityNormalizeClass);
+                return stabilityCache;
+            }
+
+            function stabilityWriteCacheNow() {
+                try {
+                    const key = stabilityStorageKey();
+                    const currentRaw = stabilityRawGet(key);
+                    if (currentRaw) {
+                        stabilityRawSet(`${key}${STABILITY_BACKUP_SUFFIX}`, currentRaw);
+                    }
+
+                    stabilityCache = {
+                        schemaVersion: STABILITY_SCHEMA_VERSION,
+                        tasks: stabilityDedupeById(taskLogs, stabilityNormalizeTask),
+                        classes: stabilityDedupeById(classLogs, stabilityNormalizeClass),
+                        pendingOps: Array.isArray(stabilityCache.pendingOps) ? stabilityCache.pendingOps : [],
+                        notificationLedger: Array.isArray(stabilityCache.notificationLedger)
+                            ? stabilityCache.notificationLedger.slice(-STABILITY_NOTIFICATION_LEDGER_LIMIT)
+                            : [],
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    stabilityRawSet(key, JSON.stringify(stabilityCache));
+                } catch (err) {
+                    console.warn('Unable to persist dashboard cache safely.', err);
+                    stabilityNotify('Local Save Warning', 'Your changes are active in this session, but the browser could not persist a local backup.');
+                }
+            }
+
+            function stabilityScheduleCacheWrite() {
+                if (stabilityCacheWriteTimer) clearTimeout(stabilityCacheWriteTimer);
+                stabilityCacheWriteTimer = setTimeout(() => {
+                    stabilityCacheWriteTimer = null;
+                    stabilityWriteCacheNow();
+                }, STABILITY_CACHE_WRITE_DELAY);
+            }
+
+            function stabilityNotify(title, message) {
+                try {
+                    if (typeof showAlert === 'function') {
+                        showAlert(title, message);
+                    } else if (typeof window.alert === 'function') {
+                        window.alert(`${title}\n\n${message}`);
+                    }
+                } catch (err) {
+                    console.warn(`[${title}] ${message}`, err);
+                }
+            }
+
+            function stabilityInlineStatus(container, message, tone = 'neutral') {
+                if (!container) return;
+                const existing = container.querySelector('[data-stability-status]');
+                if (existing) existing.remove();
+                if (!message) return;
+
+                const status = document.createElement('p');
+                status.dataset.stabilityStatus = '1';
+                status.className = tone === 'error'
+                    ? 'text-[10px] text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2'
+                    : 'text-[10px] text-slate-400 bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2';
+                status.textContent = message;
+                container.prepend(status);
+            }
+
+            function stabilitySetTaskLoading(isLoading) {
+                const container = document.getElementById('task-list-container');
+                if (!container) return;
+                if (isLoading) {
+                    container.dataset.loading = '1';
+                    container.innerHTML = '<p data-loading-state="1" class="text-xs text-slate-500 text-center py-4"><i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Loading tasks…</p>';
+                } else {
+                    delete container.dataset.loading;
+                }
+            }
+
+            function stabilitySetClassLoading(isLoading) {
+                const container = document.getElementById('classes-list-container');
+                if (!container) return;
+                if (isLoading) {
+                    container.dataset.loading = '1';
+                    container.innerHTML = '<p data-loading-state="1" class="text-xs text-slate-500 text-center py-4"><i class="fa-solid fa-circle-notch animate-spin mr-1"></i> Loading class reminders…</p>';
+                } else {
+                    delete container.dataset.loading;
+                }
+            }
+
+            function stabilityFormControl(id) {
+                return document.getElementById(id);
+            }
+
+            function stabilitySetFormBusy(formId, buttonId, isBusy, labelBusy, labelIdle) {
+                const form = document.getElementById(formId);
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    button.disabled = isBusy;
+                    button.setAttribute('aria-busy', String(isBusy));
+                    button.textContent = isBusy ? labelBusy : labelIdle;
+                }
+                if (form) {
+                    form.querySelectorAll('input, select, button').forEach(control => {
+                        if (control.id === buttonId || control.type === 'button') return;
+                        control.disabled = isBusy;
+                    });
+                }
+            }
+
+            function stabilityRestoreScroll(container, previousScroll) {
+                if (!container) return;
+                requestAnimationFrame(() => {
+                    container.scrollTop = previousScroll;
+                });
+            }
+
+            function stabilityTaskSignature(task) {
+                return JSON.stringify([task.id, task.name, task.date, task.time, Boolean(task.done)]);
+            }
+
+            function stabilityClassSignature(cls) {
+                return JSON.stringify([cls.id, cls.name, cls.day, cls.time]);
+            }
+
+            function stabilityCreateIcon(iconClass) {
+                const icon = document.createElement('i');
+                icon.className = iconClass;
+                ariaHidden(icon);
+                return icon;
+            }
+
+            function ariaHidden(element) {
+                if (element) element.setAttribute('aria-hidden', 'true');
+            }
+
+            function stabilityCreateTaskNode(task) {
+                const item = document.createElement('div');
+                item.dataset.taskId = task.id;
+                item.className = 'flex items-center justify-between gap-2 p-3 rounded-xl border transition';
+
+                const left = document.createElement('div');
+                left.className = 'flex items-start space-x-2.5 min-w-0 flex-1';
+
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.dataset.action = 'toggle-task';
+                toggle.dataset.id = task.id;
+                toggle.className = 'mt-0.5 w-11 h-11 min-w-[44px] min-h-[44px] rounded border flex items-center justify-center flex-shrink-0 transition';
+                toggle.setAttribute('aria-label', task.done ? `Mark task incomplete: ${task.name}` : `Mark task complete: ${task.name}`);
+
+                const content = document.createElement('div');
+                content.className = 'min-w-0 flex-1';
+
+                const name = document.createElement('p');
+                name.dataset.role = 'task-name';
+                name.className = 'text-xs font-semibold truncate';
+
+                const meta = document.createElement('p');
+                meta.dataset.role = 'task-meta';
+                meta.className = 'text-[10px] text-slate-500 mt-0.5';
+
+                const actions = document.createElement('div');
+                actions.className = 'flex items-center gap-1 flex-shrink-0';
+
+                const edit = document.createElement('button');
+                edit.type = 'button';
+                edit.dataset.action = 'edit-task';
+                edit.dataset.id = task.id;
+                edit.className = 'text-slate-500 hover:text-indigo-400 text-xs px-2 min-w-[44px] min-h-[44px] rounded transition';
+                edit.setAttribute('aria-label', `Edit task: ${task.name}`);
+                edit.appendChild(stabilityCreateIcon('fa-solid fa-pen-to-square'));
+
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.dataset.action = 'delete-task';
+                remove.dataset.id = task.id;
+                remove.className = 'text-slate-500 hover:text-rose-500 text-xs px-2 min-w-[44px] min-h-[44px] rounded transition';
+                remove.setAttribute('aria-label', `Delete task: ${task.name}`);
+                remove.appendChild(stabilityCreateIcon('fa-solid fa-trash'));
+
+                actions.append(edit, remove);
+                content.append(name, meta);
+                left.append(toggle, content);
+                item.append(left, actions);
+                return item;
+            }
+
+            function stabilityUpdateTaskNode(node, task) {
+                if (!node) return;
+                const previousSignature = node.dataset.signature;
+                const nextSignature = stabilityTaskSignature(task);
+                if (previousSignature === nextSignature) return;
+
+                node.dataset.signature = nextSignature;
+                node.className = `flex items-center justify-between gap-2 p-3 rounded-xl border ${task.done ? 'bg-slate-950/40 border-slate-900 line-through opacity-60' : 'bg-slate-950 border-slate-800'} transition`;
+
+                const toggle = node.querySelector('[data-action="toggle-task"]');
+                if (toggle) {
+                    toggle.className = `mt-0.5 w-11 h-11 min-w-[44px] min-h-[44px] rounded border ${task.done ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-700 text-transparent'} flex items-center justify-center flex-shrink-0 transition`;
+                    toggle.replaceChildren();
+                    if (task.done) toggle.appendChild(stabilityCreateIcon('fa-solid fa-check text-[10px]'));
+                    toggle.setAttribute('aria-label', task.done ? `Mark task incomplete: ${task.name}` : `Mark task complete: ${task.name}`);
+                }
+
+                const name = node.querySelector('[data-role="task-name"]');
+                if (name) name.textContent = task.name;
+                const meta = node.querySelector('[data-role="task-meta"]');
+                if (meta) {
+                    meta.replaceChildren();
+                    meta.appendChild(stabilityCreateIcon('fa-regular fa-calendar mr-1'));
+                    meta.appendChild(document.createTextNode(`${task.date} | `));
+                    meta.appendChild(stabilityCreateIcon('fa-regular fa-clock mr-1'));
+                    meta.appendChild(document.createTextNode(task.time));
+                }
+
+                const edit = node.querySelector('[data-action="edit-task"]');
+                if (edit) edit.setAttribute('aria-label', `Edit task: ${task.name}`);
+                const remove = node.querySelector('[data-action="delete-task"]');
+                if (remove) remove.setAttribute('aria-label', `Delete task: ${task.name}`);
+            }
+
+            function stabilityRenderTasks(options = {}) {
+                const container = document.getElementById('task-list-container');
+                if (!container) return;
+                if (container.dataset.loading === '1' && !options.force) return;
+
+                const previousScroll = container.scrollTop;
+                container.querySelector('[data-loading-state]')?.remove();
+                const sorted = [...taskLogs]
+                    .map(stabilityNormalizeTask)
+                    .filter(Boolean)
+                    .sort((a, b) => stabilityDateSortKey(a.date).localeCompare(stabilityDateSortKey(b.date)) ||
+                        (stabilityParseTaskTime(a.time)?.startMinutes ?? 9999) - (stabilityParseTaskTime(b.time)?.startMinutes ?? 9999) ||
+                        a.name.localeCompare(b.name));
+
+                if (!sorted.length) {
+                    stabilityTaskDomCache.forEach(node => node.remove());
+                    stabilityTaskDomCache.clear();
+                    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">No tasks configured. Log assignments to stay on track!</p>';
+                    stabilityRestoreScroll(container, previousScroll);
+                    return;
+                }
+
+                const visible = sorted.slice(0, stabilityTaskRenderLimit);
+                const visibleIds = new Set(visible.map(task => task.id));
+                const emptyMessage = container.querySelector(':scope > [data-empty-state]');
+                if (emptyMessage) emptyMessage.remove();
+
+                visible.forEach(task => {
+                    let node = stabilityTaskDomCache.get(task.id);
+                    if (!node) {
+                        node = stabilityCreateTaskNode(task);
+                        stabilityTaskDomCache.set(task.id, node);
+                    }
+                    stabilityUpdateTaskNode(node, task);
+                    container.appendChild(node);
+                });
+
+                [...stabilityTaskDomCache.keys()].forEach(id => {
+                    if (!visibleIds.has(id)) {
+                        stabilityTaskDomCache.get(id)?.remove();
+                        stabilityTaskDomCache.delete(id);
+                    }
+                });
+
+                const oldMore = container.querySelector('[data-load-more="tasks"]');
+                if (oldMore) oldMore.remove();
+                if (sorted.length > visible.length) {
+                    const more = document.createElement('button');
+                    more.type = 'button';
+                    more.dataset.loadMore = 'tasks';
+                    more.className = 'w-full text-[10px] font-bold text-indigo-400 hover:text-indigo-300 py-2 rounded-lg bg-slate-950/50 border border-slate-800 transition';
+                    more.textContent = `Load ${Math.min(STABILITY_RENDER_CHUNK, sorted.length - visible.length)} more (${visible.length}/${sorted.length})`;
+                    container.appendChild(more);
+                }
+
+                stabilityRestoreScroll(container, previousScroll);
+            }
+
+            function stabilityCreateClassNode(cls) {
+                const item = document.createElement('div');
+                item.dataset.classId = cls.id;
+                item.className = 'flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-950 border border-slate-800 transition hover:border-emerald-500/30';
+
+                const left = document.createElement('div');
+                left.className = 'flex items-center space-x-3 min-w-0 flex-1';
+
+                const iconBox = document.createElement('div');
+                iconBox.className = 'bg-emerald-500/10 text-emerald-400 p-2 rounded-lg text-xs flex-shrink-0';
+                iconBox.appendChild(stabilityCreateIcon('fa-solid fa-bell'));
+
+                const content = document.createElement('div');
+                content.className = 'min-w-0';
+                const name = document.createElement('p');
+                name.dataset.role = 'class-name';
+                name.className = 'text-xs font-bold text-slate-200 truncate';
+                const meta = document.createElement('p');
+                meta.dataset.role = 'class-meta';
+                meta.className = 'text-[10px] text-slate-400 mt-0.5';
+                content.append(name, meta);
+                left.append(iconBox, content);
+
+                const actions = document.createElement('div');
+                actions.className = 'flex items-center gap-1 flex-shrink-0';
+
+                const edit = document.createElement('button');
+                edit.type = 'button';
+                edit.dataset.action = 'edit-class';
+                edit.dataset.id = cls.id;
+                edit.className = 'text-slate-500 hover:text-emerald-400 text-xs px-2 min-w-[44px] min-h-[44px] rounded transition';
+                edit.setAttribute('aria-label', `Edit class reminder: ${cls.name}`);
+                edit.appendChild(stabilityCreateIcon('fa-solid fa-pen-to-square'));
+
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.dataset.action = 'delete-class';
+                remove.dataset.id = cls.id;
+                remove.className = 'text-slate-500 hover:text-rose-500 text-xs px-2 min-w-[44px] min-h-[44px] rounded transition';
+                remove.setAttribute('aria-label', `Delete class reminder: ${cls.name}`);
+                remove.appendChild(stabilityCreateIcon('fa-solid fa-trash'));
+
+                actions.append(edit, remove);
+                item.append(left, actions);
+                return item;
+            }
+
+            function stabilityUpdateClassNode(node, cls) {
+                if (!node) return;
+                const previousSignature = node.dataset.signature;
+                const nextSignature = stabilityClassSignature(cls);
+                if (previousSignature === nextSignature) return;
+                node.dataset.signature = nextSignature;
+
+                const name = node.querySelector('[data-role="class-name"]');
+                if (name) name.textContent = cls.name;
+                const meta = node.querySelector('[data-role="class-meta"]');
+                if (meta) {
+                    meta.replaceChildren();
+                    const day = document.createElement('span');
+                    day.className = 'text-emerald-400 font-semibold';
+                    day.textContent = cls.day;
+                    meta.append(day, document.createTextNode(` | ${cls.time}`));
+                }
+            }
+
+            function stabilityRenderClasses(options = {}) {
+                const container = document.getElementById('classes-list-container');
+                if (!container) return;
+                if (container.dataset.loading === '1' && !options.force) return;
+
+                const previousScroll = container.scrollTop;
+                container.querySelector('[data-loading-state]')?.remove();
+                const sorted = [...classLogs]
+                    .map(stabilityNormalizeClass)
+                    .filter(Boolean)
+                    .sort((a, b) => (STABILITY_DAY_NAMES.indexOf(a.day) - STABILITY_DAY_NAMES.indexOf(b.day)) ||
+                        ((stabilityParseClassTime(a.time)?.startMinutes ?? 9999) - (stabilityParseClassTime(b.time)?.startMinutes ?? 9999)) ||
+                        a.name.localeCompare(b.name));
+
+                if (!sorted.length) {
+                    stabilityClassDomCache.forEach(node => node.remove());
+                    stabilityClassDomCache.clear();
+                    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">No scheduled classes logged yet.</p>';
+                    stabilityRestoreScroll(container, previousScroll);
+                    return;
+                }
+
+                const visible = sorted.slice(0, stabilityClassRenderLimit);
+                const visibleIds = new Set(visible.map(cls => cls.id));
+
+                visible.forEach(cls => {
+                    let node = stabilityClassDomCache.get(cls.id);
+                    if (!node) {
+                        node = stabilityCreateClassNode(cls);
+                        stabilityClassDomCache.set(cls.id, node);
+                    }
+                    stabilityUpdateClassNode(node, cls);
+                    container.appendChild(node);
+                });
+
+                [...stabilityClassDomCache.keys()].forEach(id => {
+                    if (!visibleIds.has(id)) {
+                        stabilityClassDomCache.get(id)?.remove();
+                        stabilityClassDomCache.delete(id);
+                    }
+                });
+
+                const oldMore = container.querySelector('[data-load-more="classes"]');
+                if (oldMore) oldMore.remove();
+                if (sorted.length > visible.length) {
+                    const more = document.createElement('button');
+                    more.type = 'button';
+                    more.dataset.loadMore = 'classes';
+                    more.className = 'w-full text-[10px] font-bold text-emerald-400 hover:text-emerald-300 py-2 rounded-lg bg-slate-950/50 border border-slate-800 transition';
+                    more.textContent = `Load ${Math.min(STABILITY_RENDER_CHUNK, sorted.length - visible.length)} more (${visible.length}/${sorted.length})`;
+                    container.appendChild(more);
+                }
+
+                stabilityRestoreScroll(container, previousScroll);
+            }
+
+            function stabilityTaskExists(candidate, ignoreId = null) {
+                const normalizedName = stabilityNormalizeText(candidate.name).toLowerCase();
+                return taskLogs.some(task => {
+                    if (ignoreId && task.id === ignoreId) return false;
+                    return stabilityNormalizeText(task.name).toLowerCase() === normalizedName &&
+                        task.date === candidate.date &&
+                        task.time === candidate.time;
+                });
+            }
+
+            function stabilityClassSegments(day, time) {
+                const parsed = stabilityParseClassTime(time);
+                if (!parsed) return [];
+                const dayIndex = STABILITY_DAY_NAMES.indexOf(day);
+                if (dayIndex < 0) return [];
+                if (!parsed.crossesMidnight) {
+                    return [{ dayIndex, start: parsed.startMinutes, end: parsed.endMinutes }];
+                }
+                return [
+                    { dayIndex, start: parsed.startMinutes, end: 1440 },
+                    { dayIndex: (dayIndex + 1) % 7, start: 0, end: parsed.endMinutes }
+                ];
+            }
+
+            function stabilitySegmentsOverlap(a, b) {
+                return a.dayIndex === b.dayIndex && Math.max(a.start, b.start) < Math.min(a.end, b.end);
+            }
+
+            function stabilityClassHasConflict(candidate, ignoreId = null) {
+                const candidateSegments = stabilityClassSegments(candidate.day, candidate.time);
+                return classLogs.some(existing => {
+                    if (ignoreId && existing.id === ignoreId) return false;
+                    const existingSegments = stabilityClassSegments(existing.day, existing.time);
+                    return candidateSegments.some(a => existingSegments.some(b => stabilitySegmentsOverlap(a, b)));
+                });
+            }
+
+            function stabilityClassDuplicateExists(candidate, ignoreId = null) {
+                const targetName = stabilityNormalizeText(candidate.name).toLowerCase();
+                return classLogs.some(existing => {
+                    if (ignoreId && existing.id === ignoreId) return false;
+                    return stabilityNormalizeText(existing.name).toLowerCase() === targetName &&
+                        existing.day === candidate.day &&
+                        existing.time === candidate.time;
+                });
+            }
+
+            function stabilityEnqueueMutation(entity, action, id, data) {
+                const ops = Array.isArray(stabilityCache.pendingOps) ? stabilityCache.pendingOps : [];
+                const index = ops.findIndex(op => op.entity === entity && op.id === id);
+
+                if (action === 'insert') {
+                    if (index >= 0) {
+                        ops[index] = { ...ops[index], action: 'insert', data: { ...(ops[index].data || {}), ...(data || {}) }, updatedAt: Date.now() };
+                    } else {
+                        ops.push({ opId: stabilityUuid('op'), entity, action, id, data: { ...(data || {}) }, createdAt: Date.now() });
+                    }
+                } else if (action === 'update') {
+                    if (index >= 0 && ops[index].action === 'insert') {
+                        ops[index] = { ...ops[index], data: { ...(ops[index].data || {}), ...(data || {}) }, updatedAt: Date.now() };
+                    } else if (index >= 0 && ops[index].action === 'update') {
+                        ops[index] = { ...ops[index], data: { ...(ops[index].data || {}), ...(data || {}) }, updatedAt: Date.now() };
+                    } else if (index < 0) {
+                        ops.push({ opId: stabilityUuid('op'), entity, action, id, data: { ...(data || {}) }, createdAt: Date.now() });
+                    }
+                } else if (action === 'delete') {
+                    if (index >= 0 && ops[index].action === 'insert') {
+                        ops.splice(index, 1);
+                    } else {
+                        for (let i = ops.length - 1; i >= 0; i--) {
+                            if (ops[i].entity === entity && ops[i].id === id && ops[i].action === 'update') ops.splice(i, 1);
+                        }
+                        if (!ops.some(op => op.entity === entity && op.id === id && op.action === 'delete')) {
+                            ops.push({ opId: stabilityUuid('op'), entity, action, id, data: {}, createdAt: Date.now() });
+                        }
+                    }
+                }
+
+                stabilityCache.pendingOps = ops;
+                stabilityScheduleCacheWrite();
+            }
+
+            function stabilityApplyLocalTask(task) {
+                const normalized = stabilityNormalizeTask(task);
+                if (!normalized) return;
+                const index = taskLogs.findIndex(item => item.id === normalized.id);
+                if (index >= 0) taskLogs[index] = { ...taskLogs[index], ...normalized };
+                else taskLogs.push(normalized);
+            }
+
+            function stabilityApplyLocalClass(cls) {
+                const normalized = stabilityNormalizeClass(cls);
+                if (!normalized) return;
+                const index = classLogs.findIndex(item => item.id === normalized.id);
+                if (index >= 0) classLogs[index] = { ...classLogs[index], ...normalized };
+                else classLogs.push(normalized);
+            }
+
+            function stabilityRemoveLocal(entity, id) {
+                if (entity === 'task') taskLogs = taskLogs.filter(item => item.id !== id);
+                if (entity === 'class') classLogs = classLogs.filter(item => item.id !== id);
+            }
+
+            function stabilityApplyPendingToLoadedData() {
+                const ops = Array.isArray(stabilityCache.pendingOps) ? stabilityCache.pendingOps : [];
+                for (const op of ops) {
+                    if (!op || !op.entity || !op.action) continue;
+                    if (op.entity === 'task') {
+                        if (op.action === 'insert') stabilityApplyLocalTask(op.data);
+                        else if (op.action === 'update') stabilityApplyLocalTask({ ...(taskLogs.find(item => item.id === op.id) || {}), id: op.id, ...op.data });
+                        else if (op.action === 'delete') stabilityRemoveLocal('task', op.id);
+                    }
+                    if (op.entity === 'class') {
+                        if (op.action === 'insert') stabilityApplyLocalClass(op.data);
+                        else if (op.action === 'update') stabilityApplyLocalClass({ ...(classLogs.find(item => item.id === op.id) || {}), id: op.id, ...op.data });
+                        else if (op.action === 'delete') stabilityRemoveLocal('class', op.id);
+                    }
+                }
+            }
+
+            function stabilityIsRetryableError(err) {
+                const status = Number(err?.status || err?.code || 0);
+                const message = stabilitySafeString(err?.message).toLowerCase();
+                return status === 0 || status === 408 || status === 409 || status === 429 || status >= 500 ||
+                    /network|fetch|timeout|timed out|offline|failed to fetch|connection/i.test(message);
+            }
+
+            async function stabilityWithRetry(operation, attempts = STABILITY_NETWORK_RETRIES) {
+                let lastError = null;
+                let delay = STABILITY_RETRY_BASE_DELAY;
+                for (let attempt = 1; attempt <= attempts; attempt++) {
+                    try {
+                        return await operation();
+                    } catch (err) {
+                        lastError = err;
+                        if (!stabilityIsRetryableError(err) || attempt >= attempts) throw err;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    }
+                }
+                throw lastError || new Error('Operation failed.');
+            }
+
+            async function stabilityCloudMutation(entity, action, id, data = {}) {
+                if (!supabaseClient) throw new Error('Cloud service is unavailable.');
+                const userId = stabilityGetUserId();
+                if (!userId) throw new Error('No authenticated user is available.');
+                const table = entity === 'task' ? 'tasks' : 'classes';
+
+                return stabilityWithRetry(async () => {
+                    if (action === 'insert') {
+                        const payload = { ...data, user_id: userId };
+                        delete payload.id;
+                        const { data: rows, error } = await supabaseClient.from(table).insert([payload]).select();
+                        if (error) throw error;
+                        return rows?.[0] || null;
+                    }
+                    if (action === 'update') {
+                        const payload = { ...data };
+                        delete payload.user_id;
+                        const { data: rows, error } = await supabaseClient.from(table).update(payload).eq('id', id).eq('user_id', userId).select();
+                        if (error) throw error;
+                        return rows?.[0] || { id, ...payload };
+                    }
+                    if (action === 'delete') {
+                        const { error } = await supabaseClient.from(table).delete().eq('id', id).eq('user_id', userId);
+                        if (error) throw error;
+                        return { id };
+                    }
+                    throw new Error(`Unsupported ${entity} action.`);
+                });
+            }
+
+            function stabilityRemapPendingId(oldId, newId, entity) {
+                stabilityCache.pendingOps = (stabilityCache.pendingOps || []).map(op => {
+                    if (op.entity === entity && op.id === oldId) return { ...op, id: newId };
+                    return op;
+                });
+            }
+
+            async function stabilityFlushPendingMutations() {
+                if (!supabaseClient || !stabilityGetUserId() || navigator.onLine === false) return;
+                if (!Array.isArray(stabilityCache.pendingOps) || !stabilityCache.pendingOps.length) return;
+                if (stabilityPendingRetryTimer) {
+                    clearTimeout(stabilityPendingRetryTimer);
+                    stabilityPendingRetryTimer = null;
+                }
+
+                const queue = [...stabilityCache.pendingOps];
+                let hadFailure = false;
+
+                for (const op of queue) {
+                    try {
+                        const result = await stabilityCloudMutation(op.entity, op.action, op.id, op.data || {});
+                        const idx = stabilityCache.pendingOps.findIndex(item => item.opId === op.opId);
+                        if (idx >= 0) stabilityCache.pendingOps.splice(idx, 1);
+
+                        if (op.action === 'insert' && result?.id && result.id !== op.id) {
+                            if (op.entity === 'task') {
+                                taskLogs = taskLogs.map(item => item.id === op.id ? stabilityNormalizeTask({ ...item, ...result, id: result.id }) : item);
+                            } else if (op.entity === 'class') {
+                                classLogs = classLogs.map(item => item.id === op.id ? stabilityNormalizeClass({ ...item, ...result, id: result.id }) : item);
+                            }
+                            stabilityRemapPendingId(op.id, result.id, op.entity);
+                        }
+                    } catch (err) {
+                        hadFailure = true;
+                        if (!stabilityIsRetryableError(err)) {
+                            const idx = stabilityCache.pendingOps.findIndex(item => item.opId === op.opId);
+                            if (idx >= 0) stabilityCache.pendingOps.splice(idx, 1);
+                            console.warn(`Permanent cloud sync failure for ${op.entity}/${op.action}. Keeping local data.`, err);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                stabilityScheduleCacheWrite();
+                stabilityRenderTasks({ force: true });
+                stabilityRenderClasses({ force: true });
+                stabilityScheduleNotifications();
+
+                if (hadFailure && stabilityCache.pendingOps.length) {
+                    const delay = Math.min(30000, STABILITY_RETRY_BASE_DELAY * Math.max(1, stabilityCache.pendingOps.length));
+                    stabilityPendingRetryTimer = setTimeout(() => {
+                        stabilityPendingRetryTimer = null;
+                        stabilityFlushPendingMutations().catch(err => console.warn('Pending sync retry failed.', err));
+                    }, delay);
+                }
+            }
+
+            async function stabilityLoadCloudData() {
+                stabilitySetTaskLoading(true);
+                stabilitySetClassLoading(true);
+                stabilityLoadCache();
+
+                const cachedTasks = [...stabilityCache.tasks];
+                const cachedClasses = [...stabilityCache.classes];
+                let taskFetchSucceeded = false;
+                let classFetchSucceeded = false;
+
+                try {
+                    if (!supabaseClient) throw new Error('Supabase is not configured.');
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    if (!user) throw new Error('No signed-in user found.');
+                    currentUserSession = currentUserSession || { user };
+
+                    try {
+                        const { data: profileData, error: profileError } = await stabilityWithRetry(() => supabaseClient.from('profiles').select('*').eq('id', user.id).single(), 2);
+                        if (!profileError && profileData) {
+                            studentProfile = {
+                                name: profileData.name || studentProfile.name,
+                                year: profileData.year || studentProfile.year,
+                                course: profileData.course || studentProfile.course,
+                                district: profileData.district || studentProfile.district,
+                                gemini_api_key: profileData.gemini_api_key || ''
+                            };
+                            if (profileData.gemini_api_key) {
+                                try { localStorage.setItem('gemini_api_key', profileData.gemini_api_key); } catch (_) {}
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Profile sync skipped.', err);
+                    }
+
+                    const results = await Promise.allSettled([
+                        stabilityWithRetry(() => supabaseClient.from('papers').select('*').eq('user_id', user.id), 2),
+                        stabilityWithRetry(() => supabaseClient.from('tasks').select('*').eq('user_id', user.id), 2),
+                        stabilityWithRetry(() => supabaseClient.from('classes').select('*').eq('user_id', user.id), 2),
+                        stabilityWithRetry(() => supabaseClient.from('recalls').select('*').eq('user_id', user.id), 2)
+                    ]);
+
+                    const [paperResult, taskResult, classResult, recallResult] = results;
+
+                    if (paperResult.status === 'fulfilled' && !paperResult.value.error) {
+                        paperLogs = Array.isArray(paperResult.value.data) ? paperResult.value.data : [];
+                    }
+
+                    if (taskResult.status === 'fulfilled' && !taskResult.value.error) {
+                        taskLogs = stabilityDedupeById(taskResult.value.data, stabilityNormalizeTask);
+                        taskFetchSucceeded = true;
+                    } else {
+                        taskLogs = stabilityDedupeById(cachedTasks, stabilityNormalizeTask);
+                    }
+
+                    if (classResult.status === 'fulfilled' && !classResult.value.error) {
+                        classLogs = stabilityDedupeById(classResult.value.data, stabilityNormalizeClass);
+                        classFetchSucceeded = true;
+                    } else {
+                        classLogs = stabilityDedupeById(cachedClasses, stabilityNormalizeClass);
+                    }
+
+                    if (recallResult.status === 'fulfilled' && !recallResult.value.error) {
+                        recallLogs = Array.isArray(recallResult.value.data) ? recallResult.value.data : [];
+                    }
+
+                    stabilityApplyPendingToLoadedData();
+                    stabilityCache.tasks = [...taskLogs];
+                    stabilityCache.classes = [...classLogs];
+                    stabilityScheduleCacheWrite();
+                    await stabilityFlushPendingMutations();
+
+                    if (!taskFetchSucceeded && cachedTasks.length) {
+                        stabilityInlineStatus(document.getElementById('task-list-container'), 'Cloud tasks could not be refreshed. Showing the latest safe local copy while retrying.', 'error');
+                    }
+                    if (!classFetchSucceeded && cachedClasses.length) {
+                        stabilityInlineStatus(document.getElementById('classes-list-container'), 'Cloud class reminders could not be refreshed. Showing the latest safe local copy while retrying.', 'error');
+                    }
+                } catch (err) {
+                    console.error('Stable cloud data load failed:', err);
+                    taskLogs = stabilityDedupeById(cachedTasks, stabilityNormalizeTask);
+                    classLogs = stabilityDedupeById(cachedClasses, stabilityNormalizeClass);
+                    stabilityApplyPendingToLoadedData();
+                    stabilityInlineStatus(document.getElementById('task-list-container'), 'Offline mode: using your latest locally saved tasks. Cloud sync will retry automatically.', 'error');
+                    stabilityInlineStatus(document.getElementById('classes-list-container'), 'Offline mode: using your latest locally saved class reminders. Cloud sync will retry automatically.', 'error');
+                } finally {
+                    stabilitySetTaskLoading(false);
+                    stabilitySetClassLoading(false);
+                    stabilityRenderTasks({ force: true });
+                    stabilityRenderClasses({ force: true });
+                    stabilityScheduleNotifications();
+                    stabilityScheduleCacheWrite();
+                }
+            }
+
+            async function stabilityCheckSessionStatus() {
+                stabilityDetectStorage();
+                stabilityLoadCache();
+                try {
+                    if (typeof initSupabase === 'function') initSupabase();
+                } catch (err) {
+                    console.warn('Supabase initialization failed safely.', err);
+                }
+
+                if (!supabaseClient) {
+                    stabilitySetTaskLoading(false);
+                    stabilitySetClassLoading(false);
+                    taskLogs = stabilityDedupeById(stabilityCache.tasks, stabilityNormalizeTask);
+                    classLogs = stabilityDedupeById(stabilityCache.classes, stabilityNormalizeClass);
+                    stabilityRenderTasks({ force: true });
+                    stabilityRenderClasses({ force: true });
+                    const auth = document.getElementById('auth-screen');
+                    if (auth) auth.classList.remove('hidden');
+                    return;
+                }
+
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session?.user) {
+                        currentUserSession = session;
+                        await stabilityLoadCloudData();
+                        const auth = document.getElementById('auth-screen');
+                        if (auth) auth.classList.add('hidden');
+                        if (typeof syncProfileUI === 'function') syncProfileUI();
+                        if (typeof updateCoreStats === 'function') updateCoreStats();
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('Session restore failed safely.', err);
+                    taskLogs = stabilityDedupeById(stabilityCache.tasks, stabilityNormalizeTask);
+                    classLogs = stabilityDedupeById(stabilityCache.classes, stabilityNormalizeClass);
+                    stabilityRenderTasks({ force: true });
+                    stabilityRenderClasses({ force: true });
+                }
+
+                const auth = document.getElementById('auth-screen');
+                if (auth) auth.classList.remove('hidden');
+            }
+
+            function stabilitySetTaskEditMode(task) {
+                stabilityEditingTaskId = task.id;
+                stabilityFormControl('task-name').value = task.name;
+                stabilityFormControl('task-date').value = task.date;
+                const parsed = stabilityParseTaskTime(task.time);
+                if (parsed) {
+                    const startHour = ((Math.floor(parsed.startMinutes / 60) + 11) % 12) + 1;
+                    const startAM = parsed.startMinutes < 720 ? 'AM' : 'PM';
+                    const endClock = parsed.endMinutes % 1440;
+                    const endHour = ((Math.floor(endClock / 60) + 11) % 12) + 1;
+                    const endAM = endClock < 720 ? 'AM' : 'PM';
+                    const startHourEl = stabilityFormControl('task-start-hour');
+                    const startAmEl = stabilityFormControl('task-start-ampm');
+                    const endHourEl = stabilityFormControl('task-end-hour');
+                    const endAmEl = stabilityFormControl('task-end-ampm');
+                    if (startHourEl) startHourEl.value = String(startHour).padStart(2, '0');
+                    if (startAmEl) startAmEl.value = startAM;
+                    if (endHourEl) endHourEl.value = String(endHour).padStart(2, '0');
+                    if (endAmEl) endAmEl.value = endAM;
+                }
+                const button = document.getElementById('task-submit-button');
+                const cancel = document.getElementById('task-cancel-edit');
+                if (button) button.textContent = 'Update Task';
+                if (cancel) cancel.classList.remove('hidden');
+                stabilityFormControl('task-name')?.focus();
+            }
+
+            function stabilityCancelTaskEdit() {
+                stabilityEditingTaskId = null;
+                const form = document.getElementById('task-form');
+                if (form) form.reset();
+                const button = document.getElementById('task-submit-button');
+                const cancel = document.getElementById('task-cancel-edit');
+                if (button) button.textContent = 'Add Task';
+                if (cancel) cancel.classList.add('hidden');
+            }
+
+            async function stabilityAddTask(event) {
+                event?.preventDefault?.();
+                if (stabilityTaskSaveInProgress) return;
+
+                const nameEl = stabilityFormControl('task-name');
+                const dateEl = stabilityFormControl('task-date');
+                const startHourEl = stabilityFormControl('task-start-hour');
+                const startAmEl = stabilityFormControl('task-start-ampm');
+                const endHourEl = stabilityFormControl('task-end-hour');
+                const endAmEl = stabilityFormControl('task-end-ampm');
+                if (!nameEl || !dateEl || !startHourEl || !startAmEl || !endHourEl || !endAmEl) {
+                    stabilityNotify('Task Error', 'The task form could not be loaded correctly. Please refresh the page.');
+                    return;
+                }
+
+                const name = stabilityNormalizeText(nameEl.value);
+                const date = dateEl.value;
+                const startMinutes = stabilityParse12Hour(startHourEl.value, startAmEl.value);
+                const endMinutes = stabilityParse12Hour(endHourEl.value, endAmEl.value);
+                const time = stabilityFormatTimeRange(startHourEl.value, startAmEl.value, endHourEl.value, endAmEl.value);
+
+                if (!name) {
+                    stabilityNotify('Invalid Task', 'Task name cannot be empty or only whitespace.');
+                    nameEl.focus();
+                    return;
+                }
+                if (!stabilityDateIsValid(date)) {
+                    stabilityNotify('Invalid Date', 'Please select a valid task date.');
+                    dateEl.focus();
+                    return;
+                }
+                if (startMinutes === null || endMinutes === null || startMinutes === endMinutes) {
+                    stabilityNotify('Invalid Time', 'Please select a valid start and end time. Start and end cannot be identical.');
+                    return;
+                }
+
+                const editingId = stabilityEditingTaskId;
+                const candidate = { id: editingId || stabilityUuid('task'), name, date, time, done: editingId ? Boolean(taskLogs.find(t => t.id === editingId)?.done) : false };
+                if (stabilityTaskExists(candidate, editingId)) {
+                    stabilityNotify('Duplicate Task', 'That task already exists with the same name, date, and time.');
+                    return;
+                }
+
+                stabilityTaskSaveInProgress = true;
+                stabilitySetFormBusy('task-form', 'task-submit-button', true, editingId ? 'Saving…' : 'Adding…', editingId ? 'Update Task' : 'Add Task');
+
+                try {
+                    if (editingId) {
+                        stabilityApplyLocalTask(candidate);
+                        stabilityEnqueueMutation('task', 'update', editingId, { name, date, time, done: candidate.done });
+                        try {
+                            const cloud = await stabilityCloudMutation('task', 'update', editingId, { name, date, time, done: candidate.done });
+                            if (cloud?.id) stabilityApplyLocalTask({ ...candidate, ...cloud, id: cloud.id });
+                            stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'task' && op.id === editingId && op.action === 'update'));
+                        } catch (err) {
+                            if (!stabilityIsRetryableError(err)) {
+                                stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'task' && op.id === editingId && op.action === 'update'));
+                                stabilityNotify('Saved Locally', 'The task was updated on this device. Cloud sync could not be completed because the server rejected the request.');
+                            }
+                        }
+                    } else {
+                        stabilityApplyLocalTask(candidate);
+                        try {
+                            const cloud = await stabilityCloudMutation('task', 'insert', candidate.id, { name, date, time, done: false });
+                            if (cloud?.id && cloud.id !== candidate.id) {
+                                taskLogs = taskLogs.map(item => item.id === candidate.id ? stabilityNormalizeTask({ ...candidate, ...cloud, id: cloud.id }) : item);
+                                stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'task' && op.id === candidate.id && op.action === 'insert'));
+                            }
+                        } catch (err) {
+                            stabilityEnqueueMutation('task', 'insert', candidate.id, candidate);
+                        }
+                    }
+
+                    stabilityCache.tasks = [...taskLogs];
+                    stabilityScheduleCacheWrite();
+                    stabilityRenderTasks({ force: true });
+                    if (typeof updateCoreStats === 'function') updateCoreStats();
+                    stabilityCancelTaskEdit();
+                    const form = document.getElementById('task-form');
+                    if (form) form.reset();
+                } catch (err) {
+                    console.error('Task save failed safely.', err);
+                    stabilityNotify('Task Save Error', 'The task could not be saved. Your existing data was left untouched.');
+                } finally {
+                    stabilityTaskSaveInProgress = false;
+                    stabilitySetFormBusy('task-form', 'task-submit-button', false, '', stabilityEditingTaskId ? 'Update Task' : 'Add Task');
+                    const button = document.getElementById('task-submit-button');
+                    if (button) button.textContent = stabilityEditingTaskId ? 'Update Task' : 'Add Task';
+                    const cancel = document.getElementById('task-cancel-edit');
+                    if (!stabilityEditingTaskId && cancel) cancel.classList.add('hidden');
+                    stabilityFlushPendingMutations().catch(err => console.warn('Task retry sync failed.', err));
+                }
+            }
+
+            async function stabilityToggleTask(id) {
+                const task = taskLogs.find(item => item.id === id);
+                if (!task) return;
+                const nextDone = !Boolean(task.done);
+                taskLogs = taskLogs.map(item => item.id === id ? { ...item, done: nextDone } : item);
+                stabilityRenderTasks({ force: true });
+                stabilityCache.tasks = [...taskLogs];
+                stabilityEnqueueMutation('task', 'update', id, { done: nextDone });
+                try {
+                    await stabilityCloudMutation('task', 'update', id, { done: nextDone });
+                    stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'task' && op.id === id && op.action === 'update'));
+                } catch (err) {
+                    if (!stabilityIsRetryableError(err)) {
+                        stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'task' && op.id === id && op.action === 'update'));
+                        stabilityNotify('Saved Locally', 'Completion status was saved locally because the cloud rejected the update.');
+                    }
+                }
+                stabilityScheduleCacheWrite();
+                if (typeof updateCoreStats === 'function') updateCoreStats();
+                stabilityFlushPendingMutations().catch(err => console.warn('Task completion retry failed.', err));
+            }
+
+            async function stabilityDeleteTask(id) {
+                const task = taskLogs.find(item => item.id === id);
+                if (!task) return;
+                const previous = [...taskLogs];
+                taskLogs = taskLogs.filter(item => item.id !== id);
+                stabilityRenderTasks({ force: true });
+                stabilityCache.tasks = [...taskLogs];
+                stabilityEnqueueMutation('task', 'delete', id, {});
+                try {
+                    await stabilityCloudMutation('task', 'delete', id, {});
+                    stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'task' && op.id === id && op.action === 'delete'));
+                } catch (err) {
+                    if (!stabilityIsRetryableError(err)) {
+                        stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'task' && op.id === id && op.action === 'delete'));
+                        taskLogs = previous;
+                        stabilityCache.tasks = [...taskLogs];
+                        stabilityRenderTasks({ force: true });
+                        stabilityNotify('Delete Failed', 'The task could not be deleted from the cloud, so it was restored.');
+                    }
+                }
+                stabilityScheduleCacheWrite();
+                if (typeof updateCoreStats === 'function') updateCoreStats();
+                stabilityFlushPendingMutations().catch(err => console.warn('Task delete retry failed.', err));
+            }
+
+            function stabilitySetClassEditMode(cls) {
+                stabilityEditingClassId = cls.id;
+                stabilityFormControl('class-name').value = cls.name;
+                stabilityFormControl('class-day').value = cls.day;
+                const match = cls.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+                if (match) {
+                    stabilityFormControl('class-start-hour').value = String(Number(match[1])).padStart(2, '0');
+                    stabilityFormControl('class-start-minute').value = match[2];
+                    stabilityFormControl('class-start-ampm').value = match[3].toUpperCase();
+                    stabilityFormControl('class-end-hour').value = String(Number(match[4])).padStart(2, '0');
+                    stabilityFormControl('class-end-minute').value = match[5];
+                    stabilityFormControl('class-end-ampm').value = match[6].toUpperCase();
+                }
+                const button = document.getElementById('class-submit-button');
+                const cancel = document.getElementById('class-cancel-edit');
+                if (button) button.textContent = 'Update Reminder';
+                if (cancel) cancel.classList.remove('hidden');
+                stabilityFormControl('class-name')?.focus();
+            }
+
+            function stabilityCancelClassEdit() {
+                stabilityEditingClassId = null;
+                const form = document.getElementById('class-form');
+                if (form) form.reset();
+                const button = document.getElementById('class-submit-button');
+                const cancel = document.getElementById('class-cancel-edit');
+                if (button) button.textContent = 'Add Class Reminder';
+                if (cancel) cancel.classList.add('hidden');
+            }
+
+            async function stabilityRequestNotificationPermission() {
+                if (!stabilityHasNotificationAPI) return 'unsupported';
+                try {
+                    if (Notification.permission === 'granted') return 'granted';
+                    if (Notification.permission === 'denied') return 'denied';
+                    return await Notification.requestPermission();
+                } catch (err) {
+                    console.warn('Notification permission request failed safely.', err);
+                    return 'denied';
+                }
+            }
+
+            function stabilityClassOccurrenceKey(cls, date) {
+                return `${cls.id}|${date}|${cls.time}`;
+            }
+
+            function stabilityGetNextClassOccurrence(cls, fromDate = new Date()) {
+                const parsed = stabilityParseClassTime(cls.time);
+                const dayIndex = STABILITY_DAY_NAMES.indexOf(cls.day);
+                if (!parsed || dayIndex < 0) return null;
+
+                const now = new Date(fromDate);
+                const currentDay = now.getDay();
+                let delta = (dayIndex - currentDay + 7) % 7;
+                const startHour = Math.floor(parsed.startMinutes / 60);
+                const startMinute = parsed.startMinutes % 60;
+
+                const candidate = new Date(now);
+                candidate.setHours(0, 0, 0, 0);
+                candidate.setDate(candidate.getDate() + delta);
+                candidate.setHours(startHour, startMinute, 0, 0);
+
+                if (candidate.getTime() <= now.getTime()) {
+                    candidate.setDate(candidate.getDate() + 7);
+                }
+                return candidate;
+            }
+
+            function stabilityIsNotificationAlreadySent(key) {
+                return Array.isArray(stabilityCache.notificationLedger) && stabilityCache.notificationLedger.includes(key);
+            }
+
+            function stabilityMarkNotificationSent(key) {
+                const ledger = Array.isArray(stabilityCache.notificationLedger) ? stabilityCache.notificationLedger : [];
+                if (!ledger.includes(key)) ledger.push(key);
+                stabilityCache.notificationLedger = ledger.slice(-STABILITY_NOTIFICATION_LEDGER_LIMIT);
+                stabilityScheduleCacheWrite();
+            }
+
+            function stabilitySendClassNotification(cls, occurrenceDate) {
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
+                const dateKey = occurrenceDate.toISOString().slice(0, 10);
+                const key = stabilityClassOccurrenceKey(cls, dateKey);
+                if (stabilityIsNotificationAlreadySent(key)) return false;
+                try {
+                    const notification = new Notification(`Class Reminder: ${cls.name}`, {
+                        body: `${cls.day} • ${cls.time}`,
+                        tag: `almastermind-class-${cls.id}`,
+                        renotify: false,
+                        silent: false
+                    });
+                    notification.onclick = () => {
+                        try { window.focus(); } catch (_) {}
+                        notification.close();
+                    };
+                    stabilityMarkNotificationSent(key);
+                    return true;
+                } catch (err) {
+                    console.warn('Notification could not be displayed.', err);
+                    return false;
+                }
+            }
+
+            function stabilityScheduleNotifications() {
+                if (stabilityNotificationTimer) {
+                    clearTimeout(stabilityNotificationTimer);
+                    stabilityNotificationTimer = null;
+                }
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted' || !classLogs.length) return;
+
+                let next = null;
+                let nextClass = null;
+                for (const cls of classLogs) {
+                    const occurrence = stabilityGetNextClassOccurrence(cls);
+                    if (!occurrence) continue;
+                    if (!next || occurrence.getTime() < next.getTime()) {
+                        next = occurrence;
+                        nextClass = cls;
+                    }
+                }
+
+                if (!next || !nextClass) return;
+
+                const delay = Math.max(1000, next.getTime() - Date.now());
+                stabilityNotificationTimer = setTimeout(() => {
+                    stabilityNotificationTimer = null;
+                    try {
+                        stabilitySendClassNotification(nextClass, next);
+                    } catch (err) {
+                        console.warn('Class reminder timer failed safely.', err);
+                    } finally {
+                        stabilityScheduleNotifications();
+                    }
+                }, Math.min(delay, 2147483647));
+            }
+
+            async function stabilityAddClass(event) {
+                event?.preventDefault?.();
+                if (stabilityClassSaveInProgress) return;
+
+                const nameEl = stabilityFormControl('class-name');
+                const dayEl = stabilityFormControl('class-day');
+                const startHourEl = stabilityFormControl('class-start-hour');
+                const startMinuteEl = stabilityFormControl('class-start-minute');
+                const startAmEl = stabilityFormControl('class-start-ampm');
+                const endHourEl = stabilityFormControl('class-end-hour');
+                const endMinuteEl = stabilityFormControl('class-end-minute');
+                const endAmEl = stabilityFormControl('class-end-ampm');
+                if (!nameEl || !dayEl || !startHourEl || !startMinuteEl || !startAmEl || !endHourEl || !endMinuteEl || !endAmEl) {
+                    stabilityNotify('Class Reminder Error', 'The class reminder form could not be loaded correctly. Please refresh the page.');
+                    return;
+                }
+
+                const name = stabilityNormalizeText(nameEl.value);
+                const day = stabilitySafeString(dayEl.value).trim();
+                const startMinutes = stabilityParseTimePart(startHourEl.value, startMinuteEl.value, startAmEl.value);
+                const endMinutes = stabilityParseTimePart(endHourEl.value, endMinuteEl.value, endAmEl.value);
+                const time = stabilityFormatDetailedTimeRange(startHourEl.value, startMinuteEl.value, startAmEl.value, endHourEl.value, endMinuteEl.value, endAmEl.value);
+
+                if (!name) {
+                    stabilityNotify('Invalid Class Name', 'Class name cannot be empty or only whitespace.');
+                    nameEl.focus();
+                    return;
+                }
+                if (!STABILITY_DAY_NAMES.includes(day)) {
+                    stabilityNotify('Invalid Day', 'Please select a valid weekday.');
+                    return;
+                }
+                if (startMinutes === null || endMinutes === null || startMinutes === endMinutes) {
+                    stabilityNotify('Invalid Schedule', 'Please choose valid start and end times. Start and end cannot be identical.');
+                    return;
+                }
+
+                const candidate = { id: stabilityEditingClassId || stabilityUuid('class'), name, day, time };
+                if (stabilityClassDuplicateExists(candidate, stabilityEditingClassId)) {
+                    stabilityNotify('Duplicate Reminder', 'That class reminder already exists with the same name, day, and time.');
+                    return;
+                }
+                if (stabilityClassHasConflict(candidate, stabilityEditingClassId)) {
+                    stabilityNotify('Overlapping Schedule', 'This class overlaps another scheduled class, including a cross-midnight schedule.');
+                    return;
+                }
+
+                stabilityClassSaveInProgress = true;
+                const editingId = stabilityEditingClassId;
+                stabilitySetFormBusy('class-form', 'class-submit-button', true, editingId ? 'Saving…' : 'Adding…', editingId ? 'Update Reminder' : 'Add Class Reminder');
+
+                try {
+                    if (editingId) {
+                        stabilityApplyLocalClass(candidate);
+                        stabilityEnqueueMutation('class', 'update', editingId, { name, day, time });
+                        try {
+                            const cloud = await stabilityCloudMutation('class', 'update', editingId, { name, day, time });
+                            if (cloud?.id) stabilityApplyLocalClass({ ...candidate, ...cloud, id: cloud.id });
+                            stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'class' && op.id === editingId && op.action === 'update'));
+                        } catch (err) {
+                            if (!stabilityIsRetryableError(err)) {
+                                stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'class' && op.id === editingId && op.action === 'update'));
+                            }
+                        }
+                    } else {
+                        stabilityApplyLocalClass(candidate);
+                        try {
+                            const cloud = await stabilityCloudMutation('class', 'insert', candidate.id, { name, day, time });
+                            if (cloud?.id && cloud.id !== candidate.id) {
+                                classLogs = classLogs.map(item => item.id === candidate.id ? stabilityNormalizeClass({ ...candidate, ...cloud, id: cloud.id }) : item);
+                                stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'class' && op.id === candidate.id && op.action === 'insert'));
+                            }
+                        } catch (err) {
+                            stabilityEnqueueMutation('class', 'insert', candidate.id, candidate);
+                        }
+                    }
+
+                    stabilityCache.classes = [...classLogs];
+                    stabilityScheduleCacheWrite();
+                    stabilityRenderClasses({ force: true });
+                    stabilityScheduleNotifications();
+                    if (typeof updateCoreStats === 'function') updateCoreStats();
+                    stabilityCancelClassEdit();
+                    const permission = await stabilityRequestNotificationPermission();
+                    if (permission === 'denied') {
+                        stabilityNotify('Reminder Saved', 'The class reminder was saved, but browser notifications are blocked. The dashboard will continue working normally.');
+                    } else if (permission === 'unsupported') {
+                        stabilityNotify('Reminder Saved', 'The class reminder was saved. This browser does not support system notifications.');
+                    } else {
+                        stabilityScheduleNotifications();
+                        stabilityNotify('Success', 'Class reminder successfully saved and notification scheduling is active.');
+                    }
+                } catch (err) {
+                    console.error('Class reminder save failed safely.', err);
+                    stabilityNotify('Reminder Save Error', 'The class reminder could not be saved. Existing schedules were left untouched.');
+                } finally {
+                    stabilityClassSaveInProgress = false;
+                    stabilitySetFormBusy('class-form', 'class-submit-button', false, '', stabilityEditingClassId ? 'Update Reminder' : 'Add Class Reminder');
+                    const button = document.getElementById('class-submit-button');
+                    if (button) button.textContent = stabilityEditingClassId ? 'Update Reminder' : 'Add Class Reminder';
+                    const cancel = document.getElementById('class-cancel-edit');
+                    if (!stabilityEditingClassId && cancel) cancel.classList.add('hidden');
+                    stabilityFlushPendingMutations().catch(err => console.warn('Class retry sync failed.', err));
+                }
+            }
+
+            async function stabilityDeleteClass(id) {
+                const cls = classLogs.find(item => item.id === id);
+                if (!cls) return;
+                const previous = [...classLogs];
+                classLogs = classLogs.filter(item => item.id !== id);
+                stabilityRenderClasses({ force: true });
+                stabilityCache.classes = [...classLogs];
+                stabilityEnqueueMutation('class', 'delete', id, {});
+                try {
+                    await stabilityCloudMutation('class', 'delete', id, {});
+                    stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'class' && op.id === id && op.action === 'delete'));
+                } catch (err) {
+                    if (!stabilityIsRetryableError(err)) {
+                        stabilityCache.pendingOps = stabilityCache.pendingOps.filter(op => !(op.entity === 'class' && op.id === id && op.action === 'delete'));
+                        classLogs = previous;
+                        stabilityCache.classes = [...classLogs];
+                        stabilityRenderClasses({ force: true });
+                        stabilityNotify('Delete Failed', 'The class reminder could not be deleted from the cloud, so it was restored.');
+                    }
+                }
+                stabilityScheduleCacheWrite();
+                stabilityScheduleNotifications();
+                if (typeof updateCoreStats === 'function') updateCoreStats();
+                stabilityFlushPendingMutations().catch(err => console.warn('Class delete retry failed.', err));
+            }
+
+            function stabilityHandleTaskContainerClick(event) {
+                const button = event.target.closest?.('button[data-action]');
+                if (!button) return;
+                const action = button.dataset.action;
+                const id = button.dataset.id;
+                if (!action) return;
+
+                if (action === 'toggle-task') stabilityToggleTask(id).catch(err => console.warn('Task toggle failed.', err));
+                if (action === 'edit-task') {
+                    const task = taskLogs.find(item => item.id === id);
+                    if (task) stabilitySetTaskEditMode(task);
+                }
+                if (action === 'delete-task') stabilityDeleteTask(id).catch(err => console.warn('Task delete failed.', err));
+            }
+
+            function stabilityHandleClassContainerClick(event) {
+                const button = event.target.closest?.('button[data-action]');
+                if (!button) return;
+                const action = button.dataset.action;
+                const id = button.dataset.id;
+                if (!action) return;
+
+                if (action === 'edit-class') {
+                    const cls = classLogs.find(item => item.id === id);
+                    if (cls) stabilitySetClassEditMode(cls);
+                }
+                if (action === 'delete-class') stabilityDeleteClass(id).catch(err => console.warn('Class delete failed.', err));
+            }
+
+            function stabilityHandleLoadMore(event) {
+                const button = event.target.closest?.('[data-load-more]');
+                if (!button) return;
+                if (button.dataset.loadMore === 'tasks') {
+                    stabilityTaskRenderLimit += STABILITY_RENDER_CHUNK;
+                    stabilityRenderTasks({ force: true });
+                } else if (button.dataset.loadMore === 'classes') {
+                    stabilityClassRenderLimit += STABILITY_RENDER_CHUNK;
+                    stabilityRenderClasses({ force: true });
+                }
+            }
+
+            function stabilityMaybeLoadMoreOnScroll(event) {
+                const container = event.currentTarget;
+                if (!container || container.dataset.autoLoadBusy === '1') return;
+                if (container.scrollTop + container.clientHeight < container.scrollHeight - 80) return;
+                const total = container.id === 'task-list-container' ? taskLogs.length : classLogs.length;
+                const limit = container.id === 'task-list-container' ? stabilityTaskRenderLimit : stabilityClassRenderLimit;
+                if (total <= limit) return;
+                container.dataset.autoLoadBusy = '1';
+                requestAnimationFrame(() => {
+                    container.dataset.autoLoadBusy = '0';
+                    if (container.id === 'task-list-container') stabilityTaskRenderLimit += STABILITY_RENDER_CHUNK;
+                    if (container.id === 'classes-list-container') stabilityClassRenderLimit += STABILITY_RENDER_CHUNK;
+                    if (container.id === 'task-list-container') stabilityRenderTasks({ force: true });
+                    if (container.id === 'classes-list-container') stabilityRenderClasses({ force: true });
+                });
+            }
+
+            function stabilityDebouncedSetChartFilter(subject) {
+                activeChartFilter = subject;
+                if (stabilityFilterTimer) clearTimeout(stabilityFilterTimer);
+                stabilityFilterTimer = setTimeout(() => {
+                    stabilityFilterTimer = null;
+                    try {
+                        if (typeof updateFilterBtnHighlight === 'function') updateFilterBtnHighlight();
+                        if (typeof stabilityRenderMarksAnalytics === 'function') stabilityRenderMarksAnalytics();
+                        if (typeof renderChatViewChart === 'function') renderChatViewChart();
+                    } catch (err) {
+                        console.warn('Chart filter update failed safely.', err);
+                    }
+                }, 90);
+            }
+
+            function stabilityBuildChartDatasets(uniqueLabels) {
+                const alignScores = (subjectPapers) => uniqueLabels.map(label => {
+                    const match = subjectPapers.find(p => p.type === label);
+                    return !match || match.absent ? null : Number(match.marks);
+                });
+                const mathPapers = paperLogs.filter(p => p.subject === 'Combined Maths');
+                const chemPapers = paperLogs.filter(p => p.subject === 'Chemistry');
+                const physPapers = paperLogs.filter(p => p.subject === 'Physics');
+                const create = (label, color, papers) => ({
+                    label,
+                    data: alignScores(papers),
+                    borderColor: activeChartFilter === 'All' ? color : (ctx => getVerticalGradient(ctx.chart.ctx, ctx.chart.chartArea)),
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    tension: 0.35,
+                    spanGaps: true,
+                    segment: {
+                        borderDash: ctx => gapSegmentDash(ctx),
+                        borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
+                    },
+                    pointBackgroundColor: color,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                });
+
+                const datasets = [];
+                if (activeChartFilter === 'All' || activeChartFilter === 'Combined Maths') datasets.push(create('Combined Maths', '#818cf8', mathPapers));
+                if (activeChartFilter === 'All' || activeChartFilter === 'Chemistry') datasets.push(create('Chemistry', '#34d399', chemPapers));
+                if (activeChartFilter === 'All' || activeChartFilter === 'Physics') datasets.push(create('Physics', '#fbbf24', physPapers));
+                return datasets;
+            }
+
+            function stabilityRenderMarksAnalytics() {
+                try {
+                    const tableBody = document.getElementById('paper-table-body');
+                    const countBadge = document.getElementById('paper-count-badge');
+                    if (countBadge) countBadge.textContent = paperLogs.length;
+
+                    if (!paperLogs.length) {
+                        if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500"><i class="fa-solid fa-inbox text-2xl block mb-2 text-slate-600"></i>No practice papers logged yet. Log your first paper to unleash active insights!</td></tr>';
+                        const strength = document.getElementById('insight-strength');
+                        const weakness = document.getElementById('insight-weakness');
+                        if (strength) strength.textContent = 'Log some papers to start scanning for patterns.';
+                        if (weakness) weakness.textContent = 'No alerts detected yet.';
+                        if (performanceChartInstance) {
+                            performanceChartInstance.data.labels = [];
+                            performanceChartInstance.data.datasets = [];
+                            performanceChartInstance.update('none');
+                        }
+                        return;
+                    }
+
+                    const sorted = [...paperLogs].sort((a, b) => {
+                        const numA = Number.parseInt(String(a.type).replace(/\D/g, ''), 10) || 0;
+                        const numB = Number.parseInt(String(b.type).replace(/\D/g, ''), 10) || 0;
+                        return numA - numB || String(a.date || '').localeCompare(String(b.date || ''));
+                    });
+                    paperLogs = sorted;
+
+                    const filtered = activeChartFilter === 'All' ? sorted : sorted.filter(p => p.subject === activeChartFilter);
+                    if (tableBody) {
+                        const fragment = document.createDocumentFragment();
+                        if (!filtered.length) {
+                            const tr = document.createElement('tr');
+                            const td = document.createElement('td');
+                            td.colSpan = 6;
+                            td.className = 'p-6 text-center text-slate-500';
+                            td.textContent = `No logged records found under subject group "${activeChartFilter}".`;
+                            tr.appendChild(td);
+                            fragment.appendChild(tr);
+                        } else {
+                            filtered.forEach(paper => {
+                                const tr = document.createElement('tr');
+                                tr.className = 'hover:bg-slate-900/50 transition text-slate-300';
+                                const subjectTd = document.createElement('td');
+                                subjectTd.className = 'p-3 font-semibold';
+                                const subjectBadge = document.createElement('span');
+                                subjectBadge.className = paper.subject === 'Combined Maths'
+                                    ? 'bg-indigo-500/10 text-indigo-400 px-2.5 py-1 rounded text-[10px] font-bold'
+                                    : paper.subject === 'Chemistry'
+                                        ? 'bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded text-[10px] font-bold'
+                                        : 'bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded text-[10px] font-bold';
+                                const subjectIcon = paper.subject === 'Combined Maths'
+                                    ? 'fa-solid fa-calculator mr-1'
+                                    : paper.subject === 'Chemistry'
+                                        ? 'fa-solid fa-flask mr-1'
+                                        : 'fa-solid fa-atom mr-1';
+                                subjectBadge.appendChild(stabilityCreateIcon(subjectIcon));
+                                subjectBadge.appendChild(document.createTextNode(paper.subject));
+                                subjectTd.appendChild(subjectBadge);
+
+                                const typeTd = document.createElement('td');
+                                typeTd.className = 'p-3 font-semibold text-slate-200';
+                                typeTd.textContent = stabilitySafeString(paper.type);
+
+                                const marksTd = document.createElement('td');
+                                marksTd.className = 'p-3 font-bold text-white';
+                                if (paper.absent) {
+                                    const absentBadge = document.createElement('span');
+                                    absentBadge.className = 'bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded text-[10px] font-bold';
+                                    absentBadge.appendChild(stabilityCreateIcon('fa-solid fa-user-slash mr-1'));
+                                    absentBadge.appendChild(document.createTextNode('ABSENT'));
+                                    marksTd.appendChild(absentBadge);
+                                } else {
+                                    marksTd.textContent = `${paper.marks}%`;
+                                }
+
+                                const gradeTd = document.createElement('td');
+                                gradeTd.className = 'p-3 text-slate-400 font-semibold';
+                                gradeTd.textContent = paper.absent ? '-' : getA_LGradeLetter(paper.marks);
+
+                                const dateTd = document.createElement('td');
+                                dateTd.className = 'p-3 text-slate-500';
+                                dateTd.textContent = stabilitySafeString(paper.date);
+
+                                tr.append(subjectTd, typeTd, marksTd, gradeTd, dateTd);
+                                const actionTd = document.createElement('td');
+                                actionTd.className = 'p-3 text-right';
+                                const del = document.createElement('button');
+                                del.type = 'button';
+                                del.className = 'text-rose-500 hover:text-rose-400 font-bold px-2 py-1 rounded transition min-w-[44px] min-h-[44px]';
+                                del.setAttribute('aria-label', `Delete paper record ${paper.type}`);
+                                del.onclick = () => deletePaper(paper.id).catch(err => console.warn('Paper delete failed.', err));
+                                del.appendChild(stabilityCreateIcon('fa-solid fa-trash-can'));
+                                actionTd.appendChild(del);
+                                tr.appendChild(actionTd);
+                                fragment.appendChild(tr);
+                            });
+                        }
+                        tableBody.replaceChildren(fragment);
+                    }
+
+                    if (typeof calculateInsights === 'function') calculateInsights();
+
+                    const activePapers = filtered.filter(p => {
+                        const num = Number.parseInt(String(p.type).replace(/\D/g, ''), 10);
+                        return num !== 12 && num !== 26;
+                    });
+                    const uniqueLabels = [...new Set(activePapers.map(p => p.type))];
+                    const datasets = stabilityBuildChartDatasets(uniqueLabels);
+                    const canvas = document.getElementById('marksChart');
+                    if (!canvas || typeof Chart === 'undefined') return;
+
+                    const chartData = { labels: uniqueLabels, datasets };
+                    if (!performanceChartInstance) {
+                        const ctx = canvas.getContext('2d');
+                        performanceChartInstance = new Chart(ctx, {
+                            type: 'line',
+                            plugins: [darkThemeCanvasBackgroundPlugin],
+                            data: chartData,
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: false,
+                                resizeDelay: 0,
+                                plugins: {
+                                    legend: { labels: { color: '#94a3b8', font: { weight: 'bold', size: 11 } } },
+                                    zoom: {
+                                        pan: { enabled: true, mode: 'x' },
+                                        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        min: 0,
+                                        max: 100,
+                                        grid: { color: 'rgba(51, 65, 85, 0.25)' },
+                                        ticks: { color: '#64748b', font: { weight: 'bold' }, stepSize: 10 }
+                                    },
+                                    x: {
+                                        grid: { color: 'rgba(51, 65, 85, 0.25)' },
+                                        ticks: { color: '#64748b', font: { weight: 'bold' }, autoSkip: true, maxTicksLimit: 16 }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        performanceChartInstance.data.labels = uniqueLabels;
+                        performanceChartInstance.data.datasets = datasets;
+                        performanceChartInstance.update('none');
+                    }
+                } catch (err) {
+                    console.error('Stable marks analytics render failed.', err);
+                    stabilityNotify('Chart Error', 'The marks chart could not be refreshed, but your saved records remain safe.');
+                }
+            }
+
+            async function stabilitySaveProfile(event) {
+                event?.preventDefault?.();
+                try {
+                    const name = stabilityNormalizeText(document.getElementById('profile-name')?.value);
+                    const year = document.getElementById('profile-year')?.value;
+                    const course = document.getElementById('profile-course')?.value;
+                    const district = document.getElementById('profile-district')?.value;
+                    const newGeminiKey = stabilitySafeString(document.getElementById('profile-gemini-key')?.value).trim();
+                    if (!name || !stabilityDateIsValid(year)) {
+                        stabilityNotify('Invalid Profile', 'Please enter a valid name and target date.');
+                        return;
+                    }
+                    studentProfile.name = name;
+                    studentProfile.year = year;
+                    studentProfile.course = course;
+                    studentProfile.district = district;
+                    studentProfile.gemini_api_key = newGeminiKey;
+                    try {
+                        if (newGeminiKey) localStorage.setItem('gemini_api_key', newGeminiKey);
+                        else localStorage.removeItem('gemini_api_key');
+                    } catch (_) {}
+
+                    if (supabaseClient && stabilityGetUserId()) {
+                        try {
+                            await stabilityWithRetry(() => supabaseClient.from('profiles').upsert({
+                                id: stabilityGetUserId(),
+                                name: studentProfile.name,
+                                year: studentProfile.year,
+                                course: studentProfile.course,
+                                district: studentProfile.district,
+                                gemini_api_key: studentProfile.gemini_api_key || ''
+                            }), 3);
+                        } catch (err) {
+                            stabilityNotify('Saved Locally', 'Profile changes were saved in this browser, but cloud sync will retry later.');
+                        }
+                    }
+                    if (typeof syncProfileUI === 'function') syncProfileUI();
+                    if (typeof updateCoreStats === 'function') updateCoreStats();
+                    stabilityNotify('Profile Updated', 'Your profile changes were saved successfully.');
+                } catch (err) {
+                    console.error('Profile save failed safely.', err);
+                    stabilityNotify('Profile Error', 'The profile could not be updated safely.');
+                }
+            }
+
+            async function stabilitySaveGeminiApiKey() {
+                try {
+                    const input = document.getElementById('gemini-api-key-input');
+                    const inputVal = stabilitySafeString(input?.value).trim();
+                    if (!inputVal) {
+                        stabilityNotify('Error', 'Please enter a valid API key.');
+                        return;
+                    }
+                    studentProfile.gemini_api_key = inputVal;
+                    try { localStorage.setItem('gemini_api_key', inputVal); } catch (_) {}
+                    if (supabaseClient && stabilityGetUserId()) {
+                        try {
+                            await stabilityWithRetry(() => supabaseClient.from('profiles').upsert({ id: stabilityGetUserId(), gemini_api_key: inputVal }), 3);
+                        } catch (err) {
+                            stabilityNotify('Saved Locally', 'The API key was saved locally, but cloud sync will retry later.');
+                        }
+                    }
+                    stabilityNotify('Key Saved', 'Your Gemini API key has been saved for this dashboard.');
+                    if (typeof checkGeminiKeyAndProceed === 'function') checkGeminiKeyAndProceed();
+                } catch (err) {
+                    console.error('Gemini key save failed safely.', err);
+                    stabilityNotify('Save Error', 'The API key could not be saved safely.');
+                }
+            }
+
+            function stabilityInstallEventHandlers() {
+                if (stabilityInitialized) return;
+                stabilityInitialized = true;
+
+                stabilityDetectStorage();
+                stabilityLoadCache();
+
+                const taskContainer = document.getElementById('task-list-container');
+                const classContainer = document.getElementById('classes-list-container');
+                if (taskContainer) {
+                    taskContainer.addEventListener('click', stabilityHandleTaskContainerClick, { passive: true });
+                    taskContainer.addEventListener('click', stabilityHandleLoadMore, { passive: true });
+                    taskContainer.addEventListener('scroll', stabilityMaybeLoadMoreOnScroll, { passive: true });
+                }
+                if (classContainer) {
+                    classContainer.addEventListener('click', stabilityHandleClassContainerClick, { passive: true });
+                    classContainer.addEventListener('click', stabilityHandleLoadMore, { passive: true });
+                    classContainer.addEventListener('scroll', stabilityMaybeLoadMoreOnScroll, { passive: true });
+                }
+
+                window.addEventListener('online', () => {
+                    stabilityFlushPendingMutations().catch(err => console.warn('Online sync failed safely.', err));
+                    stabilityScheduleNotifications();
+                }, { passive: true });
+
+                window.addEventListener('offline', () => {
+                    const taskBox = document.getElementById('task-list-container');
+                    const classBox = document.getElementById('classes-list-container');
+                    stabilityInlineStatus(taskBox, 'Offline mode enabled. New changes will be saved locally and synced when the connection returns.');
+                    stabilityInlineStatus(classBox, 'Offline mode enabled. New changes will be saved locally and synced when the connection returns.');
+                }, { passive: true });
+
+                window.addEventListener('resize', () => {
+                    if (stabilityResizeFrame) cancelAnimationFrame(stabilityResizeFrame);
+                    stabilityResizeFrame = requestAnimationFrame(() => {
+                        stabilityResizeFrame = null;
+                        try { performanceChartInstance?.resize?.(); } catch (err) { console.warn('Main chart resize skipped.', err); }
+                        try { chatSideChartInstance?.resize?.(); } catch (err) { console.warn('Chat chart resize skipped.', err); }
+                    });
+                }, { passive: true });
+
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', () => {
+                        if (stabilityResizeFrame) cancelAnimationFrame(stabilityResizeFrame);
+                        stabilityResizeFrame = requestAnimationFrame(() => {
+                            stabilityResizeFrame = null;
+                            document.documentElement.style.setProperty('--app-viewport-height', `${window.visualViewport.height}px`);
+                            try { performanceChartInstance?.resize?.(); } catch (_) {}
+                            try { chatSideChartInstance?.resize?.(); } catch (_) {}
+                        });
+                    }, { passive: true });
+                }
+
+                window.addEventListener('pagehide', () => {
+                    try { stabilityWriteCacheNow(); } catch (_) {}
+                    if (stabilityNotificationTimer) clearTimeout(stabilityNotificationTimer);
+                    if (stabilityPendingRetryTimer) clearTimeout(stabilityPendingRetryTimer);
+                });
+
+                window.addEventListener('beforeunload', () => {
+                    try { stabilityWriteCacheNow(); } catch (_) {}
+                });
+
+                window.addEventListener('error', event => {
+                    console.error('Dashboard runtime error captured safely:', event.error || event.message);
+                    event.preventDefault();
+                });
+
+                window.addEventListener('unhandledrejection', event => {
+                    console.error('Dashboard async error captured safely:', event.reason);
+                    event.preventDefault();
+                });
+            }
+
+            // Replace only the public handlers that need hardening. The rest of
+            // the existing dashboard remains intact and keeps the same UI.
+            window.addTask = stabilityAddTask;
+            window.toggleTask = stabilityToggleTask;
+            window.deleteTask = stabilityDeleteTask;
+            window.addClass = stabilityAddClass;
+            window.deleteClass = stabilityDeleteClass;
+            window.renderTasks = stabilityRenderTasks;
+            window.renderClasses = stabilityRenderClasses;
+            window.loadCloudData = stabilityLoadCloudData;
+            window.checkSessionStatus = stabilityCheckSessionStatus;
+            window.setChartFilter = stabilityDebouncedSetChartFilter;
+            window.renderMarksAnalytics = stabilityRenderMarksAnalytics;
+            window.saveProfile = stabilitySaveProfile;
+            window.saveGeminiApiKey = stabilitySaveGeminiApiKey;
+            window.cancelTaskEdit = stabilityCancelTaskEdit;
+            window.cancelClassEdit = stabilityCancelClassEdit;
+
+            // Ensure the original window.onload handler uses the hardened functions.
+            // It still runs normally, but we initialize delegated listeners exactly once.
+            window.addEventListener('load', () => {
+                try {
+                    stabilityInstallEventHandlers();
+                    stabilityLoadCache();
+                    taskLogs = stabilityDedupeById(taskLogs, stabilityNormalizeTask);
+                    classLogs = stabilityDedupeById(classLogs, stabilityNormalizeClass);
+                    stabilityRenderTasks({ force: true });
+                    stabilityRenderClasses({ force: true });
+                    stabilityScheduleNotifications();
+                    stabilityFlushPendingMutations().catch(err => console.warn('Initial pending sync failed safely.', err));
+                } catch (err) {
+                    console.error('Stability layer initialization failed safely.', err);
+                    stabilityNotify('Dashboard Recovery', 'The dashboard loaded with a safe fallback mode. Refreshing is not required unless a feature remains unavailable.');
+                }
+            }, { once: true });
+        })();
+    </script>
+
 </body>
 </html>
