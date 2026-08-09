@@ -1192,6 +1192,15 @@
                             <span>Student Profile Settings</span>
                         </h3>
                         
+                        <div id="google-profile-setup-note" class="hidden rounded-xl border border-brand-500/20 bg-brand-500/10 p-3 text-[10px] text-slate-300">
+                            <div class="flex items-start gap-2">
+                                <i class="fa-brands fa-google text-red-400 mt-0.5"></i>
+                                <div>
+                                    <p class="font-bold text-brand-300">Google account connected</p>
+                                    <p class="mt-1">Your name was imported automatically. Complete the remaining profile details below.</p>
+                                </div>
+                            </div>
+                        </div>
                         <form id="profile-form" onsubmit="saveProfile(event)" class="space-y-4">
                             <div>
                                 <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Your Full Name</label>
@@ -1668,33 +1677,44 @@
 
         async function finishGoogleProfileSetup() {
             if (!window.googleProfileNeedsSetup) return;
-            window.googleProfileNeedsSetup = false;
+
+            const setupNote = document.getElementById('google-profile-setup-note');
+            if (setupNote) setupNote.classList.remove('hidden');
 
             const nameInput = document.getElementById('profile-name');
             const yearInput = document.getElementById('profile-year');
             const courseInput = document.getElementById('profile-course');
             const districtInput = document.getElementById('profile-district');
 
-            if (nameInput) nameInput.value = studentProfile.name || '';
-            if (yearInput) yearInput.value = studentProfile.year || '2027-08-10';
-            if (courseInput) courseInput.value = studentProfile.course || '';
-            if (districtInput) districtInput.value = studentProfile.district || '';
-
-            // Open the existing profile/settings UI. The Google name is already
-            // filled in, so the user only supplies the remaining information.
-            try {
-                const settingsButton =
-                    document.querySelector('[onclick*="openSettingsModal"]') ||
-                    document.querySelector('[onclick*="openSettings"]') ||
-                    document.querySelector('[data-action="settings"]');
-                if (settingsButton) settingsButton.click();
-            } catch (err) {
-                console.warn('Could not open profile setup UI:', err);
+            // Google account name is filled automatically. Do not ask the user
+            // to type it again. The other profile fields are collected here.
+            if (nameInput) {
+                nameInput.value = studentProfile.name || '';
+                nameInput.readOnly = true;
+                nameInput.classList.add('opacity-70', 'cursor-not-allowed');
+                nameInput.title = 'Name imported automatically from your Google account';
             }
+            if (yearInput) yearInput.value = studentProfile.year || '2027-08-10';
+            if (courseInput) courseInput.value = studentProfile.course || 'Engineering';
+            if (districtInput) districtInput.value = studentProfile.district || 'Colombo';
+
+            // This dashboard uses a Settings tab rather than a separate modal.
+            // Open it immediately after Google authentication so the user can
+            // complete the remaining inputs.
+            try {
+                switchTab('settings');
+                setTimeout(() => {
+                    document.getElementById('profile-course')?.focus();
+                }, 100);
+            } catch (err) {
+                console.warn('Could not open profile setup:', err);
+            }
+
+            window.googleProfileNeedsSetup = false;
 
             showAlert(
                 'Complete Your Profile',
-                'Your name was taken automatically from your Google account. Please complete the remaining profile details.'
+                'Your name was imported automatically from your Google account. Complete the remaining profile details and save your profile.'
             );
         }
 
@@ -3567,7 +3587,7 @@ Strict answer rules:
 
         async function saveProfile(event) {
             event.preventDefault();
-            studentProfile.name = document.getElementById('profile-name').value;
+            studentProfile.name = document.getElementById('profile-name').value.trim();
             studentProfile.year = document.getElementById('profile-year').value;
             studentProfile.course = document.getElementById('profile-course').value;
             studentProfile.district = document.getElementById('profile-district').value;
@@ -3585,6 +3605,13 @@ Strict answer rules:
             }
             syncProfileUI();
             updateCoreStats();
+            const setupNote = document.getElementById('google-profile-setup-note');
+            if (setupNote) setupNote.classList.add('hidden');
+            if (document.getElementById('profile-name')) {
+                document.getElementById('profile-name').readOnly = false;
+                document.getElementById('profile-name').classList.remove('opacity-70', 'cursor-not-allowed');
+                document.getElementById('profile-name').title = '';
+            }
             showAlert('Profile Updated', 'Your profile adjustments and target district cutoffs have been calculated.');
         }
 
