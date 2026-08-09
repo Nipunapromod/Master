@@ -1632,9 +1632,8 @@
                         localStorage.setItem('gemini_api_key', profileData.gemini_api_key);
                     }
                 } else {
-                    // First-time Google users do not have a profiles row yet.
-                    // Use Google's verified display name, then save the normal
-                    // dashboard profile so the rest of the app works unchanged.
+                    // First-time Google users: take the name directly from Google
+                    // and ask for the remaining profile details after login.
                     const googleName =
                         user.user_metadata?.full_name ||
                         user.user_metadata?.name ||
@@ -1644,25 +1643,11 @@
                     studentProfile = {
                         name: googleName,
                         year: "2027-08-10",
-                        course: "Engineering",
-                        district: "Colombo",
+                        course: "",
+                        district: "",
                         gemini_api_key: ""
                     };
-
-                    const { error: profileCreateError } = await supabaseClient
-                        .from('profiles')
-                        .upsert({
-                            id: user.id,
-                            name: studentProfile.name,
-                            year: studentProfile.year,
-                            course: studentProfile.course,
-                            district: studentProfile.district,
-                            gemini_api_key: ""
-                        });
-
-                    if (profileCreateError) {
-                        console.warn('Could not create Google profile row:', profileCreateError);
-                    }
+                    window.googleProfileNeedsSetup = true;
                 }
 
                 const { data: papers } = await supabaseClient.from('papers').select('*').eq('user_id', user.id);
@@ -1679,6 +1664,38 @@
             } catch (err) {
                 console.error("Data synchronization failed:", err);
             }
+        }
+
+        async function finishGoogleProfileSetup() {
+            if (!window.googleProfileNeedsSetup) return;
+            window.googleProfileNeedsSetup = false;
+
+            const nameInput = document.getElementById('profile-name');
+            const yearInput = document.getElementById('profile-year');
+            const courseInput = document.getElementById('profile-course');
+            const districtInput = document.getElementById('profile-district');
+
+            if (nameInput) nameInput.value = studentProfile.name || '';
+            if (yearInput) yearInput.value = studentProfile.year || '2027-08-10';
+            if (courseInput) courseInput.value = studentProfile.course || '';
+            if (districtInput) districtInput.value = studentProfile.district || '';
+
+            // Open the existing profile/settings UI. The Google name is already
+            // filled in, so the user only supplies the remaining information.
+            try {
+                const settingsButton =
+                    document.querySelector('[onclick*="openSettingsModal"]') ||
+                    document.querySelector('[onclick*="openSettings"]') ||
+                    document.querySelector('[data-action="settings"]');
+                if (settingsButton) settingsButton.click();
+            } catch (err) {
+                console.warn('Could not open profile setup UI:', err);
+            }
+
+            showAlert(
+                'Complete Your Profile',
+                'Your name was taken automatically from your Google account. Please complete the remaining profile details.'
+            );
         }
 
         async function saveProfileToCloud() {
@@ -3583,6 +3600,7 @@ Strict answer rules:
 
         window.handleAuthSubmit = handleAuthSubmit;
         window.signInWithGoogle = signInWithGoogle;
+        window.finishGoogleProfileSetup = finishGoogleProfileSetup;
         window.handleLogout = handleLogout;
         window.toggleAbsentInput = toggleAbsentInput;
         window.initCountdown = initCountdown;
@@ -3619,7 +3637,11 @@ Strict answer rules:
         window.saveGeminiApiKey = saveGeminiApiKey;
 
         window.onload = function() {
-            checkSessionStatus();
+            checkSessionStatus().then(() => {
+                if (window.googleProfileNeedsSetup) {
+                    setTimeout(() => finishGoogleProfileSetup(), 150);
+                }
+            });
             loadAIChatHistory();
             generateNewQuote();
 
