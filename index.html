@@ -928,9 +928,7 @@
                                 <button onclick="setTaskFilter('today')" id="task-filter-today" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-[10px] font-bold whitespace-nowrap">Today</button>
                                 <button onclick="setTaskFilter('done')" id="task-filter-done" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-[10px] font-bold whitespace-nowrap">Done</button>
                             </div>
-                            <div class="space-y-2 max-h-80 overflow-y-auto pr-1" id="task-list-container"></div>
-
-                            <div class="space-y-2 max-h-72 overflow-y-auto pr-1" id="task-list-container">
+                            <div class="space-y-2 max-h-[28rem] overflow-y-auto pr-1" id="task-list-container">
                                 <!-- Dynamic tasks -->
                             </div>
                         </div>
@@ -1920,35 +1918,124 @@
             pendingAlert.innerText = `${pending} Concept(s) Pending`;
         }
 
+        let activeTaskFilter = 'all';
+
+        function localISODate(offsetDays = 0) {
+            const d = new Date();
+            d.setHours(12, 0, 0, 0);
+            d.setDate(d.getDate() + offsetDays);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function getNextSaturday() {
+            const d = new Date();
+            const delta = (6 - d.getDay() + 7) % 7 || 7;
+            return localISODate(delta);
+        }
+
+        function getNextMonday() {
+            const d = new Date();
+            const delta = (8 - d.getDay()) % 7 || 7;
+            return localISODate(delta);
+        }
+
+        function toggleTaskCustomDate(select) {
+            const input = document.getElementById('task-date');
+            if (!input || !select) return;
+            const custom = select.value === 'custom';
+            input.classList.toggle('hidden', !custom);
+            input.required = custom;
+            if (!custom) {
+                input.value = select.value === 'today' ? localISODate(0) :
+                    select.value === 'tomorrow' ? localISODate(1) :
+                    select.value === 'weekend' ? getNextSaturday() : getNextMonday();
+            }
+            updateTaskQuickButtons();
+        }
+
+        function setTaskQuickDate(value) {
+            const select = document.getElementById('task-date-option');
+            if (!select) return;
+            select.value = value;
+            toggleTaskCustomDate(select);
+            if (value === 'custom') document.getElementById('task-date')?.focus();
+        }
+
+        function applyTaskTimePreset(select) {
+            const custom = document.getElementById('task-custom-time');
+            if (custom) custom.classList.toggle('hidden', select?.value !== 'custom');
+        }
+
+        function getTaskTimeRange() {
+            const preset = document.getElementById('task-time-option')?.value;
+            const ranges = {
+                morning: '9:00 AM – 11:00 AM',
+                afternoon: '2:00 PM – 4:00 PM',
+                evening: '5:00 PM – 7:00 PM',
+                night: '7:00 PM – 9:00 PM'
+            };
+            if (preset !== 'custom') return ranges[preset] || null;
+            const start = document.getElementById('task-start-time')?.value;
+            const end = document.getElementById('task-end-time')?.value;
+            if (!start || !end || start >= end) return null;
+            const fmt = value => {
+                const [h, m] = value.split(':').map(Number);
+                const ap = h >= 12 ? 'PM' : 'AM';
+                const hh = h % 12 || 12;
+                return `${hh}:${String(m).padStart(2, '0')} ${ap}`;
+            };
+            return `${fmt(start)} – ${fmt(end)}`;
+        }
+
+        function updateTaskQuickButtons() {
+            const value = document.getElementById('task-date-option')?.value;
+            document.querySelectorAll('.task-quick-date').forEach(btn => {
+                btn.classList.remove('bg-indigo-500/10', 'text-indigo-300', 'border-indigo-500/20');
+            });
+            const map = { today: 0, tomorrow: 1, custom: 2 };
+            const buttons = document.querySelectorAll('.task-quick-date');
+            if (buttons[map[value]]) buttons[map[value]].classList.add('bg-indigo-500/10', 'text-indigo-300', 'border-indigo-500/20');
+        }
+
         async function addTask(event) {
             event.preventDefault();
-            const name = document.getElementById('task-name').value;
-            const date = document.getElementById('task-date').value;
-            
-            const startH = document.getElementById('task-start-hour').value;
-            const startAM = document.getElementById('task-start-ampm').value;
-            const endH = document.getElementById('task-end-hour').value;
-            const endAM = document.getElementById('task-end-ampm').value;
+            const name = document.getElementById('task-name')?.value.trim();
+            const dateOption = document.getElementById('task-date-option')?.value;
+            const dateInput = document.getElementById('task-date');
+            const date = dateOption === 'today' ? localISODate(0) :
+                dateOption === 'tomorrow' ? localISODate(1) :
+                dateOption === 'weekend' ? getNextSaturday() :
+                dateOption === 'nextweek' ? getNextMonday() : dateInput?.value;
+            const compiledTime = getTaskTimeRange();
 
-            const compiledTime = compileTimeRange(startH, startAM, endH, endAM);
+            if (!name) { showAlert('Missing task', 'Enter a task name.'); return; }
+            if (!date) { showAlert('Missing date', 'Choose a date for the task.'); return; }
+            if (!compiledTime) { showAlert('Invalid time', 'Choose a valid time range.'); return; }
 
+            const localTask = { id: `local-${Date.now()}`, name, date, time: compiledTime, done: false };
+            let saved = false;
             if (supabaseClient) {
                 try {
                     const { data: { user } } = await supabaseClient.auth.getUser();
-                    const { data, error } = await supabaseClient.from('tasks').insert([
-                        { user_id: user.id, name, date, time: compiledTime, done: false }
-                    ]).select();
-                    if (!error && data) {
-                        taskLogs.push(data[0]);
+                    if (user) {
+                        const { data, error } = await supabaseClient.from('tasks').insert([{ user_id: user.id, name, date, time: compiledTime, done: false }]).select();
+                        if (!error && data?.[0]) { taskLogs.push(data[0]); saved = true; }
                     }
-                } catch (err) {
-                    console.warn("Bypassed dynamic task cloud sync.");
-                }
+                } catch (err) { console.warn('Task cloud sync unavailable.', err); }
             }
+            if (!saved) taskLogs.push(localTask);
 
-            document.getElementById('task-form').reset();
+            document.getElementById('task-form')?.reset();
+            const dateSelect = document.getElementById('task-date-option');
+            const timeSelect = document.getElementById('task-time-option');
+            if (dateSelect) { dateSelect.value = 'today'; toggleTaskCustomDate(dateSelect); }
+            if (timeSelect) { timeSelect.value = 'morning'; applyTaskTimePreset(timeSelect); }
             renderTasks();
             updateCoreStats();
+            showAlert('Task added', 'Your task has been added to the to-do list.');
         }
 
         async function toggleTask(id) {
@@ -5610,7 +5697,7 @@ Strict answer rules:
             commands: [
                 { id:'home', label:'Overview & Clock', hint:'Dashboard overview', icon:'fa-house', action:() => switchTab('home') },
                 { id:'tracker', label:'Marks Tracker', hint:'Scores and progression', icon:'fa-chart-line', action:() => switchTab('tracker') },
-                { id:'tasks', label:'Tasks & Classes', hint:'To-do list and reminders', icon:'fa-list-check', action:() => switchTab('tasks') },
+                { id:'tasks', label:'To-Do List', hint:'Plan and track your tasks', icon:'fa-list-check', action:() => switchTab('tasks') },
                 { id:'forgetting', label:'Recall Planner', hint:'Active recall schedule', icon:'fa-brain', action:() => switchTab('forgetting') },
                 { id:'ai', label:'Mastermind AI Coach', hint:'AI study assistant', icon:'fa-wand-magic-sparkles', action:() => switchTab('ai') },
                 { id:'settings', label:'Settings', hint:'Profile and configuration', icon:'fa-sliders', action:() => switchTab('settings') },
@@ -5814,95 +5901,4 @@ Strict answer rules:
     </script>
 
 </body>
-</html        let activeTaskFilter = 'all';
-
-        function localISODate(offsetDays = 0) {
-            const d = new Date();
-            d.setHours(12, 0, 0, 0);
-            d.setDate(d.getDate() + offsetDays);
-            return d.toISOString().slice(0, 10);
-        }
-
-        function getNextSaturday() {
-            const d = new Date();
-            const delta = (6 - d.getDay() + 7) % 7 || 7;
-            return localISODate(delta);
-        }
-
-        function getNextMonday() {
-            const d = new Date();
-            const delta = ((8 - d.getDay()) % 7) || 7;
-            return localISODate(delta);
-        }
-
-        function toggleTaskCustomDate(select) {
-            const input = document.getElementById('task-date');
-            const custom = select.value === 'custom';
-            input.classList.toggle('hidden', !custom);
-            input.required = custom;
-            if (!custom) {
-                input.value = select.value === 'today' ? localISODate(0) : select.value === 'tomorrow' ? localISODate(1) : select.value === 'weekend' ? getNextSaturday() : getNextMonday();
-            }
-            updateTaskQuickButtons();
-        }
-
-        function setTaskQuickDate(value) {
-            const select = document.getElementById('task-date-option');
-            select.value = value;
-            toggleTaskCustomDate(select);
-            if (value === 'custom') document.getElementById('task-date').focus();
-        }
-
-        function applyTaskTimePreset(select) {
-            const custom = document.getElementById('task-custom-time');
-            custom.classList.toggle('hidden', select.value !== 'custom');
-        }
-
-        function getTaskTimeRange() {
-            const preset = document.getElementById('task-time-option').value;
-            const ranges = { morning: '9:00 AM – 11:00 AM', afternoon: '2:00 PM – 4:00 PM', evening: '5:00 PM – 7:00 PM', night: '7:00 PM – 9:00 PM' };
-            if (preset !== 'custom') return ranges[preset];
-            const start = document.getElementById('task-start-time').value;
-            const end = document.getElementById('task-end-time').value;
-            if (!start || !end) return null;
-            const fmt = value => { const [h, m] = value.split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; const hh = h % 12 || 12; return `${hh}:${String(m).padStart(2,'0')} ${ap}`; };
-            return `${fmt(start)} – ${fmt(end)}`;
-        }
-
-        function updateTaskQuickButtons() {
-            const value = document.getElementById('task-date-option')?.value;
-            document.querySelectorAll('.task-quick-date').forEach(btn => btn.classList.remove('bg-indigo-500/10','text-indigo-300','border-indigo-500/20'));
-            const map = { today: 0, tomorrow: 1, custom: 2 };
-            const buttons = document.querySelectorAll('.task-quick-date');
-            if (buttons[map[value]]) buttons[map[value]].classList.add('bg-indigo-500/10','text-indigo-300','border-indigo-500/20');
-        }
-
-        async function addTask(event) {
-            event.preventDefault();
-            const name = document.getElementById('task-name').value.trim();
-            const dateOption = document.getElementById('task-date-option').value;
-            const dateInput = document.getElementById('task-date');
-            const date = dateOption === 'today' ? localISODate(0) : dateOption === 'tomorrow' ? localISODate(1) : dateOption === 'weekend' ? getNextSaturday() : dateOption === 'nextweek' ? getNextMonday() : dateInput.value;
-            const compiledTime = getTaskTimeRange();
-            if (!name || !date || !compiledTime) { showAlert('Missing details', 'Choose a valid task date and time.'); return; }
-            const localTask = { id: `local-${Date.now()}`, name, date, time: compiledTime, done: false };
-            let saved = false;
-            if (supabaseClient) {
-                try {
-                    const { data: { user } } = await supabaseClient.auth.getUser();
-                    const { data, error } = await supabaseClient.from('tasks').insert([{ user_id: user.id, name, date, time: compiledTime, done: false }]).select();
-                    if (!error && data?.[0]) { taskLogs.push(data[0]); saved = true; }
-                } catch (err) { console.warn('Task cloud sync unavailable.', err); }
-            }
-            if (!saved) taskLogs.push(localTask);
-            document.getElementById('task-form').reset();
-            document.getElementById('task-date-option').value = 'today';
-            document.getElementById('task-time-option').value = 'morning';
-            toggleTaskCustomDate(document.getElementById('task-date-option'));
-            applyTaskTimePreset(document.getElementById('task-time-option'));
-            renderTasks();
-            updateCoreStats();
-            showAlert('Task added', 'Your task has been added to the to-do list.');
-        }
-
 </html>
