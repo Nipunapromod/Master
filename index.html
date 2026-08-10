@@ -2001,7 +2001,8 @@
         }
 
         async function addTask(event) {
-            event.preventDefault();
+            event?.preventDefault?.();
+
             const name = document.getElementById('task-name')?.value.trim();
             const dateOption = document.getElementById('task-date-option')?.value;
             const dateInput = document.getElementById('task-date');
@@ -2015,27 +2016,68 @@
             if (!date) { showAlert('Missing date', 'Choose a date for the task.'); return; }
             if (!compiledTime) { showAlert('Invalid time', 'Choose a valid time range.'); return; }
 
-            const localTask = { id: `local-${Date.now()}`, name, date, time: compiledTime, done: false };
-            let saved = false;
-            if (supabaseClient) {
-                try {
-                    const { data: { user } } = await supabaseClient.auth.getUser();
-                    if (user) {
-                        const { data, error } = await supabaseClient.from('tasks').insert([{ user_id: user.id, name, date, time: compiledTime, done: false }]).select();
-                        if (!error && data?.[0]) { taskLogs.push(data[0]); saved = true; }
-                    }
-                } catch (err) { console.warn('Task cloud sync unavailable.', err); }
+            // Add locally FIRST so the task appears immediately, even if Supabase
+            // is slow, offline, or still refreshing the dashboard cache.
+            const localTask = {
+                id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                name,
+                date,
+                time: compiledTime,
+                done: false
+            };
+
+            if (typeof stabilityApplyLocalTask === 'function') {
+                stabilityApplyLocalTask(localTask);
+            } else {
+                taskLogs.push(localTask);
             }
-            if (!saved) taskLogs.push(localTask);
+
+            // Persist the local state immediately so a background cloud refresh
+            // cannot make the newly added task disappear.
+            if (typeof stabilityCache !== 'undefined') {
+                stabilityCache.tasks = [...taskLogs];
+                if (typeof stabilityScheduleCacheWrite === 'function') stabilityScheduleCacheWrite();
+            }
+            if (typeof stabilityRenderTasks === 'function') stabilityRenderTasks({ force: true });
+            else if (typeof renderTasks === 'function') renderTasks();
+            if (typeof updateCoreStats === 'function') updateCoreStats();
 
             document.getElementById('task-form')?.reset();
             const dateSelect = document.getElementById('task-date-option');
             const timeSelect = document.getElementById('task-time-option');
             if (dateSelect) { dateSelect.value = 'today'; toggleTaskCustomDate(dateSelect); }
             if (timeSelect) { timeSelect.value = 'morning'; applyTaskTimePreset(timeSelect); }
-            renderTasks();
-            updateCoreStats();
+
             showAlert('Task added', 'Your task has been added to the to-do list.');
+
+            // Sync to Supabase in the background. The UI does not wait for this.
+            if (supabaseClient) {
+                try {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    if (user) {
+                        const { data, error } = await supabaseClient
+                            .from('tasks')
+                            .insert([{ user_id: user.id, name, date, time: compiledTime, done: false }])
+                            .select()
+                            .single();
+
+                        if (!error && data) {
+                            taskLogs = taskLogs.map(t => t.id === localTask.id ? data : t);
+                            if (typeof stabilityCache !== 'undefined') {
+                                stabilityCache.tasks = [...taskLogs];
+                                if (typeof stabilityScheduleCacheWrite === 'function') stabilityScheduleCacheWrite();
+                            }
+                            if (typeof stabilityRenderTasks === 'function') stabilityRenderTasks({ force: true });
+                            else if (typeof renderTasks === 'function') renderTasks();
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Task cloud sync unavailable. Keeping local task.', err);
+                    if (typeof stabilityEnqueueMutation === 'function') {
+                        stabilityEnqueueMutation('task', 'insert', localTask.id, localTask);
+                    }
+                }
+            }
         }
 
         async function toggleTask(id) {
@@ -5592,7 +5634,10 @@ Strict answer rules:
 
             // Replace only the public handlers that need hardening. The rest of
             // the existing dashboard remains intact and keeps the same UI.
-            window.addTask = stabilityAddTask;
+            // The current To-Do form uses task-date-option/task-time-option and time inputs.
+            // Keep the public submit handler aligned with that form instead of the legacy
+            // stability handler, which expects task-start-hour/task-end-hour controls.
+            window.addTask = addTask;
             window.toggleTask = stabilityToggleTask;
             window.deleteTask = stabilityDeleteTask;
             window.addClass = stabilityAddClass;
