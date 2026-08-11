@@ -190,13 +190,7 @@
             }
 
             #marksChart {
-                min-height: 0;
-                width: 100% !important;
-                height: 100% !important;
-            }
-
-            #tab-content-tracker .relative:has(> #marksChart) {
-                min-height: 310px;
+                min-height: 250px;
             }
 
             #tab-content-ai {
@@ -253,66 +247,6 @@
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
                 scroll-behavior: auto !important;
-            }
-        }
-
-    
-        /* ===== Mobile marks-chart upgrade ===== */
-        .marks-chart-shell {
-            min-width: 0;
-            width: 100%;
-            height: 480px;
-        }
-
-        @media (max-width: 767px) {
-            .marks-chart-shell {
-                height: 320px !important;
-                padding: 0.5rem !important;
-                border-radius: 1rem;
-            }
-
-            #marksChart {
-                width: 100% !important;
-                height: 100% !important;
-            }
-
-            #tab-content-tracker .chart-filter-btn {
-                min-height: 36px;
-                padding-left: 0.65rem;
-                padding-right: 0.65rem;
-            }
-
-            #tab-content-tracker .chart-filter-group {
-                width: 100%;
-                overflow-x: auto;
-                scrollbar-width: none;
-            }
-
-            #tab-content-tracker .chart-filter-group::-webkit-scrollbar {
-                display: none;
-            }
-
-            #tab-content-tracker .chart-controls {
-                width: 100%;
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) auto;
-                gap: 0.5rem;
-            }
-        }
-
-        @media (max-width: 420px) {
-            .marks-chart-shell {
-                height: 285px !important;
-                padding: 0.25rem !important;
-            }
-
-            #tab-content-tracker .chart-controls {
-                grid-template-columns: 1fr;
-            }
-
-            #tab-content-tracker .chart-controls > div:last-child {
-                width: 100%;
-                justify-content: flex-end;
             }
         }
 
@@ -384,7 +318,7 @@
             </div>
 
             <!-- Login / Signup toggler -->
-            <div class="chart-filter-group flex bg-slate-950 p-1 rounded-xl border border-slate-800/80 overflow-x-auto">
+            <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
                 <button onclick="toggleAuthMode('login')" id="auth-tab-login" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-brand-600 text-white">
                     Sign In
                 </button>
@@ -566,7 +500,7 @@
                 
                 <button onclick="switchTab('tasks')" id="btn-tab-tasks" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
                     <i class="fa-solid fa-list-check text-lg w-6"></i>
-                    <span>To-Do List</span>
+                    <span>Tasks & Classes</span>
                 </button>
 
                 <button onclick="switchTab('forgetting')" id="btn-tab-forgetting" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
@@ -831,7 +765,7 @@
                             </h3>
                             
                             <!-- Combined Actions: Subject Filter + Zoom & Save Controls -->
-                            <div class="chart-controls flex flex-wrap items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
                                 <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
                                     <button onclick="setChartFilter('All')" id="btn-filter-all" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all bg-brand-600 text-white">All 3 Subjects</button>
                                     <button onclick="setChartFilter('Combined Maths')" id="btn-filter-maths" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Maths</button>
@@ -853,7 +787,7 @@
                         </div>
 
                         <!-- Canvas viewport (Expanded 480px high view) -->
-                        <div class="marks-chart-shell relative w-full bg-slate-950 rounded-xl p-2 sm:p-3 md:p-4 border border-slate-800/60 flex items-center justify-center overflow-hidden">
+                        <div class="relative w-full h-[480px] bg-slate-950 rounded-xl p-4 border border-slate-800/60 flex items-center justify-center">
                             <canvas id="marksChart" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
                         </div>
                     </div>
@@ -936,64 +870,182 @@
                                 <span class="text-xs text-slate-500">Keep syllabus on track</span>
                             </div>
 
-                            <form id="task-form" onsubmit="addTask(event)" class="space-y-4 bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-inner">
+                            <form id="task-form" onsubmit="addTask(event)" class="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
                                 <div>
-                                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1.5">Task</label>
-                                    <input type="text" id="task-name" required maxlength="120" placeholder="e.g. Solve Integration past paper" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
+                                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Task Name</label>
+                                    <input type="text" id="task-name" required placeholder="e.g. Solve Integration past paper" class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500">
                                 </div>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <div>
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1.5">Date</label>
-                                        <select id="task-date-option" required onchange="toggleTaskCustomDate(this)" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
-                                            <option value="today" selected>Today</option>
-                                            <option value="tomorrow">Tomorrow</option>
-                                            <option value="weekend">This Saturday</option>
-                                            <option value="nextweek">Next Monday</option>
-                                            <option value="custom">Choose date…</option>
-                                        </select>
-                                        <input type="date" id="task-date" class="hidden mt-2 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none">
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Date</label>
+                                        <input type="date" id="task-date" required class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none">
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1.5">Time</label>
-                                        <select id="task-time-option" required onchange="applyTaskTimePreset(this)" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
-                                            <option value="morning" selected>Morning · 9:00 AM–11:00 AM</option>
-                                            <option value="afternoon">Afternoon · 2:00 PM–4:00 PM</option>
-                                            <option value="evening">Evening · 5:00 PM–7:00 PM</option>
-                                            <option value="night">Night · 7:00 PM–9:00 PM</option>
-                                            <option value="custom">Custom time…</option>
-                                        </select>
-                                        <div id="task-custom-time" class="hidden grid grid-cols-2 gap-2 mt-2">
-                                            <input type="time" id="task-start-time" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none">
-                                            <input type="time" id="task-end-time" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none">
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Time Slot Selector</label>
+                                        <div class="flex items-center space-x-1">
+                                            <select id="task-start-hour" class="bg-slate-900 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                                <option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option>
+                                                <option value="07">7</option><option value="08">8</option><option value="09" selected>9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                                            </select>
+                                            <select id="task-start-ampm" class="bg-slate-900 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                                <option value="AM" selected>AM</option>
+                                                <option value="PM">PM</option>
+                                            </select>
+                                            <span class="text-slate-500 text-[11px]">-</span>
+                                            <select id="task-end-hour" class="bg-slate-900 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                                <option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option>
+                                                <option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11" selected>11</option><option value="12">12</option>
+                                            </select>
+                                            <select id="task-end-ampm" class="bg-slate-900 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                                <option value="AM" selected>AM</option>
+                                                <option value="PM">PM</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <button type="button" onclick="setTaskQuickDate('today')" class="task-quick-date px-3 py-1.5 rounded-lg text-[10px] font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Today</button>
-                                    <button type="button" onclick="setTaskQuickDate('tomorrow')" class="task-quick-date px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800">Tomorrow</button>
-                                    <button type="button" onclick="setTaskQuickDate('custom')" class="task-quick-date px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800">Custom date</button>
-                                </div>
-                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-2.5 px-3 rounded-xl text-sm transition shadow-lg shadow-indigo-900/20">
-                                    <i class="fa-solid fa-plus mr-1.5"></i>Add Task
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1.5 px-3 rounded text-xs transition">
+                                    Add Task
                                 </button>
                             </form>
-                            <div class="grid grid-cols-3 gap-2">
-                                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><p class="text-[9px] uppercase font-bold text-slate-500">Total</p><p id="task-stat-total" class="text-lg font-black text-white mt-0.5">0</p></div>
-                                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><p class="text-[9px] uppercase font-bold text-slate-500">Pending</p><p id="task-stat-pending" class="text-lg font-black text-indigo-400 mt-0.5">0</p></div>
-                                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3"><p class="text-[9px] uppercase font-bold text-slate-500">Done</p><p id="task-stat-done" class="text-lg font-black text-emerald-400 mt-0.5">0</p></div>
-                            </div>
-                            <div class="flex items-center gap-2 overflow-x-auto pb-1">
-                                <button onclick="setTaskFilter('all')" id="task-filter-all" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[10px] font-bold whitespace-nowrap">All</button>
-                                <button onclick="setTaskFilter('pending')" id="task-filter-pending" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-[10px] font-bold whitespace-nowrap">Pending</button>
-                                <button onclick="setTaskFilter('today')" id="task-filter-today" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-[10px] font-bold whitespace-nowrap">Today</button>
-                                <button onclick="setTaskFilter('done')" id="task-filter-done" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-[10px] font-bold whitespace-nowrap">Done</button>
-                            </div>
-                            <div class="space-y-2 max-h-[28rem] overflow-y-auto pr-1" id="task-list-container">
+
+                            <div class="space-y-2 max-h-72 overflow-y-auto pr-1" id="task-list-container">
                                 <!-- Dynamic tasks -->
                             </div>
                         </div>
                     </div>
 
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                                    <i class="fa-solid fa-clock text-emerald-400"></i>
+                                    <span>Class Reminders & Schedules</span>
+                                </h3>
+                                <span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-bold">Alert System Active</span>
+                            </div>
+
+                            <form id="class-form" onsubmit="addClass(event)" class="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Class Name</label>
+                                        <input type="text" id="class-name" required placeholder="Class / Teacher" class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Scheduled Day</label>
+                                        <select id="class-day" required class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none">
+                                            <option value="Monday">Monday</option>
+                                            <option value="Tuesday">Tuesday</option>
+                                            <option value="Wednesday">Wednesday</option>
+                                            <option value="Thursday">Thursday</option>
+                                            <option value="Friday">Friday</option>
+                                            <option value="Saturday">Saturday</option>
+                                            <option value="Sunday">Sunday</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Time Range Selector</label>
+                                    <div class="flex items-center space-x-1 bg-slate-900 p-2 rounded border border-slate-800">
+                                        <span class="text-slate-500 text-[10px] font-bold">START:</span>
+                                        <select id="class-start-hour" class="bg-slate-950 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                            <option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option>
+                                            <option value="07">07</option><option value="08" selected>08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                                        </select>
+                                        <select id="class-start-minute" class="bg-slate-950 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                            <option value="00" selected>00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+                                        </select>
+                                        <select id="class-start-ampm" class="bg-slate-950 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                            <option value="AM" selected>AM</option>
+                                            <option value="PM">PM</option>
+                                        </select>
+                                        
+                                        <span class="text-slate-500 text-xs px-1">to</span>
+                                        
+                                        <span class="text-slate-500 text-[10px] font-bold">END:</span>
+                                        <select id="class-end-hour" class="bg-slate-950 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                            <option value="01" selected>01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option>
+                                            <option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                                        </select>
+                                        <select id="class-end-minute" class="bg-slate-950 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                            <option value="00" selected>00</option><option value="15">15</option><option value="30">30</option><option value="45">45</option>
+                                        </select>
+                                        <select id="class-end-ampm" class="bg-slate-950 border border-slate-800 text-[11px] p-1 rounded text-slate-200 focus:outline-none">
+                                            <option value="AM">AM</option>
+                                            <option value="PM" selected>PM</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded text-xs transition">
+                                    Add Class Reminder
+                                </button>
+                            </form>
+
+                            <div class="space-y-2 max-h-72 overflow-y-auto pr-1" id="classes-list-container">
+                                <!-- Dynamic classes -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- ================= ACTIVE RECALL PLANNER TAB ================= -->
+            <section id="tab-content-forgetting" class="tab-pane hidden space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-brain text-purple-400"></i>
+                            <span>Active Recall Spacing Planner</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Map high-difficulty concepts to optimized memory spacing intervals to conquer the forgetting curve.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-square-plus text-purple-400"></i>
+                            <span>Log New Hard Topic</span>
+                        </h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Learned a tough mechanism, an integration pattern, or electric theory? Log it below to schedule automated spacing reviews.
+                        </p>
+                        
+                        <form id="forgetting-form" onsubmit="saveRecallTopic(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Subject Area</label>
+                                <select id="recall-subject" required class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                                    <option value="Combined Maths">Combined Mathematics</option>
+                                    <option value="Chemistry">Chemistry</option>
+                                    <option value="Physics">Physics</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Topic / Lesson Concept</label>
+                                <input type="text" id="recall-topic" required placeholder="e.g. Organic Rx Mechanisms (Grignard)" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Initial Date Studied</label>
+                                <input type="date" id="recall-date" required class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            </div>
+                            <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition">
+                                Build Spaced Spacing Intervals
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-list-check text-purple-400"></i>
+                                <span>Spaced Milestones Review Feed</span>
+                            </h3>
+                            <div class="space-y-2 overflow-y-auto max-h-96 pr-2" id="recall-list-container">
+                                <!-- Generated items -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -1978,201 +2030,70 @@
             pendingAlert.innerText = `${pending} Concept(s) Pending`;
         }
 
-        let activeTaskFilter = 'all';
-
-        function localISODate(offsetDays = 0) {
-            const d = new Date();
-            d.setHours(12, 0, 0, 0);
-            d.setDate(d.getDate() + offsetDays);
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${y}-${m}-${day}`;
-        }
-
-        function getNextSaturday() {
-            const d = new Date();
-            const delta = (6 - d.getDay() + 7) % 7 || 7;
-            return localISODate(delta);
-        }
-
-        function getNextMonday() {
-            const d = new Date();
-            const delta = (8 - d.getDay()) % 7 || 7;
-            return localISODate(delta);
-        }
-
-        function toggleTaskCustomDate(select) {
-            const input = document.getElementById('task-date');
-            if (!input || !select) return;
-            const custom = select.value === 'custom';
-            input.classList.toggle('hidden', !custom);
-            input.required = custom;
-            if (!custom) {
-                input.value = select.value === 'today' ? localISODate(0) :
-                    select.value === 'tomorrow' ? localISODate(1) :
-                    select.value === 'weekend' ? getNextSaturday() : getNextMonday();
-            }
-            updateTaskQuickButtons();
-        }
-
-        function setTaskQuickDate(value) {
-            const select = document.getElementById('task-date-option');
-            if (!select) return;
-            select.value = value;
-            toggleTaskCustomDate(select);
-            if (value === 'custom') document.getElementById('task-date')?.focus();
-        }
-
-        function applyTaskTimePreset(select) {
-            const custom = document.getElementById('task-custom-time');
-            if (custom) custom.classList.toggle('hidden', select?.value !== 'custom');
-        }
-
-        function getTaskTimeRange() {
-            const preset = document.getElementById('task-time-option')?.value;
-            const ranges = {
-                morning: '9:00 AM – 11:00 AM',
-                afternoon: '2:00 PM – 4:00 PM',
-                evening: '5:00 PM – 7:00 PM',
-                night: '7:00 PM – 9:00 PM'
-            };
-            if (preset !== 'custom') return ranges[preset] || null;
-            const start = document.getElementById('task-start-time')?.value;
-            const end = document.getElementById('task-end-time')?.value;
-            if (!start || !end || start >= end) return null;
-            const fmt = value => {
-                const [h, m] = value.split(':').map(Number);
-                const ap = h >= 12 ? 'PM' : 'AM';
-                const hh = h % 12 || 12;
-                return `${hh}:${String(m).padStart(2, '0')} ${ap}`;
-            };
-            return `${fmt(start)} – ${fmt(end)}`;
-        }
-
-        function updateTaskQuickButtons() {
-            const value = document.getElementById('task-date-option')?.value;
-            document.querySelectorAll('.task-quick-date').forEach(btn => {
-                btn.classList.remove('bg-indigo-500/10', 'text-indigo-300', 'border-indigo-500/20');
-            });
-            const map = { today: 0, tomorrow: 1, custom: 2 };
-            const buttons = document.querySelectorAll('.task-quick-date');
-            if (buttons[map[value]]) buttons[map[value]].classList.add('bg-indigo-500/10', 'text-indigo-300', 'border-indigo-500/20');
-        }
-
         async function addTask(event) {
-            event?.preventDefault?.();
+            event.preventDefault();
+            const name = document.getElementById('task-name').value;
+            const date = document.getElementById('task-date').value;
+            
+            const startH = document.getElementById('task-start-hour').value;
+            const startAM = document.getElementById('task-start-ampm').value;
+            const endH = document.getElementById('task-end-hour').value;
+            const endAM = document.getElementById('task-end-ampm').value;
 
-            const name = document.getElementById('task-name')?.value.trim();
-            const dateOption = document.getElementById('task-date-option')?.value;
-            const dateInput = document.getElementById('task-date');
-            const date = dateOption === 'today' ? localISODate(0) :
-                dateOption === 'tomorrow' ? localISODate(1) :
-                dateOption === 'weekend' ? getNextSaturday() :
-                dateOption === 'nextweek' ? getNextMonday() : dateInput?.value;
-            const compiledTime = getTaskTimeRange();
+            const compiledTime = compileTimeRange(startH, startAM, endH, endAM);
 
-            if (!name) { showAlert('Missing task', 'Enter a task name.'); return; }
-            if (!date) { showAlert('Missing date', 'Choose a date for the task.'); return; }
-            if (!compiledTime) { showAlert('Invalid time', 'Choose a valid time range.'); return; }
-
-            // Add locally FIRST so the task appears immediately, even if Supabase
-            // is slow, offline, or still refreshing the dashboard cache.
-            const localTask = {
-                id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                name,
-                date,
-                time: compiledTime,
-                done: false
-            };
-
-            if (typeof stabilityApplyLocalTask === 'function') {
-                stabilityApplyLocalTask(localTask);
-            } else {
-                taskLogs.push(localTask);
-            }
-
-            // Persist the local state immediately so a background cloud refresh
-            // cannot make the newly added task disappear.
-            if (typeof stabilityCache !== 'undefined') {
-                stabilityCache.tasks = [...taskLogs];
-                if (typeof stabilityScheduleCacheWrite === 'function') stabilityScheduleCacheWrite();
-            }
-            if (typeof stabilityRenderTasks === 'function') stabilityRenderTasks({ force: true });
-            else if (typeof renderTasks === 'function') renderTasks();
-            if (typeof updateCoreStats === 'function') updateCoreStats();
-
-            document.getElementById('task-form')?.reset();
-            const dateSelect = document.getElementById('task-date-option');
-            const timeSelect = document.getElementById('task-time-option');
-            if (dateSelect) { dateSelect.value = 'today'; toggleTaskCustomDate(dateSelect); }
-            if (timeSelect) { timeSelect.value = 'morning'; applyTaskTimePreset(timeSelect); }
-
-            showAlert('Task added', 'Your task has been added to the to-do list.');
-
-            // Sync to Supabase in the background. The UI does not wait for this.
             if (supabaseClient) {
                 try {
                     const { data: { user } } = await supabaseClient.auth.getUser();
-                    if (user) {
-                        const { data, error } = await supabaseClient
-                            .from('tasks')
-                            .insert([{ user_id: user.id, name, date, time: compiledTime, done: false }])
-                            .select()
-                            .single();
-
-                        if (!error && data) {
-                            taskLogs = taskLogs.map(t => t.id === localTask.id ? data : t);
-                            if (typeof stabilityCache !== 'undefined') {
-                                stabilityCache.tasks = [...taskLogs];
-                                if (typeof stabilityScheduleCacheWrite === 'function') stabilityScheduleCacheWrite();
-                            }
-                            if (typeof stabilityRenderTasks === 'function') stabilityRenderTasks({ force: true });
-                            else if (typeof renderTasks === 'function') renderTasks();
-                        }
+                    const { data, error } = await supabaseClient.from('tasks').insert([
+                        { user_id: user.id, name, date, time: compiledTime, done: false }
+                    ]).select();
+                    if (!error && data) {
+                        taskLogs.push(data[0]);
                     }
                 } catch (err) {
-                    console.warn('Task cloud sync unavailable. Keeping local task.', err);
-                    if (typeof stabilityEnqueueMutation === 'function') {
-                        stabilityEnqueueMutation('task', 'insert', localTask.id, localTask);
-                    }
+                    console.warn("Bypassed dynamic task cloud sync.");
                 }
             }
+
+            document.getElementById('task-form').reset();
+            renderTasks();
+            updateCoreStats();
         }
 
         async function toggleTask(id) {
             const task = taskLogs.find(t => t.id === id);
             if (!task) return;
+
             const nextDone = !task.done;
-            if (String(id).startsWith('local-') || !supabaseClient) {
-                taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
-            } else {
+
+            if (supabaseClient) {
                 try {
                     const { data: { user } } = await supabaseClient.auth.getUser();
                     const { error } = await supabaseClient.from('tasks').update({ done: nextDone }).eq('id', id).eq('user_id', user.id);
-                    if (!error) taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
+                    if (!error) {
+                        taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
+                    }
                 } catch (err) {
-                    console.warn('Task update failed.', err);
+                    taskLogs = taskLogs.map(t => t.id === id ? { ...t, done: nextDone } : t);
                 }
             }
             renderTasks();
-            updateCoreStats();
         }
 
         async function deleteTask(id) {
-            if (String(id).startsWith('local-') || !supabaseClient) {
-                taskLogs = taskLogs.filter(t => t.id !== id);
-            } else {
+            if (supabaseClient) {
                 try {
                     const { data: { user } } = await supabaseClient.auth.getUser();
                     const { error } = await supabaseClient.from('tasks').delete().eq('id', id).eq('user_id', user.id);
-                    if (!error) taskLogs = taskLogs.filter(t => t.id !== id);
+                    if (!error) {
+                        taskLogs = taskLogs.filter(t => t.id !== id);
+                    }
                 } catch (err) {
-                    console.warn('Task delete failed.', err);
+                    taskLogs = taskLogs.filter(t => t.id !== id);
                 }
             }
             renderTasks();
-            updateCoreStats();
         }
 
         async function addClass(event) {
@@ -2243,6 +2164,11 @@
                     showAlert('Invalid Entry', 'Marks must be an integer between 0 and 100.');
                     return;
                 }
+            }
+
+            if (numberVal == 12 || numberVal == 26) {
+                showAlert('Filtered Assignment', 'Note: Practice papers 12 and 26 are master calibration values and cannot be loaded.');
+                return;
             }
 
             if (supabaseClient) {
@@ -2476,7 +2402,10 @@
 
             const datasets = [];
             const activePapersForLabels = (activeChartFilter === 'All' ? paperLogs : paperLogs.filter(p => p.subject === activeChartFilter))
-                .filter(p => p && p.type);
+                .filter(p => {
+                    const num = parseInt(String(p.type).replace(/\D/g, ''), 10);
+                    return num !== 12 && num !== 26;
+                });
             
             const uniqueLabels = [...new Set(activePapersForLabels.map(p => p.type))];
 
@@ -2631,7 +2560,10 @@
             }
 
             const activePapersForLabels = (activeChartFilter === 'All' ? paperLogs : paperLogs.filter(p => p.subject === activeChartFilter))
-                .filter(p => p && p.type);
+                .filter(p => {
+                    const num = parseInt(String(p.type).replace(/\D/g, ''), 10);
+                    return num !== 12 && num !== 26;
+                });
             
             const uniqueLabels = [...new Set(activePapersForLabels.map(p => p.type))];
 
@@ -2773,32 +2705,7 @@
             }
         }
 
-        async 
-function recallLocalDateKey(date = new Date()) {
-    const d = new Date(date);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-}
-
-function recallParseLocalDate(value) {
-    if (!value) return null;
-    const parts = String(value).split('-').map(Number);
-    if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
-    return new Date(parts[0], parts[1] - 1, parts[2]);
-}
-
-function recallDaysBetween(a, b) {
-    const da = recallParseLocalDate(a);
-    const db = recallParseLocalDate(b);
-    if (!da || !db) return 0;
-    da.setHours(0,0,0,0);
-    db.setHours(0,0,0,0);
-    return Math.round((db - da) / 86400000);
-}
-
-function saveRecallTopic(event) {
+        async function saveRecallTopic(event) {
             event.preventDefault();
             const subject = document.getElementById('recall-subject').value;
             const topic = document.getElementById('recall-topic').value;
@@ -3602,56 +3509,30 @@ Strict answer rules:
             return `${startH}:${startM} ${startAM} - ${endH}:${endM} ${endAM}`;
         }
 
-        function setTaskFilter(filter) {
-            activeTaskFilter = filter;
-            document.querySelectorAll('[id^="task-filter-"]').forEach(btn => { btn.className = 'px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-[10px] font-bold whitespace-nowrap'; });
-            const active = document.getElementById(`task-filter-${filter}`);
-            if (active) active.className = 'px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[10px] font-bold whitespace-nowrap';
-            try {
-                if (typeof stabilityEnsureTaskState === 'function') stabilityEnsureTaskState();
-                if (typeof stabilityRenderTasks === 'function') {
-                    stabilityRenderTasks({ force: true });
-                } else if (typeof renderTasks === 'function') {
-                    renderTasks();
-                }
-            } catch (err) {
-                console.warn('Task filter refresh failed safely.', err);
-            }
-        }
-
         function renderTasks() {
             const container = document.getElementById('task-list-container');
             if (!container) return;
-            const today = localISODate(0);
-            const total = taskLogs.length;
-            const done = taskLogs.filter(t => t.done).length;
-            const pending = total - done;
-            document.getElementById('task-stat-total')?.replaceChildren(document.createTextNode(total));
-            document.getElementById('task-stat-pending')?.replaceChildren(document.createTextNode(pending));
-            document.getElementById('task-stat-done')?.replaceChildren(document.createTextNode(done));
-            let visible = [...taskLogs];
-            if (activeTaskFilter === 'pending') visible = visible.filter(t => !t.done);
-            if (activeTaskFilter === 'done') visible = visible.filter(t => t.done);
-            if (activeTaskFilter === 'today') visible = visible.filter(t => t.date === today);
-            visible.sort((a,b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-            if (!visible.length) { container.innerHTML = `<div class="text-center py-10 bg-slate-950/60 border border-dashed border-slate-800 rounded-2xl"><i class="fa-solid fa-circle-check text-2xl text-slate-700"></i><p class="text-xs text-slate-500 mt-2">No tasks in this view.</p></div>`; return; }
+            if (!taskLogs.length) {
+                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No tasks configured. Log assignments to stay on track!</p>`;
+                return;
+            }
+
             container.innerHTML = '';
-            visible.forEach(task => {
+            taskLogs.forEach(task => {
                 const item = document.createElement('div');
-                const overdue = !task.done && task.date < today;
-                item.className = `group flex items-center gap-3 p-3.5 rounded-2xl border ${task.done ? 'bg-emerald-950/10 border-emerald-900/30' : overdue ? 'bg-rose-950/10 border-rose-900/40' : 'bg-slate-950 border-slate-800 hover:border-indigo-500/40'} transition`;
-                const dateLabel = task.date === today ? 'Today' : task.date === localISODate(1) ? 'Tomorrow' : task.date;
+                item.className = `flex items-center justify-between p-3 rounded-xl border ${task.done ? 'bg-slate-950/40 border-slate-900 line-through opacity-60' : 'bg-slate-950 border-slate-800'} transition`;
                 item.innerHTML = `
-                    <button onclick="toggleTask('${task.id}')" aria-label="${task.done ? 'Mark task pending' : 'Complete task'}" class="w-7 h-7 rounded-lg border ${task.done ? 'bg-emerald-600 border-emerald-500 text-white' : 'border-slate-700 text-transparent hover:border-indigo-500'} flex items-center justify-center flex-shrink-0 transition"><i class="fa-solid fa-check text-xs"></i></button>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-sm font-semibold ${task.done ? 'text-slate-500 line-through' : 'text-slate-200'} truncate">${stabilitySafeString(task.name)}</p>
-                        <div class="flex flex-wrap items-center gap-2 mt-1 text-[10px] font-semibold">
-                            <span class="${overdue ? 'text-rose-400' : 'text-indigo-400'}"><i class="fa-regular fa-calendar mr-1"></i>${dateLabel}</span>
-                            <span class="text-slate-500"><i class="fa-regular fa-clock mr-1"></i>${stabilitySafeString(task.time || 'No time')}</span>
-                            ${overdue ? '<span class="text-rose-400">OVERDUE</span>' : ''}
+                    <div class="flex items-start space-x-2.5 min-w-0 flex-1">
+                        <button onclick="toggleTask('${task.id}')" class="mt-0.5 w-4 h-4 rounded border ${task.done ? 'bg-indigo-600 border-indigo-500 flex items-center justify-center text-white' : 'border-slate-700'} flex-shrink-0">
+                            ${task.done ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}
+                        </button>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-slate-200 truncate">${task.name}</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5"><i class="fa-regular fa-calendar mr-1"></i>${task.date} | <i class="fa-regular fa-clock mr-1"></i>${task.time}</p>
                         </div>
                     </div>
-                    <button onclick="deleteTask('${task.id}')" aria-label="Delete task" class="w-9 h-9 rounded-lg text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 transition"><i class="fa-solid fa-trash-can text-xs"></i></button>`;
+                    <button onclick="deleteTask('${task.id}')" class="text-slate-500 hover:text-rose-500 text-xs px-2"><i class="fa-solid fa-trash"></i></button>
+                `;
                 container.appendChild(item);
             });
         }
@@ -3753,10 +3634,6 @@ Strict answer rules:
         window.generateNewQuote = generateNewQuote;
         window.updateCoreStats = updateCoreStats;
         window.toggleTask = toggleTask;
-        window.setTaskFilter = setTaskFilter;
-        window.toggleTaskCustomDate = toggleTaskCustomDate;
-        window.setTaskQuickDate = setTaskQuickDate;
-        window.applyTaskTimePreset = applyTaskTimePreset;
         window.deleteTask = deleteTask;
         window.deleteClass = deleteClass;
         window.savePaper = savePaper;
@@ -3916,7 +3793,7 @@ Strict answer rules:
 
             function stabilityParseTaskTime(timeText) {
                 const text = stabilitySafeString(timeText).trim();
-                const match = text.match(/^\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\s*[-–—]\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\s*$/i);
+                const match = text.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
                 if (!match) return null;
                 const start = stabilityParseTimePart(match[1], match[2] ?? '00', match[3]);
                 const end = stabilityParseTimePart(match[4], match[5] ?? '00', match[6]);
@@ -4298,94 +4175,24 @@ Strict answer rules:
                 if (remove) remove.setAttribute('aria-label', `Delete task: ${task.name}`);
             }
 
-            
-function stabilityEnsureTaskState() {
-    try {
-        if (!Array.isArray(taskLogs)) taskLogs = [];
-        taskLogs = taskLogs
-            .map(stabilityNormalizeTask)
-            .filter(Boolean);
-
-        // Remove duplicate IDs while preserving the newest record.
-        const seen = new Set();
-        taskLogs = taskLogs.filter(task => {
-            if (!task.id) return true;
-            if (seen.has(task.id)) return false;
-            seen.add(task.id);
-            return true;
-        });
-
-        return taskLogs;
-    } catch (err) {
-        console.warn('Task state normalization failed safely.', err);
-        return Array.isArray(taskLogs) ? taskLogs : [];
-    }
-}
-
-function stabilityRenderTasks(options = {}) {
-                stabilityEnsureTaskState();
+            function stabilityRenderTasks(options = {}) {
                 const container = document.getElementById('task-list-container');
                 if (!container) return;
                 if (container.dataset.loading === '1' && !options.force) return;
 
-                // Keep the stability renderer in sync with the task filter buttons.
-                // The old renderer handled these filters, but the stability renderer
-                // replaced it and previously ignored activeTaskFilter.
-                const currentFilter = ['all', 'pending', 'today', 'done'].includes(activeTaskFilter)
-                    ? activeTaskFilter
-                    : 'all';
-
-                const today = typeof localISODate === 'function'
-                    ? localISODate(0)
-                    : new Date().toISOString().slice(0, 10);
-
-                const totalCount = taskLogs.length;
-                const doneCount = taskLogs.filter(task => Boolean(task.done)).length;
-                const pendingCount = totalCount - doneCount;
-
-                document.getElementById('task-stat-total')?.replaceChildren(
-                    document.createTextNode(String(totalCount))
-                );
-                document.getElementById('task-stat-pending')?.replaceChildren(
-                    document.createTextNode(String(pendingCount))
-                );
-                document.getElementById('task-stat-done')?.replaceChildren(
-                    document.createTextNode(String(doneCount))
-                );
-
                 const previousScroll = container.scrollTop;
                 container.querySelector('[data-loading-state]')?.remove();
-                const normalizedTasks = [...taskLogs]
+                const sorted = [...taskLogs]
                     .map(stabilityNormalizeTask)
-                    .filter(Boolean);
-
-                let filteredTasks = normalizedTasks;
-
-                if (currentFilter === 'pending') {
-                    filteredTasks = normalizedTasks.filter(task => !task.done);
-                } else if (currentFilter === 'done') {
-                    filteredTasks = normalizedTasks.filter(task => Boolean(task.done));
-                } else if (currentFilter === 'today') {
-                    filteredTasks = normalizedTasks.filter(task => task.date === today);
-                }
-
-                const sorted = filteredTasks.sort((a, b) =>
-                    stabilityDateSortKey(a.date).localeCompare(stabilityDateSortKey(b.date)) ||
-                    (stabilityParseTaskTime(a.time)?.startMinutes ?? 9999) -
-                    (stabilityParseTaskTime(b.time)?.startMinutes ?? 9999) ||
-                    a.name.localeCompare(b.name)
-                );
+                    .filter(Boolean)
+                    .sort((a, b) => stabilityDateSortKey(a.date).localeCompare(stabilityDateSortKey(b.date)) ||
+                        (stabilityParseTaskTime(a.time)?.startMinutes ?? 9999) - (stabilityParseTaskTime(b.time)?.startMinutes ?? 9999) ||
+                        a.name.localeCompare(b.name));
 
                 if (!sorted.length) {
                     stabilityTaskDomCache.forEach(node => node.remove());
                     stabilityTaskDomCache.clear();
-                    const filterLabels = {
-                        all: 'No tasks configured. Add a task to get started!',
-                        pending: 'No pending tasks. Nice work!',
-                        today: 'No tasks scheduled for today.',
-                        done: 'No completed tasks yet.'
-                    };
-                    container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">${filterLabels[currentFilter]}</p>`;
+                    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">No tasks configured. Log assignments to stay on track!</p>';
                     stabilityRestoreScroll(container, previousScroll);
                     return;
                 }
@@ -5572,7 +5379,10 @@ function stabilityRenderTasks(options = {}) {
 
                     if (typeof calculateInsights === 'function') calculateInsights();
 
-                    const activePapers = filtered.filter(p => p && p.type);
+                    const activePapers = filtered.filter(p => {
+                        const num = Number.parseInt(String(p.type).replace(/\D/g, ''), 10);
+                        return num !== 12 && num !== 26;
+                    });
                     const uniqueLabels = [...new Set(activePapers.map(p => p.type))];
                     const datasets = stabilityBuildChartDatasets(uniqueLabels);
                     const canvas = document.getElementById('marksChart');
@@ -5589,21 +5399,9 @@ function stabilityRenderTasks(options = {}) {
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 animation: false,
-                                resizeDelay: 80,
-                                interaction: { mode: 'index', intersect: false },
-                                layout: { padding: { top: 4, right: 8, bottom: 4, left: 2 } },
+                                resizeDelay: 0,
                                 plugins: {
-                                    legend: {
-                                        position: window.innerWidth < 768 ? 'bottom' : 'top',
-                                        align: window.innerWidth < 768 ? 'center' : 'start',
-                                        labels: {
-                                            color: '#94a3b8',
-                                            font: { weight: 'bold', size: window.innerWidth < 768 ? 10 : 11 },
-                                            boxWidth: window.innerWidth < 768 ? 10 : 14,
-                                            boxHeight: window.innerWidth < 768 ? 10 : 14,
-                                            padding: window.innerWidth < 768 ? 10 : 14
-                                        }
-                                    },
+                                    legend: { labels: { color: '#94a3b8', font: { weight: 'bold', size: 11 } } },
                                     zoom: {
                                         pan: { enabled: true, mode: 'x' },
                                         zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
@@ -5613,30 +5411,12 @@ function stabilityRenderTasks(options = {}) {
                                     y: {
                                         min: 0,
                                         max: 100,
-                                        beginAtZero: true,
-                                        title: { display: true, text: 'Marks (%)', color: '#64748b', font: { weight: 'bold', size: window.innerWidth < 768 ? 10 : 11 } },
-                                        grid: { color: 'rgba(51, 65, 85, 0.25)', drawTicks: true },
-                                        border: { display: true, color: 'rgba(71, 85, 105, 0.55)' },
-                                        ticks: {
-                                            color: '#94a3b8',
-                                            font: { weight: 'bold', size: window.innerWidth < 768 ? 9 : 11 },
-                                            stepSize: 10,
-                                            maxTicksLimit: 11,
-                                            padding: window.innerWidth < 768 ? 4 : 7,
-                                            callback: value => `${value}%`
-                                        }
+                                        grid: { color: 'rgba(51, 65, 85, 0.25)' },
+                                        ticks: { color: '#64748b', font: { weight: 'bold' }, stepSize: 10 }
                                     },
                                     x: {
-                                        grid: { color: 'rgba(51, 65, 85, 0.18)' },
-                                        border: { display: true, color: 'rgba(71, 85, 105, 0.55)' },
-                                        ticks: {
-                                            color: '#94a3b8',
-                                            font: { weight: 'bold', size: window.innerWidth < 768 ? 9 : 11 },
-                                            autoSkip: true,
-                                            maxTicksLimit: window.innerWidth < 768 ? 8 : 16,
-                                            maxRotation: window.innerWidth < 768 ? 45 : 0,
-                                            minRotation: window.innerWidth < 768 ? 45 : 0
-                                        }
+                                        grid: { color: 'rgba(51, 65, 85, 0.25)' },
+                                        ticks: { color: '#64748b', font: { weight: 'bold' }, autoSkip: true, maxTicksLimit: 16 }
                                     }
                                 }
                             }
@@ -5798,10 +5578,7 @@ function stabilityRenderTasks(options = {}) {
 
             // Replace only the public handlers that need hardening. The rest of
             // the existing dashboard remains intact and keeps the same UI.
-            // The current To-Do form uses task-date-option/task-time-option and time inputs.
-            // Keep the public submit handler aligned with that form instead of the legacy
-            // stability handler, which expects task-start-hour/task-end-hour controls.
-            window.addTask = addTask;
+            window.addTask = stabilityAddTask;
             window.toggleTask = stabilityToggleTask;
             window.deleteTask = stabilityDeleteTask;
             window.addClass = stabilityAddClass;
@@ -5906,7 +5683,7 @@ function stabilityRenderTasks(options = {}) {
             commands: [
                 { id:'home', label:'Overview & Clock', hint:'Dashboard overview', icon:'fa-house', action:() => switchTab('home') },
                 { id:'tracker', label:'Marks Tracker', hint:'Scores and progression', icon:'fa-chart-line', action:() => switchTab('tracker') },
-                { id:'tasks', label:'To-Do List', hint:'Plan and track your tasks', icon:'fa-list-check', action:() => switchTab('tasks') },
+                { id:'tasks', label:'Tasks & Classes', hint:'To-do list and reminders', icon:'fa-list-check', action:() => switchTab('tasks') },
                 { id:'forgetting', label:'Recall Planner', hint:'Active recall schedule', icon:'fa-brain', action:() => switchTab('forgetting') },
                 { id:'ai', label:'Mastermind AI Coach', hint:'AI study assistant', icon:'fa-wand-magic-sparkles', action:() => switchTab('ai') },
                 { id:'settings', label:'Settings', hint:'Profile and configuration', icon:'fa-sliders', action:() => switchTab('settings') },
@@ -6108,177 +5885,6 @@ function stabilityRenderTasks(options = {}) {
         window.showV7Toast = toast;
     })();
     </script>
-
-
-<script>
-/* A/L Mastermind final task + mobile chart hardening */
-(() => {
-    'use strict';
-
-    const refreshTaskUI = () => {
-        try {
-            if (typeof stabilityRenderTasks === 'function') stabilityRenderTasks({ force: true });
-            else if (typeof renderTasks === 'function') renderTasks();
-            if (typeof updateCoreStats === 'function') updateCoreStats();
-        } catch (e) {
-            console.warn('Task UI refresh skipped safely.', e);
-        }
-    };
-
-    window.addEventListener('resize', () => {
-        requestAnimationFrame(() => {
-            try {
-                if (typeof performanceChartInstance !== 'undefined' && performanceChartInstance) {
-                    performanceChartInstance.resize();
-                }
-            } catch (_) {}
-        });
-    }, { passive: true });
-
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            setTimeout(() => {
-                try {
-                    if (typeof performanceChartInstance !== 'undefined' && performanceChartInstance) {
-                        performanceChartInstance.resize();
-                    }
-                } catch (_) {}
-                refreshTaskUI();
-            }, 80);
-        }
-    });
-
-    window.addEventListener('load', () => setTimeout(refreshTaskUI, 120));
-})();
-</script>
-
-
-<script>
-/* v7.2 To-Do filter synchronization */
-(() => {
-    'use strict';
-
-    function syncTodoFilters() {
-        try {
-            const active = ['all', 'pending', 'today', 'done'].includes(activeTaskFilter)
-                ? activeTaskFilter
-                : 'all';
-
-            document.querySelectorAll('[id^="task-filter-"]').forEach(btn => {
-                btn.className = 'px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-[10px] font-bold whitespace-nowrap';
-            });
-
-            const activeButton = document.getElementById(`task-filter-${active}`);
-            if (activeButton) {
-                activeButton.className = 'px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-[10px] font-bold whitespace-nowrap';
-            }
-
-            if (typeof stabilityRenderTasks === 'function') {
-                stabilityRenderTasks({ force: true });
-            }
-        } catch (err) {
-            console.warn('To-Do filter sync skipped safely.', err);
-        }
-    }
-
-    window.addEventListener('load', () => setTimeout(syncTodoFilters, 180));
-})();
-</script>
-
-
-<script>
-/* v7.3 Recall Planner hardening */
-(() => {
-    'use strict';
-
-    const recallState = {
-        getArray() {
-            const names = [
-                'recallItems', 'recallLogs', 'recallPlans',
-                'recallPlannerData', 'recallData'
-            ];
-            for (const name of names) {
-                try {
-                    const value = window[name];
-                    if (Array.isArray(value)) return value;
-                    if (value && Array.isArray(value.items)) return value.items;
-                    if (value && Array.isArray(value.records)) return value.records;
-                } catch (_) {}
-            }
-            return [];
-        },
-
-        refresh() {
-            const candidates = [
-                'renderRecallPlanner', 'renderRecallPlan', 'renderRecall',
-                'updateRecallPlanner', 'loadRecallPlanner',
-                'refreshRecallPlanner'
-            ];
-
-            for (const fn of candidates) {
-                try {
-                    if (typeof window[fn] === 'function') {
-                        window[fn]();
-                        return true;
-                    }
-                } catch (err) {
-                    console.warn('Recall refresh failed in ' + fn, err);
-                }
-            }
-            return false;
-        }
-    };
-
-    // Re-render after tab switches, which fixes planners that were initialized
-    // while their container was hidden.
-    document.addEventListener('click', event => {
-        const target = event.target.closest('button, [role="tab"]');
-        if (!target) return;
-
-        const label = (target.textContent || '').trim().toLowerCase();
-        const id = (target.id || '').toLowerCase();
-
-        if (label.includes('recall') || id.includes('recall')) {
-            setTimeout(() => recallState.refresh(), 80);
-        }
-    });
-
-    window.addEventListener('load', () => {
-        setTimeout(() => recallState.refresh(), 250);
-    });
-
-    window.addEventListener('resize', () => {
-        if (window.innerWidth < 768) {
-            setTimeout(() => recallState.refresh(), 60);
-        }
-    }, { passive: true });
-
-    // Expose a safe manual refresh hook for the dashboard's own buttons.
-    window.refreshRecallPlannerSafe = () => recallState.refresh();
-})();
-</script>
-
-
-<script>
-/* v7.3 To-Do final sync */
-(() => {
-    'use strict';
-    function syncTasks() {
-        try {
-            if (typeof stabilityEnsureTaskState === 'function') stabilityEnsureTaskState();
-            if (typeof stabilityRenderTasks === 'function') {
-                stabilityRenderTasks({ force: true });
-            }
-        } catch (err) {
-            console.warn('Final task sync skipped safely.', err);
-        }
-    }
-    window.addEventListener('load', () => setTimeout(syncTasks, 220));
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) setTimeout(syncTasks, 100);
-    });
-})();
-</script>
 
 </body>
 </html>
