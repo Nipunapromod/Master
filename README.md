@@ -1,6 +1,6 @@
 # A/L Mastermind PWA v7.1
 
-Files:
+Files
 - index.html  -> upgraded dashboard
 - manifest.json -> PWA metadata
 - sw.js -> offline service worker
