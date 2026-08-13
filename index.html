@@ -5739,25 +5739,81 @@ Strict answer rules:
             }
 
             async function enableTaskNotifications() {
+                const button = document.getElementById('enable-task-notifications');
+
                 if (!stabilityHasNotificationAPI) {
-                    stabilityNotify('Notifications Unavailable', 'This browser does not support device notifications.');
+                    if (button) button.textContent = 'Notifications Unsupported';
+                    stabilityNotify(
+                        'Notifications Unavailable',
+                        'This browser does not support device notifications.'
+                    );
                     return;
                 }
+
                 try {
-                    const permission = await Notification.requestPermission();
-                    const button = document.getElementById('enable-task-notifications');
+                    let permission = Notification.permission;
+
+                    if (permission !== 'granted') {
+                        permission = await Notification.requestPermission();
+                    }
+
                     if (permission === 'granted') {
                         if (button) button.textContent = 'Notifications Enabled ✓';
-                        stabilityNotify('Notifications Enabled', 'You will receive task reminders on this device while the dashboard is active.');
+
+                        // Immediate test notification confirms that permission really works.
+                        try {
+                            const test = new Notification('🔔 Notifications Enabled', {
+                                body: 'A/L Mastermind task reminders are now active on this device.',
+                                tag: 'almastermind-notification-test',
+                                icon: './icons/1icon-192.png'
+                            });
+                            test.onclick = () => {
+                                try { window.focus(); } catch (_) {}
+                                test.close();
+                            };
+                        } catch (notificationError) {
+                            console.warn('Test notification failed:', notificationError);
+                            stabilityNotify(
+                                'Permission Granted',
+                                'Notifications are allowed, but the browser could not display the test notification.'
+                            );
+                        }
+
+                        stabilityNotify(
+                            'Notifications Enabled',
+                            'Task reminders are active while the dashboard is running.'
+                        );
+
                         stabilityScheduleTaskNotifications();
-                    } else if (permission === 'denied') {
-                        if (button) button.textContent = 'Notifications Blocked';
-                        stabilityNotify('Notifications Blocked', 'Allow notifications for this site in your browser settings.');
+                        return;
                     }
+
+                    if (permission === 'denied') {
+                        if (button) button.textContent = 'Notifications Blocked';
+                        stabilityNotify(
+                            'Notifications Blocked',
+                            'Allow notifications for this site in your browser site settings, then try again.'
+                        );
+                        return;
+                    }
+
+                    if (button) button.textContent = 'Allow Notifications';
+                    stabilityNotify(
+                        'Notification Permission',
+                        'Please allow notifications in the browser permission prompt.'
+                    );
                 } catch (err) {
-                    console.warn('Notification permission request failed.', err);
+                    console.error('Notification permission request failed:', err);
+                    stabilityNotify(
+                        'Notification Error',
+                        'The browser could not request notification permission. Check the site permissions and console for details.'
+                    );
                 }
             }
+
+            // Expose the button handler because this function lives inside the
+            // stability IIFE while the HTML button uses onclick="enableTaskNotifications()".
+            window.enableTaskNotifications = enableTaskNotifications;
 
             function stabilityScheduleTaskNotifications() {
                 if (stabilityTaskNotificationTimer) {
