@@ -4289,10 +4289,20 @@ Strict answer rules:
             loadAIChatHistory();
             generateNewQuote();
 
+            // Register the notification service worker early and keep its registration available.
+            // The notification UI uses ServiceWorkerRegistration.showNotification() instead of
+            // new Notification(), which is much more reliable for installed PWAs.
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./sw.js', { scope: './' })
-                    .then((reg) => console.log('Service worker registered:', reg))
-                    .catch((err) => console.warn('Service worker failed to register:', err));
+                    .then(async (reg) => {
+                        window.alMasterpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63 = reg;
+                        try { await navigator.serviceWorker.ready; } catch (_) {}
+                        console.log('Service worker registered:', reg.scope);
+                    })
+                    .catch((err) => {
+                        window.alMasterpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63 = null;
+                        console.warn('Service worker failed to register:', err);
+                    });
             }
         }
     </script>
@@ -5700,28 +5710,45 @@ Strict answer rules:
                 return due;
             }
 
-            function stabilitySendTaskNotification(task, dueDate) {
+            async function stabilityShowNotification(title, options = {}) {
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
+                const payload = {
+                    body: '',
+                    tag: 'almastermind-notification',
+                    icon: './icons/1icon-192.png',
+                    badge: './icons/1icon-192.png',
+                    renotify: false,
+                    silent: false,
+                    ...options
+                };
+                try {
+                    if ('serviceWorker' in navigator) {
+                        const reg = window.alMasterpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63 || await navigator.serviceWorker.ready;
+                        if (reg && typeof reg.showNotification === 'function') {
+                            await reg.showNotification(title, payload);
+                            return true;
+                        }
+                    }
+                    // Fallback for browsers that expose Notifications but not a usable SW.
+                    const notification = new Notification(title, payload);
+                    notification.onclick = () => { try { window.focus(); } catch (_) {} notification.close(); };
+                    return true;
+                } catch (err) {
+                    console.warn('Notification could not be displayed.', err);
+                    return false;
+                }
+            }
+
+            async function stabilitySendTaskNotification(task, dueDate) {
                 if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
                 const key = stabilityTaskOccurrenceKey(task);
                 if (stabilityIsNotificationAlreadySent(key)) return false;
-                try {
-                    const notification = new Notification(`Task Due: ${task.name}`, {
-                        body: `${task.date} • ${task.time}`,
-                        tag: `almastermind-task-${task.id}`,
-                        renotify: false,
-                        silent: false,
-                        icon: './icon-192.png'
-                    });
-                    notification.onclick = () => {
-                        try { window.focus(); } catch (_) {}
-                        notification.close();
-                    };
-                    stabilityMarkNotificationSent(key);
-                    return true;
-                } catch (err) {
-                    console.warn('Task notification could not be displayed.', err);
-                    return false;
-                }
+                const shown = await stabilityShowNotification(`Task Due: ${task.name}`, {
+                    body: `${task.date} • ${task.time}`,
+                    tag: `almastermind-task-${task.id}`
+                });
+                if (shown) stabilityMarkNotificationSent(key);
+                return shown;
             }
 
             function stabilityFindNextTaskReminder() {
@@ -5760,23 +5787,18 @@ Strict answer rules:
                     if (permission === 'granted') {
                         if (button) button.textContent = 'Notifications Enabled ✓';
 
-                        // Immediate test notification confirms that permission really works.
-                        try {
-                            const test = new Notification('🔔 Notifications Enabled', {
-                                body: 'A/L Mastermind task reminders are now active on this device.',
-                                tag: 'almastermind-notification-test',
-                                icon: './icons/1icon-192.png'
-                            });
-                            test.onclick = () => {
-                                try { window.focus(); } catch (_) {}
-                                test.close();
-                            };
-                        } catch (notificationError) {
-                            console.warn('Test notification failed:', notificationError);
+                        // Immediate test notification. Use the service worker so the
+                        // notification is delivered by the browser notification system.
+                        const testShown = await stabilityShowNotification('🔔 Notifications Enabled', {
+                            body: 'A/L Mastermind task reminders are now active on this device.',
+                            tag: 'almastermind-notification-test'
+                        });
+                        if (!testShown) {
                             stabilityNotify(
                                 'Permission Granted',
-                                'Notifications are allowed, but the browser could not display the test notification.'
+                                'Permission was granted, but the browser could not display the test notification. Check site notification settings.'
                             );
+                            return;
                         }
 
                         stabilityNotify(
@@ -5826,33 +5848,21 @@ Strict answer rules:
                 const delay = Math.max(1000, next.due.getTime() - Date.now());
                 stabilityTaskNotificationTimer = setTimeout(() => {
                     stabilityTaskNotificationTimer = null;
-                    stabilitySendTaskNotification(next.task, next.due);
-                    stabilityScheduleTaskNotifications();
+                    stabilitySendTaskNotification(next.task, next.due).finally(() => stabilityScheduleTaskNotifications());
                 }, Math.min(delay, 2147483647));
             }
 
-            function stabilitySendClassNotification(cls, occurrenceDate) {
+            async function stabilitySendClassNotification(cls, occurrenceDate) {
                 if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
                 const dateKey = occurrenceDate.toISOString().slice(0, 10);
                 const key = stabilityClassOccurrenceKey(cls, dateKey);
                 if (stabilityIsNotificationAlreadySent(key)) return false;
-                try {
-                    const notification = new Notification(`Class Reminder: ${cls.name}`, {
-                        body: `${cls.day} • ${cls.time}`,
-                        tag: `almastermind-class-${cls.id}`,
-                        renotify: false,
-                        silent: false
-                    });
-                    notification.onclick = () => {
-                        try { window.focus(); } catch (_) {}
-                        notification.close();
-                    };
-                    stabilityMarkNotificationSent(key);
-                    return true;
-                } catch (err) {
-                    console.warn('Notification could not be displayed.', err);
-                    return false;
-                }
+                const shown = await stabilityShowNotification(`Class Reminder: ${cls.name}`, {
+                    body: `${cls.day} • ${cls.time}`,
+                    tag: `almastermind-class-${cls.id}`
+                });
+                if (shown) stabilityMarkNotificationSent(key);
+                return shown;
             }
 
             function stabilityScheduleNotifications() {
@@ -5879,7 +5889,7 @@ Strict answer rules:
                 stabilityNotificationTimer = setTimeout(() => {
                     stabilityNotificationTimer = null;
                     try {
-                        stabilitySendClassNotification(nextClass, next);
+                        stabilitySendClassNotification(nextClass, next).catch(err => console.warn('Class notification failed.', err));
                     } catch (err) {
                         console.warn('Class reminder timer failed safely.', err);
                     } finally {

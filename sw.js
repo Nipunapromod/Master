@@ -1,4 +1,4 @@
-const CACHE_NAME = 'al-mastermind-v8.0';
+const CACHE_NAME = 'al-mastermind-v8.2';
 
 const APP_SHELL = [
   './',
@@ -9,18 +9,25 @@ const APP_SHELL = [
 ];
 
 /* =========================================================
-   A/L MASTERMIND SERVICE WORKER v8.0
-   PWA caching + Web Push notifications
+   A/L MASTERMIND SERVICE WORKER v8.2
+   PWA CACHE + WEB PUSH + LOCAL NOTIFICATIONS
    ========================================================= */
+
+/* ---------- INSTALL ---------- */
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(APP_SHELL))
       .then(() => self.skipWaiting())
-      .catch(err => console.error('[SW] Install failed:', err))
+      .catch(error => {
+        console.error('[SW] Install failed:', error);
+      })
   );
 });
+
+
+/* ---------- ACTIVATE ---------- */
 
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -33,68 +40,105 @@ self.addEventListener('activate', event => {
         )
       )
       .then(() => self.clients.claim())
-      .catch(err => console.error('[SW] Activate failed:', err))
+      .catch(error => {
+        console.error('[SW] Activate failed:', error);
+      })
   );
 });
+
 
 /* =========================================================
    FETCH
    ========================================================= */
 
 self.addEventListener('fetch', event => {
+
   const request = event.request;
 
-  if (request.method !== 'GET') return;
+  if (request.method !== 'GET') {
+    return;
+  }
 
   const url = new URL(request.url);
 
-  // Don't cache API/database requests.
+  /* Never cache APIs / Supabase */
   if (
     url.pathname.includes('/api/') ||
     url.pathname.includes('/rest/') ||
+    url.pathname.includes('/auth/') ||
     url.hostname.includes('supabase.co')
   ) {
     return;
   }
 
-  // Network-first for HTML.
+
+  /* ---------- HTML: NETWORK FIRST ---------- */
+
   if (
     request.mode === 'navigate' ||
     request.destination === 'document'
   ) {
+
     event.respondWith(
+
       fetch(request)
         .then(response => {
+
           if (response.ok) {
-            const copy = response.clone();
+
+            const copy =
+              response.clone();
 
             caches.open(CACHE_NAME)
-              .then(cache => cache.put('./index.html', copy))
+              .then(cache => {
+                cache.put(
+                  './index.html',
+                  copy
+                );
+              })
               .catch(() => {});
           }
 
           return response;
         })
-        .catch(() => caches.match('./index.html'))
+
+        .catch(() =>
+          caches.match('./index.html')
+        )
     );
 
     return;
   }
 
-  // Cache-first for same-origin assets.
+
+  /* ---------- ASSETS: CACHE FIRST ---------- */
+
   if (url.origin === self.location.origin) {
+
     event.respondWith(
+
       caches.match(request)
         .then(cached => {
-          if (cached) return cached;
+
+          if (cached) {
+            return cached;
+          }
 
           return fetch(request)
             .then(response => {
+
               if (response.ok) {
-                const copy = response.clone();
+
+                const copy =
+                  response.clone();
 
                 caches.open(CACHE_NAME)
-                  .then(cache => cache.put(request, copy))
+                  .then(cache => {
+                    cache.put(
+                      request,
+                      copy
+                    );
+                  })
                   .catch(() => {});
               }
 
@@ -105,231 +149,538 @@ self.addEventListener('fetch', event => {
   }
 });
 
+
 /* =========================================================
    WEB PUSH
-   =========================================================
-   Example payload:
-
-   {
-     "title": "Task Reminder",
-     "body": "Physics revision starts now.",
-     "url": "/",
-     "taskId": "123",
-     "tag": "task-123"
-   }
-
-   A service worker alone cannot schedule a notification
-   while the browser is completely closed. For that, your
-   Todo List needs a Web Push backend.
    ========================================================= */
 
 self.addEventListener('push', event => {
-  let data = {};
 
-  try {
-    data = event.data
-      ? event.data.json()
-      : {};
-  } catch {
-    data = {
-      body: event.data
-        ? event.data.text()
-        : 'You have a scheduled task.'
-    };
-  }
+  event.waitUntil(
 
-  const title =
-    data.title ||
-    '📚 A/L Mastermind';
+    (async () => {
 
-  const options = {
-    body:
-      data.body ||
-      'You have a scheduled task.',
+      let data = {};
 
-    icon:
-      data.icon ||
-      './icons/1icon-192.png',
+      try {
 
-    badge:
-      data.badge ||
-      './icons/1icon-192.png',
+        if (event.data) {
+          data = event.data.json();
+        }
 
-    tag:
-      data.tag ||
-      `task-${data.taskId || Date.now()}`,
+      } catch {
 
-    renotify:
-      Boolean(data.renotify),
-
-    requireInteraction:
-      Boolean(data.requireInteraction),
-
-    silent:
-      Boolean(data.silent),
-
-    timestamp: Date.now(),
-
-    data: {
-      url: data.url || './',
-      taskId: data.taskId || null
-    },
-
-    actions: [
-      {
-        action: 'open-task',
-        title: 'Open Tasks'
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss'
+        data = {
+          body: event.data
+            ? event.data.text()
+            : 'You have a scheduled task.'
+        };
       }
-    ]
-  };
 
-  event.waitUntil(
-    self.registration.showNotification(
-      title,
-      options
-    )
-  );
-});
 
-/* =========================================================
-   NOTIFICATION CLICK
-   ========================================================= */
+      const title =
+        data.title ||
+        '📚 A/L Mastermind';
 
-self.addEventListener('notificationclick', event => {
-  const notification = event.notification;
-  const action = event.action;
-  const data = notification.data || {};
 
-  notification.close();
+      const options = {
 
-  if (action === 'dismiss') {
-    return;
-  }
+        body:
+          data.body ||
+          'You have a scheduled task.',
 
-  const targetUrl =
-    data.url || './';
 
-  event.waitUntil(
-    self.clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true
-    })
-    .then(clients => {
+        icon:
+          data.icon ||
+          './icons/1icon-192.png',
 
-      // Reuse an existing dashboard tab.
-      for (const client of clients) {
 
-        if ('focus' in client) {
+        badge:
+          data.badge ||
+          './icons/1icon-192.png',
 
-          if (
-            data.taskId &&
-            'postMessage' in client
-          ) {
-            client.postMessage({
-              type: 'OPEN_TASK',
-              taskId: data.taskId
-            });
+
+        tag:
+          data.tag ||
+          `almastermind-${data.taskId || Date.now()}`,
+
+
+        renotify:
+          Boolean(data.renotify),
+
+
+        requireInteraction:
+          Boolean(data.requireInteraction),
+
+
+        silent:
+          Boolean(data.silent),
+
+
+        timestamp:
+          Date.now(),
+
+
+        data: {
+
+          url:
+            data.url ||
+            './',
+
+          taskId:
+            data.taskId ||
+            null
+
+        },
+
+
+        actions: [
+
+          {
+            action:
+              'open-task',
+
+            title:
+              'Open Tasks'
+          },
+
+          {
+            action:
+              'dismiss',
+
+            title:
+              'Dismiss'
           }
 
-          return client.focus();
-        }
-      }
+        ]
 
-      // Otherwise open the dashboard.
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(
-          targetUrl
-        );
-      }
-    })
+      };
+
+
+      await self.registration.showNotification(
+        title,
+        options
+      );
+
+    })()
   );
 });
+
 
 /* =========================================================
    MESSAGE API
    ========================================================= */
 
 self.addEventListener('message', event => {
-  const message = event.data;
 
-  /* Force the new service worker to activate. */
-  if (
-    message === 'SKIP_WAITING' ||
-    message?.type === 'SKIP_WAITING'
-  ) {
-    self.skipWaiting();
+  const message =
+    event.data;
+
+  if (!message) {
     return;
   }
 
-  /*
-   * Show an immediate task notification.
-   * Your Todo List can send:
-   *
-   * navigator.serviceWorker.controller.postMessage({
-   *   type: 'SHOW_TASK_NOTIFICATION',
-   *   task: {
-   *     id: task.id,
-   *     name: task.name,
-   *     body: 'Your task starts now.'
-   *   }
-   * });
-   */
+
+  /* ---------- UPDATE SERVICE WORKER ---------- */
 
   if (
-    message?.type ===
+    message === 'SKIP_WAITING' ||
+    message.type === 'SKIP_WAITING'
+  ) {
+
+    self.skipWaiting();
+
+    return;
+  }
+
+
+  /* ---------- TEST NOTIFICATION ---------- */
+
+  if (
+    message.type ===
+    'TEST_NOTIFICATION'
+  ) {
+
+    event.waitUntil(
+
+      self.registration.showNotification(
+        '🔔 Notifications Enabled',
+        {
+
+          body:
+            'A/L Mastermind notifications are working correctly.',
+
+          icon:
+            './icons/1icon-192.png',
+
+          badge:
+            './icons/1icon-192.png',
+
+          tag:
+            'almastermind-test',
+
+          requireInteraction:
+            true,
+
+          data: {
+            url: './',
+            type: 'test'
+          }
+
+        }
+      )
+
+    );
+
+    return;
+  }
+
+
+  /* ---------- TASK NOTIFICATION ---------- */
+
+  if (
+    message.type ===
     'SHOW_TASK_NOTIFICATION'
   ) {
 
     const task =
       message.task || {};
 
+
     event.waitUntil(
+
       self.registration.showNotification(
+
         task.title ||
-          '📚 Task Reminder',
+        '📚 Task Reminder',
 
         {
+
           body:
             task.body ||
             task.name ||
             'You have a task scheduled now.',
 
+
           icon:
             task.icon ||
             './icons/1icon-192.png',
+
 
           badge:
             task.badge ||
             './icons/1icon-192.png',
 
+
           tag:
             task.tag ||
-            `local-task-${task.id || Date.now()}`,
+            `task-${task.id || Date.now()}`,
+
+
+          requireInteraction:
+            true,
+
 
           data: {
+
             url:
-              task.url || './',
+              task.url ||
+              './',
 
             taskId:
-              task.id || null
+              task.id ||
+              null
+
+          },
+
+
+          actions: [
+
+            {
+              action:
+                'open-task',
+
+              title:
+                'Open Tasks'
+            },
+
+            {
+              action:
+                'dismiss',
+
+              title:
+                'Dismiss'
+            }
+
+          ]
+
+        }
+
+      )
+
+    );
+
+    return;
+  }
+
+
+  /* ---------- CLASS NOTIFICATION ---------- */
+
+  if (
+    message.type ===
+    'SHOW_CLASS_NOTIFICATION'
+  ) {
+
+    const cls =
+      message.classData ||
+      message.class ||
+      {};
+
+
+    event.waitUntil(
+
+      self.registration.showNotification(
+
+        cls.title ||
+        `📖 Class Reminder: ${cls.name || 'Class'}`,
+
+        {
+
+          body:
+            cls.body ||
+            `${cls.day || ''} • ${cls.time || ''}`,
+
+          icon:
+            './icons/1icon-192.png',
+
+          badge:
+            './icons/1icon-192.png',
+
+          tag:
+            cls.tag ||
+            `class-${cls.id || Date.now()}`,
+
+          requireInteraction:
+            true,
+
+          data: {
+
+            url:
+              cls.url ||
+              './',
+
+            classId:
+              cls.id ||
+              null
+
           },
 
           actions: [
+
             {
-              action: 'open-task',
-              title: 'Open Tasks'
+              action:
+                'open-class',
+
+              title:
+                'Open Classes'
             },
+
             {
-              action: 'dismiss',
-              title: 'Dismiss'
+              action:
+                'dismiss',
+
+              title:
+                'Dismiss'
             }
+
           ]
+
         }
+
       )
+
     );
+
+    return;
   }
+
 });
+
+
+/* =========================================================
+   NOTIFICATION CLICK
+   ========================================================= */
+
+self.addEventListener(
+  'notificationclick',
+  event => {
+
+    const notification =
+      event.notification;
+
+    const action =
+      event.action;
+
+    const data =
+      notification.data || {};
+
+
+    notification.close();
+
+
+    /* Dismiss */
+    if (
+      action ===
+      'dismiss'
+    ) {
+      return;
+    }
+
+
+    const targetUrl =
+      data.url ||
+      './';
+
+
+    event.waitUntil(
+
+      self.clients.matchAll({
+
+        type:
+          'window',
+
+        includeUncontrolled:
+          true
+
+      })
+
+      .then(async clients => {
+
+
+        /* ---------- EXISTING WINDOW ---------- */
+
+        for (
+          const client of clients
+        ) {
+
+          if (
+            !('focus' in client)
+          ) {
+            continue;
+          }
+
+
+          /* Task */
+          if (
+            data.taskId &&
+            'postMessage' in client
+          ) {
+
+            client.postMessage({
+
+              type:
+                'OPEN_TASK',
+
+              taskId:
+                data.taskId
+
+            });
+
+          }
+
+
+          /* Class */
+          if (
+            data.classId &&
+            'postMessage' in client
+          ) {
+
+            client.postMessage({
+
+              type:
+                'OPEN_CLASS',
+
+              classId:
+                data.classId
+
+            });
+
+          }
+
+
+          await client.focus();
+
+          return;
+        }
+
+
+        /* ---------- NEW WINDOW ---------- */
+
+        if (
+          self.clients.openWindow
+        ) {
+
+          return self.clients.openWindow(
+            targetUrl
+          );
+
+        }
+
+      })
+
+    );
+
+  }
+);
+
+
+/* =========================================================
+   NOTIFICATION CLOSE
+   ========================================================= */
+
+self.addEventListener(
+  'notificationclose',
+  event => {
+
+    console.log(
+      '[SW] Notification closed.'
+    );
+
+  }
+);
+
+
+/* =========================================================
+   ERROR HANDLING
+   ========================================================= */
+
+self.addEventListener(
+  'error',
+  event => {
+
+    console.error(
+      '[SW] Error:',
+      event.error ||
+      event.message
+    );
+
+  }
+);
+
+
+self.addEventListener(
+  'unhandledrejection',
+  event => {
+
+    console.error(
+      '[SW] Promise error:',
+      event.reason
+    );
+
+  }
+);
+
+
+console.log(
+  '[A/L Mastermind] Service Worker v8.2 loaded.'
+);
