@@ -1536,6 +1536,10 @@ aside button:active{
                     </div>
 
                     <form id="task-form" onsubmit="addTask(event)" class="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr_1.6fr_auto] gap-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                        <div class="lg:col-span-full flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2">
+                            <div class="text-xs text-slate-400"><i class="fa-solid fa-bell text-indigo-400 mr-1"></i> Get device notifications when your tasks are due.</div>
+                            <button type="button" id="enable-task-notifications" onclick="enableTaskNotifications()" class="text-xs font-bold px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition">Enable Notifications</button>
+                        </div>
                         <div class="min-w-0">
                             <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Task</label>
                             <input type="text" id="task-name" required maxlength="180" autocomplete="off" placeholder="e.g. Solve integration past paper"
@@ -4286,7 +4290,7 @@ Strict answer rules:
             generateNewQuote();
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
+                navigator.serviceWorker.register('./sw.js', { scope: './' })
                     .then((reg) => console.log('Service worker registered:', reg))
                     .catch((err) => console.warn('Service worker failed to register:', err));
             }
@@ -5676,6 +5680,101 @@ Strict answer rules:
                 stabilityScheduleCacheWrite();
             }
 
+            function stabilityTaskOccurrenceKey(task) {
+                return `task|${task.id}|${task.date}|${task.time}`;
+            }
+
+            function stabilityGetTaskDueDate(task) {
+                if (!task?.date || !task?.time) return null;
+                const m = String(task.time).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                if (!m) return null;
+                let hour = Number(m[1]);
+                const minute = Number(m[2]);
+                const ampm = m[3].toUpperCase();
+                if (hour < 1 || hour > 12 || minute > 59) return null;
+                if (ampm === 'PM' && hour !== 12) hour += 12;
+                if (ampm === 'AM' && hour === 12) hour = 0;
+                const due = new Date(`${task.date}T00:00:00`);
+                if (Number.isNaN(due.getTime())) return null;
+                due.setHours(hour, minute, 0, 0);
+                return due;
+            }
+
+            function stabilitySendTaskNotification(task, dueDate) {
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
+                const key = stabilityTaskOccurrenceKey(task);
+                if (stabilityIsNotificationAlreadySent(key)) return false;
+                try {
+                    const notification = new Notification(`Task Due: ${task.name}`, {
+                        body: `${task.date} • ${task.time}`,
+                        tag: `almastermind-task-${task.id}`,
+                        renotify: false,
+                        silent: false,
+                        icon: './icon-192.png'
+                    });
+                    notification.onclick = () => {
+                        try { window.focus(); } catch (_) {}
+                        notification.close();
+                    };
+                    stabilityMarkNotificationSent(key);
+                    return true;
+                } catch (err) {
+                    console.warn('Task notification could not be displayed.', err);
+                    return false;
+                }
+            }
+
+            function stabilityFindNextTaskReminder() {
+                const now = Date.now();
+                let best = null;
+                for (const task of taskLogs) {
+                    if (!task || task.done) continue;
+                    const due = stabilityGetTaskDueDate(task);
+                    if (!due) continue;
+                    const diff = due.getTime() - now;
+                    if (diff < -60000) continue;
+                    if (!best || due.getTime() < best.due.getTime()) best = { task, due };
+                }
+                return best;
+            }
+
+            async function enableTaskNotifications() {
+                if (!stabilityHasNotificationAPI) {
+                    stabilityNotify('Notifications Unavailable', 'This browser does not support device notifications.');
+                    return;
+                }
+                try {
+                    const permission = await Notification.requestPermission();
+                    const button = document.getElementById('enable-task-notifications');
+                    if (permission === 'granted') {
+                        if (button) button.textContent = 'Notifications Enabled ✓';
+                        stabilityNotify('Notifications Enabled', 'You will receive task reminders on this device while the dashboard is active.');
+                        stabilityScheduleTaskNotifications();
+                    } else if (permission === 'denied') {
+                        if (button) button.textContent = 'Notifications Blocked';
+                        stabilityNotify('Notifications Blocked', 'Allow notifications for this site in your browser settings.');
+                    }
+                } catch (err) {
+                    console.warn('Notification permission request failed.', err);
+                }
+            }
+
+            function stabilityScheduleTaskNotifications() {
+                if (stabilityTaskNotificationTimer) {
+                    clearTimeout(stabilityTaskNotificationTimer);
+                    stabilityTaskNotificationTimer = null;
+                }
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return;
+                const next = stabilityFindNextTaskReminder();
+                if (!next) return;
+                const delay = Math.max(1000, next.due.getTime() - Date.now());
+                stabilityTaskNotificationTimer = setTimeout(() => {
+                    stabilityTaskNotificationTimer = null;
+                    stabilitySendTaskNotification(next.task, next.due);
+                    stabilityScheduleTaskNotifications();
+                }, Math.min(delay, 2147483647));
+            }
+
             function stabilitySendClassNotification(cls, occurrenceDate) {
                 if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
                 const dateKey = occurrenceDate.toISOString().slice(0, 10);
@@ -5864,6 +5963,12 @@ Strict answer rules:
                 if (typeof updateCoreStats === 'function') updateCoreStats();
                 stabilityFlushPendingMutations().catch(err => console.warn('Class delete retry failed.', err));
             }
+
+            window.addEventListener('focus', () => stabilityScheduleTaskNotifications());
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) stabilityScheduleTaskNotifications();
+            });
+            setTimeout(() => stabilityScheduleTaskNotifications(), 1500);
 
             function stabilityHandleTaskContainerClick(event) {
                 const button = event.target.closest?.('button[data-action]');
