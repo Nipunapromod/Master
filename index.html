@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A/L Mastermind Dashboard v8.0 • Smart Task lanner</title>
+    <title>A/L Mastermind Dashboard v8.0 • Smart Task Planner</title>
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#4c1d95">
     <meta name="mobile-web-app-capable" content="yes">
@@ -1537,8 +1537,6 @@ aside button:active{
 
                     <form id="task-form" onsubmit="addTask(event)" class="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr_1.6fr_auto] gap-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                         <div class="lg:col-span-full flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2">
-                            <div class="text-xs text-slate-400"><i class="fa-solid fa-bell text-indigo-400 mr-1"></i> Get device notifications when your tasks are due.</div>
-                            <button type="button" id="enable-task-notifications" onclick="enableTaskNotifications()" class="text-xs font-bold px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition">Enable Notifications</button>
                         </div>
                         <div class="min-w-0">
                             <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Task</label>
@@ -4289,21 +4287,6 @@ Strict answer rules:
             loadAIChatHistory();
             generateNewQuote();
 
-            // Register the notification service worker early and keep its registration available.
-            // The notification UI uses ServiceWorkerRegistration.showNotification() instead of
-            // new Notification(), which is much more reliable for installed PWAs.
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js', { scope: './' })
-                    .then(async (reg) => {
-                        window.alMasterpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63 = reg;
-                        try { await navigator.serviceWorker.ready; } catch (_) {}
-                        console.log('Service worker registered:', reg.scope);
-                    })
-                    .catch((err) => {
-                        window.alMasterpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63 = null;
-                        console.warn('Service worker failed to register:', err);
-                    });
-            }
         }
     </script>
 
@@ -4312,7 +4295,7 @@ Strict answer rules:
         /* ======================================================================
            A/L MASTERMIND - Stability & Reliability Layer
            Keeps the existing UI and feature set, but hardens storage, sync,
-           task/class CRUD, notifications, responsive behavior and rendering.
+           task/class CRUD, responsive behavior and rendering.
            ====================================================================== */
         (() => {
             'use strict';
@@ -4325,7 +4308,6 @@ Strict answer rules:
             const STABILITY_RENDER_CHUNK = 80;
             const STABILITY_NETWORK_RETRIES = 3;
             const STABILITY_CACHE_WRITE_DELAY = 180;
-            const STABILITY_NOTIFICATION_LEDGER_LIMIT = 100;
             const STABILITY_RETRY_BASE_DELAY = 900;
             const STABILITY_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -4333,7 +4315,6 @@ Strict answer rules:
             let stabilityMemoryStore = new Map();
             let stabilityCacheWriteTimer = null;
             let stabilityPendingRetryTimer = null;
-            let stabilityNotificationTimer = null;
             let stabilityInitialized = false;
             let stabilityTaskSaveInProgress = false;
             let stabilityClassSaveInProgress = false;
@@ -4354,11 +4335,9 @@ Strict answer rules:
                 tasks: [],
                 classes: [],
                 pendingOps: [],
-                notificationLedger: [],
                 updatedAt: new Date().toISOString()
             };
 
-            const stabilityHasNotificationAPI = typeof window !== 'undefined' && 'Notification' in window;
 
             function stabilityUuid(prefix = 'local') {
                 try {
@@ -4539,8 +4518,7 @@ Strict answer rules:
                     tasks: [],
                     classes: [],
                     pendingOps: [],
-                    notificationLedger: [],
-                    updatedAt: new Date().toISOString()
+                        updatedAt: new Date().toISOString()
                 };
             }
 
@@ -4549,16 +4527,12 @@ Strict answer rules:
                 const tasks = stabilityDedupeById(source.tasks, stabilityNormalizeTask);
                 const classes = stabilityDedupeById(source.classes, stabilityNormalizeClass);
                 const pendingOps = Array.isArray(source.pendingOps) ? source.pendingOps.filter(op => op && typeof op === 'object') : [];
-                const notificationLedger = Array.isArray(source.notificationLedger)
-                    ? source.notificationLedger.filter(Boolean).map(String).slice(-STABILITY_NOTIFICATION_LEDGER_LIMIT)
-                    : [];
 
                 return {
                     schemaVersion: STABILITY_SCHEMA_VERSION,
                     tasks,
                     classes,
                     pendingOps,
-                    notificationLedger,
                     updatedAt: source.updatedAt || new Date().toISOString()
                 };
             }
@@ -4603,9 +4577,6 @@ Strict answer rules:
                         tasks: stabilityDedupeById(taskLogs, stabilityNormalizeTask),
                         classes: stabilityDedupeById(classLogs, stabilityNormalizeClass),
                         pendingOps: Array.isArray(stabilityCache.pendingOps) ? stabilityCache.pendingOps : [],
-                        notificationLedger: Array.isArray(stabilityCache.notificationLedger)
-                            ? stabilityCache.notificationLedger.slice(-STABILITY_NOTIFICATION_LEDGER_LIMIT)
-                            : [],
                         updatedAt: new Date().toISOString()
                     };
 
@@ -5282,7 +5253,6 @@ Strict answer rules:
                 stabilityScheduleCacheWrite();
                 stabilityRenderTasks({ force: true });
                 stabilityRenderClasses({ force: true });
-                stabilityScheduleNotifications();
 
                 if (hadFailure && stabilityCache.pendingOps.length) {
                     const delay = Math.min(30000, STABILITY_RETRY_BASE_DELAY * Math.max(1, stabilityCache.pendingOps.length));
@@ -5382,8 +5352,7 @@ Strict answer rules:
                     stabilitySetClassLoading(false);
                     stabilityRenderTasks({ force: true });
                     stabilityRenderClasses({ force: true });
-                    stabilityScheduleNotifications();
-                    stabilityScheduleCacheWrite();
+                        stabilityScheduleCacheWrite();
                 }
             }
 
@@ -5641,263 +5610,6 @@ Strict answer rules:
                 if (cancel) cancel.classList.add('hidden');
             }
 
-            async function stabilityRequestNotificationPermission() {
-                if (!stabilityHasNotificationAPI) return 'unsupported';
-                try {
-                    if (Notification.permission === 'granted') return 'granted';
-                    if (Notification.permission === 'denied') return 'denied';
-                    return await Notification.requestPermission();
-                } catch (err) {
-                    console.warn('Notification permission request failed safely.', err);
-                    return 'denied';
-                }
-            }
-
-            function stabilityClassOccurrenceKey(cls, date) {
-                return `${cls.id}|${date}|${cls.time}`;
-            }
-
-            function stabilityGetNextClassOccurrence(cls, fromDate = new Date()) {
-                const parsed = stabilityParseClassTime(cls.time);
-                const dayIndex = STABILITY_DAY_NAMES.indexOf(cls.day);
-                if (!parsed || dayIndex < 0) return null;
-
-                const now = new Date(fromDate);
-                const currentDay = now.getDay();
-                let delta = (dayIndex - currentDay + 7) % 7;
-                const startHour = Math.floor(parsed.startMinutes / 60);
-                const startMinute = parsed.startMinutes % 60;
-
-                const candidate = new Date(now);
-                candidate.setHours(0, 0, 0, 0);
-                candidate.setDate(candidate.getDate() + delta);
-                candidate.setHours(startHour, startMinute, 0, 0);
-
-                if (candidate.getTime() <= now.getTime()) {
-                    candidate.setDate(candidate.getDate() + 7);
-                }
-                return candidate;
-            }
-
-            function stabilityIsNotificationAlreadySent(key) {
-                return Array.isArray(stabilityCache.notificationLedger) && stabilityCache.notificationLedger.includes(key);
-            }
-
-            function stabilityMarkNotificationSent(key) {
-                const ledger = Array.isArray(stabilityCache.notificationLedger) ? stabilityCache.notificationLedger : [];
-                if (!ledger.includes(key)) ledger.push(key);
-                stabilityCache.notificationLedger = ledger.slice(-STABILITY_NOTIFICATION_LEDGER_LIMIT);
-                stabilityScheduleCacheWrite();
-            }
-
-            function stabilityTaskOccurrenceKey(task) {
-                return `task|${task.id}|${task.date}|${task.time}`;
-            }
-
-            function stabilityGetTaskDueDate(task) {
-                if (!task?.date || !task?.time) return null;
-                const m = String(task.time).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-                if (!m) return null;
-                let hour = Number(m[1]);
-                const minute = Number(m[2]);
-                const ampm = m[3].toUpperCase();
-                if (hour < 1 || hour > 12 || minute > 59) return null;
-                if (ampm === 'PM' && hour !== 12) hour += 12;
-                if (ampm === 'AM' && hour === 12) hour = 0;
-                const due = new Date(`${task.date}T00:00:00`);
-                if (Number.isNaN(due.getTime())) return null;
-                due.setHours(hour, minute, 0, 0);
-                return due;
-            }
-
-            async function stabilityShowNotification(title, options = {}) {
-                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
-                const payload = {
-                    body: '',
-                    tag: 'almastermind-notification',
-                    icon: './icons/1icon-192.png',
-                    badge: './icons/1icon-192.png',
-                    renotify: false,
-                    silent: false,
-                    ...options
-                };
-                try {
-                    if ('serviceWorker' in navigator) {
-                        const reg = window.alMasterpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63 || await navigator.serviceWorker.ready;
-                        if (reg && typeof reg.showNotification === 'function') {
-                            await reg.showNotification(title, payload);
-                            return true;
-                        }
-                    }
-                    // Fallback for browsers that expose Notifications but not a usable SW.
-                    const notification = new Notification(title, payload);
-                    notification.onclick = () => { try { window.focus(); } catch (_) {} notification.close(); };
-                    return true;
-                } catch (err) {
-                    console.warn('Notification could not be displayed.', err);
-                    return false;
-                }
-            }
-
-            async function stabilitySendTaskNotification(task, dueDate) {
-                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
-                const key = stabilityTaskOccurrenceKey(task);
-                if (stabilityIsNotificationAlreadySent(key)) return false;
-                const shown = await stabilityShowNotification(`Task Due: ${task.name}`, {
-                    body: `${task.date} • ${task.time}`,
-                    tag: `almastermind-task-${task.id}`
-                });
-                if (shown) stabilityMarkNotificationSent(key);
-                return shown;
-            }
-
-            function stabilityFindNextTaskReminder() {
-                const now = Date.now();
-                let best = null;
-                for (const task of taskLogs) {
-                    if (!task || task.done) continue;
-                    const due = stabilityGetTaskDueDate(task);
-                    if (!due) continue;
-                    const diff = due.getTime() - now;
-                    if (diff < -60000) continue;
-                    if (!best || due.getTime() < best.due.getTime()) best = { task, due };
-                }
-                return best;
-            }
-
-            async function enableTaskNotifications() {
-                const button = document.getElementById('enable-task-notifications');
-
-                if (!stabilityHasNotificationAPI) {
-                    if (button) button.textContent = 'Notifications Unsupported';
-                    stabilityNotify(
-                        'Notifications Unavailable',
-                        'This browser does not support device notifications.'
-                    );
-                    return;
-                }
-
-                try {
-                    let permission = Notification.permission;
-
-                    if (permission !== 'granted') {
-                        permission = await Notification.requestPermission();
-                    }
-
-                    if (permission === 'granted') {
-                        if (button) button.textContent = 'Notifications Enabled ✓';
-
-                        // Immediate test notification. Use the service worker so the
-                        // notification is delivered by the browser notification system.
-                        const testShown = await stabilityShowNotification('🔔 Notifications Enabled', {
-                            body: 'A/L Mastermind task reminders are now active on this device.',
-                            tag: 'almastermind-notification-test'
-                        });
-                        if (!testShown) {
-                            stabilityNotify(
-                                'Permission Granted',
-                                'Permission was granted, but the browser could not display the test notification. Check site notification settings.'
-                            );
-                            return;
-                        }
-
-                        stabilityNotify(
-                            'Notifications Enabled',
-                            'Task reminders are active while the dashboard is running.'
-                        );
-
-                        stabilityScheduleTaskNotifications();
-                        return;
-                    }
-
-                    if (permission === 'denied') {
-                        if (button) button.textContent = 'Notifications Blocked';
-                        stabilityNotify(
-                            'Notifications Blocked',
-                            'Allow notifications for this site in your browser site settings, then try again.'
-                        );
-                        return;
-                    }
-
-                    if (button) button.textContent = 'Allow Notifications';
-                    stabilityNotify(
-                        'Notification Permission',
-                        'Please allow notifications in the browser permission prompt.'
-                    );
-                } catch (err) {
-                    console.error('Notification permission request failed:', err);
-                    stabilityNotify(
-                        'Notification Error',
-                        'The browser could not request notification permission. Check the site permissions and console for details.'
-                    );
-                }
-            }
-
-            // Expose the button handler because this function lives inside the
-            // stability IIFE while the HTML button uses onclick="enableTaskNotifications()".
-            window.enableTaskNotifications = enableTaskNotifications;
-
-            function stabilityScheduleTaskNotifications() {
-                if (stabilityTaskNotificationTimer) {
-                    clearTimeout(stabilityTaskNotificationTimer);
-                    stabilityTaskNotificationTimer = null;
-                }
-                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return;
-                const next = stabilityFindNextTaskReminder();
-                if (!next) return;
-                const delay = Math.max(1000, next.due.getTime() - Date.now());
-                stabilityTaskNotificationTimer = setTimeout(() => {
-                    stabilityTaskNotificationTimer = null;
-                    stabilitySendTaskNotification(next.task, next.due).finally(() => stabilityScheduleTaskNotifications());
-                }, Math.min(delay, 2147483647));
-            }
-
-            async function stabilitySendClassNotification(cls, occurrenceDate) {
-                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
-                const dateKey = occurrenceDate.toISOString().slice(0, 10);
-                const key = stabilityClassOccurrenceKey(cls, dateKey);
-                if (stabilityIsNotificationAlreadySent(key)) return false;
-                const shown = await stabilityShowNotification(`Class Reminder: ${cls.name}`, {
-                    body: `${cls.day} • ${cls.time}`,
-                    tag: `almastermind-class-${cls.id}`
-                });
-                if (shown) stabilityMarkNotificationSent(key);
-                return shown;
-            }
-
-            function stabilityScheduleNotifications() {
-                if (stabilityNotificationTimer) {
-                    clearTimeout(stabilityNotificationTimer);
-                    stabilityNotificationTimer = null;
-                }
-                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted' || !classLogs.length) return;
-
-                let next = null;
-                let nextClass = null;
-                for (const cls of classLogs) {
-                    const occurrence = stabilityGetNextClassOccurrence(cls);
-                    if (!occurrence) continue;
-                    if (!next || occurrence.getTime() < next.getTime()) {
-                        next = occurrence;
-                        nextClass = cls;
-                    }
-                }
-
-                if (!next || !nextClass) return;
-
-                const delay = Math.max(1000, next.getTime() - Date.now());
-                stabilityNotificationTimer = setTimeout(() => {
-                    stabilityNotificationTimer = null;
-                    try {
-                        stabilitySendClassNotification(nextClass, next).catch(err => console.warn('Class notification failed.', err));
-                    } catch (err) {
-                        console.warn('Class reminder timer failed safely.', err);
-                    } finally {
-                        stabilityScheduleNotifications();
-                    }
-                }, Math.min(delay, 2147483647));
-            }
-
             async function stabilityAddClass(event) {
                 event?.preventDefault?.();
                 if (stabilityClassSaveInProgress) return;
@@ -5978,18 +5690,8 @@ Strict answer rules:
                     stabilityCache.classes = [...classLogs];
                     stabilityScheduleCacheWrite();
                     stabilityRenderClasses({ force: true });
-                    stabilityScheduleNotifications();
-                    if (typeof updateCoreStats === 'function') updateCoreStats();
+                        if (typeof updateCoreStats === 'function') updateCoreStats();
                     stabilityCancelClassEdit();
-                    const permission = await stabilityRequestNotificationPermission();
-                    if (permission === 'denied') {
-                        stabilityNotify('Reminder Saved', 'The class reminder was saved, but browser notifications are blocked. The dashboard will continue working normally.');
-                    } else if (permission === 'unsupported') {
-                        stabilityNotify('Reminder Saved', 'The class reminder was saved. This browser does not support system notifications.');
-                    } else {
-                        stabilityScheduleNotifications();
-                        stabilityNotify('Success', 'Class reminder successfully saved and notification scheduling is active.');
-                    }
                 } catch (err) {
                     console.error('Class reminder save failed safely.', err);
                     stabilityNotify('Reminder Save Error', 'The class reminder could not be saved. Existing schedules were left untouched.');
@@ -6025,16 +5727,10 @@ Strict answer rules:
                     }
                 }
                 stabilityScheduleCacheWrite();
-                stabilityScheduleNotifications();
                 if (typeof updateCoreStats === 'function') updateCoreStats();
                 stabilityFlushPendingMutations().catch(err => console.warn('Class delete retry failed.', err));
             }
 
-            window.addEventListener('focus', () => stabilityScheduleTaskNotifications());
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) stabilityScheduleTaskNotifications();
-            });
-            setTimeout(() => stabilityScheduleTaskNotifications(), 1500);
 
             function stabilityHandleTaskContainerClick(event) {
                 const button = event.target.closest?.('button[data-action]');
@@ -6396,8 +6092,7 @@ Strict answer rules:
 
                 window.addEventListener('online', () => {
                     stabilityFlushPendingMutations().catch(err => console.warn('Online sync failed safely.', err));
-                    stabilityScheduleNotifications();
-                }, { passive: true });
+                    }, { passive: true });
 
                 window.addEventListener('offline', () => {
                     const taskBox = document.getElementById('task-list-container');
@@ -6429,7 +6124,6 @@ Strict answer rules:
 
                 window.addEventListener('pagehide', () => {
                     try { stabilityWriteCacheNow(); } catch (_) {}
-                    if (stabilityNotificationTimer) clearTimeout(stabilityNotificationTimer);
                     if (stabilityPendingRetryTimer) clearTimeout(stabilityPendingRetryTimer);
                 });
 
@@ -6481,8 +6175,7 @@ Strict answer rules:
                     classLogs = stabilityDedupeById(classLogs, stabilityNormalizeClass);
                     stabilityRenderTasks({ force: true });
                     stabilityRenderClasses({ force: true });
-                    stabilityScheduleNotifications();
-                    stabilityFlushPendingMutations().catch(err => console.warn('Initial pending sync failed safely.', err));
+                        stabilityFlushPendingMutations().catch(err => console.warn('Initial pending sync failed safely.', err));
                 } catch (err) {
                     console.error('Stability layer initialization failed safely.', err);
                     stabilityNotify('Dashboard Recovery', 'The dashboard loaded with a safe fallback mode. Refreshing is not required unless a feature remains unavailable.');
