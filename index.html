@@ -564,20 +564,7 @@
             }
         }
 
-    
-/* ================= ADVANCED MARKS INTELLIGENCE ================= */
-#marks-intelligence-panel .marks-window-btn{min-height:38px}
-#mi-grade-bars .mi-bar{display:grid;grid-template-columns:18px 1fr 34px;align-items:center;gap:8px}
-#mi-grade-bars .mi-track{height:7px;border-radius:999px;background:rgba(15,23,42,.9);overflow:hidden;border:1px solid rgba(148,163,184,.08)}
-#mi-grade-bars .mi-fill{height:100%;border-radius:999px;transition:width .55s cubic-bezier(.2,.8,.2,1)}
-#mi-subject-intel .mi-subject-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:12px;background:rgba(2,6,23,.62);border:1px solid rgba(148,163,184,.08)}
-#mi-subject-intel .mi-score{font-size:12px;font-weight:900;color:#fff}
-@media (max-width:767px){
-  #marks-intelligence-panel{scroll-margin-top:12px}
-  #marks-intelligence-panel .grid{min-width:0}
-  #mi-subject-intel .mi-subject-row{padding:9px}
-}
-</style>
+    </style>
 
 <!-- ================= MASTERMIN D ULTRA MOTION v7.3 ================= -->
 <style id="mastermind-ultra-motion">
@@ -908,19 +895,63 @@ aside button:active{
 
 </head>
 <body class="h-full flex flex-col font-sans overflow-hidden">
-<div id="startup-screen" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-6">
-  <div class="text-center w-full max-w-xs">
-    <div class="relative mx-auto mb-5 w-20 h-20 rounded-3xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center shadow-2xl shadow-brand-500/30">
-      <div class="absolute inset-0 rounded-3xl bg-brand-500/20 animate-ping"></div>
-      <i class="fa-solid fa-graduation-cap text-3xl text-white relative z-10"></i>
+
+    <style id="startup-loader-reduced-motion">
+        @media (prefers-reduced-motion: reduce) {
+            #startup-loader {
+                transition: none !important;
+            }
+            #startup-loader-bar {
+                transition: none !important;
+            }
+        }
+    </style>
+    <!-- ===== 3-SECOND SITE STARTUP LOADER ===== -->
+    <div id="startup-loader"
+         aria-live="polite"
+         aria-label="Loading A/L Mastermind"
+         style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#020617;opacity:1;visibility:visible;transition:opacity .35s ease,visibility .35s ease;">
+        <div style="width:min(88vw,360px);text-align:center;">
+            <div style="width:76px;height:76px;margin:0 auto 18px;border-radius:24px;background:linear-gradient(135deg,#7c3aed,#4f46e5);display:flex;align-items:center;justify-content:center;box-shadow:0 0 42px rgba(139,92,246,.30);">
+                <i class="fa-solid fa-graduation-cap" style="font-size:30px;color:#fff;"></i>
+            </div>
+            <div style="font-size:21px;font-weight:900;letter-spacing:.08em;color:#fff;">A/L MASTERMIND</div>
+            <div style="margin-top:7px;font-size:11px;color:#94a3b8;">Preparing your dashboard...</div>
+            <div style="height:4px;margin-top:20px;border-radius:999px;background:#0f172a;overflow:hidden;border:1px solid rgba(148,163,184,.12);">
+                <div id="startup-loader-bar"
+                     style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#7c3aed,#6366f1,#a78bfa);transition:width 2.8s cubic-bezier(.22,1,.36,1);"></div>
+            </div>
+            <div id="startup-loader-count" style="margin-top:9px;font-size:10px;font-weight:800;color:#64748b;">Loading 0%</div>
+        </div>
     </div>
-    <h1 class="text-2xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-indigo-300">A/L MASTERMIND</h1>
-    <p class="mt-2 text-xs text-slate-400">Initializing your dashboard...</p>
-    <div class="mt-5 h-1.5 rounded-full bg-slate-800 overflow-hidden"><div class="h-full w-0 bg-gradient-to-r from-indigo-500 via-brand-500 to-cyan-400" style="animation:startupProgress 3s linear forwards"></div></div>
-  </div>
-</div>
-<style>@keyframes startupProgress{from{width:0}to{width:100%}}#startup-screen{transition:opacity .45s ease}@media(prefers-reduced-motion:reduce){#startup-screen div[style*="startupProgress"]{animation:none!important;width:100%!important}}</style>
-<script>setTimeout(()=>{const e=document.getElementById('startup-screen');if(e){e.style.opacity='0';setTimeout(()=>e.remove(),450)}},3000);</script>
+    <script>
+    (() => {
+        const loader = document.getElementById('startup-loader');
+        const bar = document.getElementById('startup-loader-bar');
+        const count = document.getElementById('startup-loader-count');
+        if (!loader) return;
+
+        const start = performance.now();
+        const duration = 3000;
+
+        const tick = (now) => {
+            const progress = Math.min(100, ((now - start) / duration) * 100);
+            if (bar) bar.style.width = `${progress}%`;
+            if (count) count.textContent = `Loading ${Math.round(progress)}%`;
+            if (progress < 100) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+
+        window.setTimeout(() => {
+            if (bar) bar.style.width = '100%';
+            if (count) count.textContent = 'Loading 100%';
+            loader.style.opacity = '0';
+            loader.style.visibility = 'hidden';
+            loader.setAttribute('aria-hidden', 'true');
+            window.setTimeout(() => loader.remove(), 400);
+        }, duration);
+    })();
+    </script>
 
 
     <script>
@@ -1171,6 +1202,11 @@ aside button:active{
                     <i class="fa-solid fa-list-check text-lg w-6"></i>
                     <span>Task Planner</span>
                 </button>
+
+                <button onclick="switchTab('forgetting')" id="btn-tab-forgetting" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i class="fa-solid fa-brain text-lg w-6"></i>
+                    <span>Recall Planner</span>
+                </button>
                 
                 <button onclick="switchTab('ai')" id="btn-tab-ai" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
                     <i class="fa-solid fa-wand-magic-sparkles text-lg w-6"></i>
@@ -1293,59 +1329,6 @@ aside button:active{
                     </div>
                 </div>
 
-                <!-- ================= ADVANCED MARKS INTELLIGENCE ================= -->
-                <div id="marks-intelligence-panel" class="space-y-4">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="bg-brand-500/10 text-brand-300 p-2 rounded-xl"><i class="fa-solid fa-chart-simple"></i></span>
-                                <div>
-                                    <h3 class="text-base font-black text-white">Performance Intelligence</h3>
-                                    <p class="text-[10px] text-slate-500">Live statistics from your logged papers. No fake predictions, just what your records support.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="setMarksWindow(5)" id="marks-window-5" class="marks-window-btn px-3 py-2 rounded-lg text-[10px] font-bold bg-brand-600 text-white">Recent 5</button>
-                            <button type="button" onclick="setMarksWindow(10)" id="marks-window-10" class="marks-window-btn px-3 py-2 rounded-lg text-[10px] font-bold bg-slate-950 text-slate-400 border border-slate-800">Recent 10</button>
-                            <button type="button" onclick="setMarksWindow('all')" id="marks-window-all" class="marks-window-btn px-3 py-2 rounded-lg text-[10px] font-bold bg-slate-950 text-slate-400 border border-slate-800">All</button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 xl:grid-cols-6 gap-3">
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><span class="text-[9px] uppercase tracking-wider font-bold text-slate-500">Current Avg</span><div id="mi-current-avg" class="mt-1 text-2xl font-black text-white">0%</div><div id="mi-current-grade" class="text-[10px] text-brand-300 font-bold">N/A</div></div>
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><span class="text-[9px] uppercase tracking-wider font-bold text-slate-500">Recent Avg</span><div id="mi-recent-avg" class="mt-1 text-2xl font-black text-indigo-300">0%</div><div id="mi-recent-delta" class="text-[10px] text-slate-400 font-bold">No trend</div></div>
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><span class="text-[9px] uppercase tracking-wider font-bold text-slate-500">Personal Best</span><div id="mi-best" class="mt-1 text-2xl font-black text-emerald-300">0%</div><div id="mi-best-paper" class="text-[10px] text-slate-400 truncate">—</div></div>
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><span class="text-[9px] uppercase tracking-wider font-bold text-slate-500">Consistency</span><div id="mi-consistency" class="mt-1 text-2xl font-black text-amber-300">0%</div><div id="mi-volatility" class="text-[10px] text-slate-400">SD 0.0</div></div>
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><span class="text-[9px] uppercase tracking-wider font-bold text-slate-500">Target Gap</span><div id="mi-target-gap" class="mt-1 text-2xl font-black text-pink-300">—</div><div id="mi-target-label" class="text-[10px] text-slate-400">Target 75%</div></div>
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><span class="text-[9px] uppercase tracking-wider font-bold text-slate-500">Momentum</span><div id="mi-momentum" class="mt-1 text-2xl font-black text-cyan-300">—</div><div id="mi-momentum-note" class="text-[10px] text-slate-400">Waiting for data</div></div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-                            <div class="flex items-center justify-between gap-2">
-                                <div class="text-xs font-black text-white"><i class="fa-solid fa-bullseye text-brand-400 mr-1"></i> Subject Targets</div>
-                                <button type="button" onclick="saveMarksTargets()" class="text-[10px] font-bold text-brand-300 hover:text-white">Save Targets</button>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <label class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="block text-[9px] uppercase font-bold text-indigo-300 mb-1">Maths target %</span><input id="target-maths" type="number" min="0" max="100" step="0.1" class="w-full bg-transparent text-sm font-black text-white outline-none" value="75"></label>
-                                <label class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="block text-[9px] uppercase font-bold text-emerald-300 mb-1">Chemistry target %</span><input id="target-chemistry" type="number" min="0" max="100" step="0.1" class="w-full bg-transparent text-sm font-black text-white outline-none" value="75"></label>
-                                <label class="bg-slate-950 border border-slate-800 rounded-xl p-3"><span class="block text-[9px] uppercase font-bold text-amber-300 mb-1">Physics target %</span><input id="target-physics" type="number" min="0" max="100" step="0.1" class="w-full bg-transparent text-sm font-black text-white outline-none" value="75"></label>
-                            </div>
-                        </div>
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                            <div class="text-xs font-black text-white mb-2"><i class="fa-solid fa-ranking-star text-amber-300 mr-1"></i> Subject Intelligence</div>
-                            <div id="mi-subject-intel" class="space-y-2 text-[10px]"></div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><div class="text-xs font-black text-white mb-2">Grade Distribution</div><div id="mi-grade-bars" class="space-y-2"></div></div>
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><div class="text-xs font-black text-white mb-2">Performance Range</div><div class="grid grid-cols-2 gap-2"><div class="bg-slate-950 rounded-xl p-3"><span class="text-[9px] text-slate-500">Median</span><strong id="mi-median" class="block text-lg text-white">0%</strong></div><div class="bg-slate-950 rounded-xl p-3"><span class="text-[9px] text-slate-500">Lowest</span><strong id="mi-lowest" class="block text-lg text-rose-300">0%</strong></div><div class="bg-slate-950 rounded-xl p-3"><span class="text-[9px] text-slate-500">Highest</span><strong id="mi-highest" class="block text-lg text-emerald-300">0%</strong></div><div class="bg-slate-950 rounded-xl p-3"><span class="text-[9px] text-slate-500">Attempts</span><strong id="mi-attempts" class="block text-lg text-indigo-300">0</strong></div></div></div>
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4"><div class="text-xs font-black text-white mb-2">Smart Verdict</div><div id="mi-verdict" class="text-xs leading-relaxed text-slate-300">Log papers to generate a grounded performance verdict.</div></div>
-                    </div>
-                </div>
-
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                         <div class="flex items-center justify-between">
@@ -1385,162 +1368,254 @@ aside button:active{
                             </div>
                         </div>
                     </div>
-</div>
+
+                    <div class="bg-gradient-to-br from-indigo-950/20 via-slate-900 to-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-brain text-purple-400"></i>
+                                <span>Active Recall Spacing Loop</span>
+                            </h3>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                Studies prove we forget up to <strong>70%</strong> of newly learned A/L concepts within 24 hours. Fight the forgetting curve by tracking review intervals in our active recall log.
+                            </p>
+                            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800/85">
+                                <span class="text-[10px] uppercase font-bold text-indigo-400 block mb-1">Standard Spacing Milestones</span>
+                                <div class="flex justify-between text-[10px] text-slate-400">
+                                    <span>Day 1: Review</span>
+                                    <span>Day 3: Practice</span>
+                                    <span>Day 7: Lock</span>
+                                    <span>Day 30: Master</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="switchTab('forgetting')" class="w-full mt-4 bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition duration-200">
+                            Open Spacing Recall Planner
+                        </button>
+                    </div>
+                </div>
 
             </section>
 
             <!-- ================= TRACKER TAB ================= -->
             <section id="tab-content-tracker" class="tab-pane hidden space-y-6">
-                
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
-                        <h2 class="text-2xl font-bold text-white tracking-tight">Paper Marks Analyzer</h2>
-                        <p class="text-xs text-slate-400">Log scores of model, school, and provincial exams. Use the mouse wheel to zoom the chart horizontally.</p>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-brand-500/10 text-brand-400 p-2.5 rounded-xl">
+                                <i class="fa-solid fa-chart-pie"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-2xl font-black text-white tracking-tight">Marks Intelligence</h2>
+                                <p class="text-xs text-slate-400">Track trends, targets, consistency and grade progression from every paper.</p>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="flex items-center space-x-2">
-                        <button onclick="openLogPaperModal()" class="bg-brand-600 hover:bg-brand-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center space-x-1.5">
-                            <i class="fa-solid fa-plus"></i>
-                            <span>Log New Paper</span>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="openMarksTargetPanel()" class="bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold px-3 py-2.5 rounded-xl text-xs transition flex items-center gap-2">
+                            <i class="fa-solid fa-bullseye text-brand-400"></i><span>Targets</span>
+                        </button>
+                        <button type="button" onclick="openLogPaperModal()" class="bg-brand-600 hover:bg-brand-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-lg shadow-brand-600/15">
+                            <i class="fa-solid fa-plus"></i><span>Log New Paper</span>
                         </button>
                     </div>
                 </div>
 
+                <!-- Target panel -->
+                <div id="marks-target-panel" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-black text-white">Subject Targets</h3>
+                            <p class="text-[10px] text-slate-500">Saved on this device. These targets power the gap and projection cards.</p>
+                        </div>
+                        <button type="button" onclick="closeMarksTargetPanel()" class="text-slate-500 hover:text-white p-2"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-indigo-400 mb-1">Combined Maths</label>
+                            <input id="target-maths" type="number" min="0" max="100" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500" value="75">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-emerald-400 mb-1">Chemistry</label>
+                            <input id="target-chemistry" type="number" min="0" max="100" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500" value="75">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-amber-400 mb-1">Physics</label>
+                            <input id="target-physics" type="number" min="0" max="100" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500" value="75">
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-4">
+                        <button type="button" onclick="saveMarksTargets()" class="bg-brand-600 hover:bg-brand-500 text-white font-bold px-4 py-2 rounded-xl text-xs">Save Targets</button>
+                    </div>
+                </div>
+
+                <!-- KPI cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                        <span class="text-[9px] uppercase tracking-widest font-black text-slate-500">Overall Average</span>
+                        <div class="flex items-end gap-2 mt-1"><strong id="marks-stat-average" class="text-2xl md:text-3xl font-black text-white">0%</strong><span id="marks-stat-trend" class="text-[10px] font-bold text-slate-500 mb-1">—</span></div>
+                        <p id="marks-stat-subtitle" class="text-[10px] text-slate-500 mt-1">No scored papers</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                        <span class="text-[9px] uppercase tracking-widest font-black text-slate-500">Recent 5</span>
+                        <strong id="marks-stat-recent" class="block text-2xl md:text-3xl font-black text-brand-400 mt-1">0%</strong>
+                        <p id="marks-stat-recent-gap" class="text-[10px] text-slate-500 mt-1">Waiting for data</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                        <span class="text-[9px] uppercase tracking-widest font-black text-slate-500">Consistency</span>
+                        <strong id="marks-stat-consistency" class="block text-2xl md:text-3xl font-black text-indigo-400 mt-1">0%</strong>
+                        <p id="marks-stat-volatility" class="text-[10px] text-slate-500 mt-1">Volatility: —</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                        <span class="text-[9px] uppercase tracking-widest font-black text-slate-500">Personal Best</span>
+                        <strong id="marks-stat-best" class="block text-2xl md:text-3xl font-black text-emerald-400 mt-1">0%</strong>
+                        <p id="marks-stat-best-paper" class="text-[10px] text-slate-500 mt-1">No record yet</p>
+                    </div>
+                </div>
+
+                <!-- Subject intelligence -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="bg-slate-900 border border-indigo-500/15 rounded-2xl p-4">
+                        <div class="flex items-center justify-between"><span class="text-[9px] uppercase font-black text-indigo-400">Maths</span><span id="marks-maths-grade" class="text-xs font-black text-indigo-300">—</span></div>
+                        <strong id="marks-maths-avg" class="block text-2xl font-black text-white mt-1">0%</strong>
+                        <div class="h-1.5 bg-slate-950 rounded-full mt-3 overflow-hidden"><div id="marks-maths-bar" class="h-full bg-indigo-500 rounded-full transition-all" style="width:0%"></div></div>
+                        <p id="marks-maths-gap" class="text-[10px] text-slate-500 mt-2">Target: 75%</p>
+                    </div>
+                    <div class="bg-slate-900 border border-emerald-500/15 rounded-2xl p-4">
+                        <div class="flex items-center justify-between"><span class="text-[9px] uppercase font-black text-emerald-400">Chemistry</span><span id="marks-chemistry-grade" class="text-xs font-black text-emerald-300">—</span></div>
+                        <strong id="marks-chemistry-avg" class="block text-2xl font-black text-white mt-1">0%</strong>
+                        <div class="h-1.5 bg-slate-950 rounded-full mt-3 overflow-hidden"><div id="marks-chemistry-bar" class="h-full bg-emerald-500 rounded-full transition-all" style="width:0%"></div></div>
+                        <p id="marks-chemistry-gap" class="text-[10px] text-slate-500 mt-2">Target: 75%</p>
+                    </div>
+                    <div class="bg-slate-900 border border-amber-500/15 rounded-2xl p-4">
+                        <div class="flex items-center justify-between"><span class="text-[9px] uppercase font-black text-amber-400">Physics</span><span id="marks-physics-grade" class="text-xs font-black text-amber-300">—</span></div>
+                        <strong id="marks-physics-avg" class="block text-2xl font-black text-white mt-1">0%</strong>
+                        <div class="h-1.5 bg-slate-950 rounded-full mt-3 overflow-hidden"><div id="marks-physics-bar" class="h-full bg-amber-400 rounded-full transition-all" style="width:0%"></div></div>
+                        <p id="marks-physics-gap" class="text-[10px] text-slate-500 mt-2">Target: 75%</p>
+                    </div>
+                </div>
+
+                <!-- Log paper -->
                 <div id="log-paper-modal" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
-                            <i class="fa-solid fa-file-pen text-indigo-400"></i>
-                            <span>Log New Practice Paper</span>
-                        </h3>
-                        <button onclick="closeLogPaperModal()" class="text-slate-400 hover:text-slate-200"><i class="fa-solid fa-xmark"></i></button>
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-file-pen text-indigo-400"></i>Log Practice Paper</h3>
+                            <p class="text-[10px] text-slate-500 mt-1">Paper 12 and Paper 26 are now retained as benchmark records.</p>
+                        </div>
+                        <button type="button" onclick="closeLogPaperModal()" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark"></i></button>
                     </div>
-                    
                     <form id="paper-form" onsubmit="savePaper(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Subject</label>
-                            <select id="paper-subject" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Subject</label>
+                            <select id="paper-subject" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                                 <option value="Combined Maths">Combined Mathematics</option>
                                 <option value="Chemistry">Chemistry</option>
                                 <option value="Physics">Physics</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Paper Number</label>
-                            <input type="number" id="paper-number" required placeholder="e.g. 5" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Paper Number</label>
+                            <input type="number" id="paper-number" min="1" required placeholder="e.g. 5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Marks Obtained (%)</label>
-                            <input type="number" id="paper-marks" min="0" max="100" required placeholder="0 - 100" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
-                            <!-- Absent toggle -->
-                            <div class="flex items-center space-x-1.5 mt-2">
+                            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Marks (%)</label>
+                            <input type="number" id="paper-marks" min="0" max="100" step="0.1" required placeholder="0 - 100" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            <div class="flex items-center gap-1.5 mt-2">
                                 <input type="checkbox" id="paper-absent" onchange="toggleAbsentInput(this)" class="rounded border-slate-800 bg-slate-950 text-brand-600 focus:ring-brand-500 w-3.5 h-3.5">
-                                <label for="paper-absent" class="text-[9px] font-bold text-rose-400 uppercase cursor-pointer tracking-wider">Absent for this Paper</label>
+                                <label for="paper-absent" class="text-[9px] font-bold text-rose-400 uppercase cursor-pointer">Absent</label>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Date Attempted</label>
-                            <input type="date" id="paper-date" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Date Attempted</label>
+                            <input type="date" id="paper-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none">
                         </div>
-                        <div class="md:col-span-4 flex justify-end space-x-2">
-                            <button type="button" onclick="closeLogPaperModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg text-xs transition">Cancel</button>
-                            <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white font-bold px-5 py-2 rounded-lg text-xs transition">Save Record</button>
+                        <div class="md:col-span-4 flex justify-end gap-2">
+                            <button type="button" onclick="closeLogPaperModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-xl text-xs">Cancel</button>
+                            <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white font-bold px-5 py-2 rounded-xl text-xs">Save Record</button>
                         </div>
                     </form>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-                            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
-                                <i class="fa-solid fa-chart-line text-brand-400"></i>
-                                <span id="chart-title-lbl">Subject Progression (3-Subject Composite)</span>
-                            </h3>
-                            
-                            <!-- Combined Actions: Subject Filter + Zoom & Save Controls -->
-                            <div class="flex flex-wrap items-center gap-2">
-                                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
-                                    <button onclick="setChartFilter('All')" id="btn-filter-all" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all bg-brand-600 text-white">All 3 Subjects</button>
-                                    <button onclick="setChartFilter('Combined Maths')" id="btn-filter-maths" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Maths</button>
-                                    <button onclick="setChartFilter('Chemistry')" id="btn-filter-chem" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Chemistry</button>
-                                    <button onclick="setChartFilter('Physics')" id="btn-filter-phys" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Physics</button>
-                                </div>
-                                
-                                <div class="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
-                                    <button onclick="resetChartZoom()" title="Reset Chart Zoom" class="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-200 rounded transition flex items-center space-x-1">
-                                        <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
-                                        <span>Reset</span>
-                                    </button>
-                                    <button onclick="saveChartImage()" title="Save Chart Image" class="px-2 py-1 text-[10px] font-bold text-brand-400 hover:text-brand-300 rounded transition flex items-center space-x-1">
-                                        <i class="fa-solid fa-download text-[10px]"></i>
-                                        <span>Save</span>
-                                    </button>
-                                </div>
-                            </div>
+                <!-- Main chart -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-4">
+                    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-sm font-black text-white"><i class="fa-solid fa-chart-line text-brand-400 mr-2"></i><span id="chart-title-lbl">Performance Progression</span></h3>
+                            <p class="text-[10px] text-slate-500 mt-1">Use filters to compare subjects. Wheel/pinch zoom is supported.</p>
                         </div>
-
-                        <!-- Canvas viewport (Expanded 480px high view) -->
-                        <div class="relative w-full h-[480px] bg-slate-950 rounded-xl p-4 border border-slate-800/60 flex items-center justify-center">
-                            <canvas id="marksChart" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                        <div class="flex flex-wrap gap-2">
+                            <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+                                <button onclick="setChartFilter('All')" id="btn-filter-all" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg bg-brand-600 text-white">All</button>
+                                <button onclick="setChartFilter('Combined Maths')" id="btn-filter-maths" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg text-slate-400">Maths</button>
+                                <button onclick="setChartFilter('Chemistry')" id="btn-filter-chem" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg text-slate-400">Chemistry</button>
+                                <button onclick="setChartFilter('Physics')" id="btn-filter-phys" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg text-slate-400">Physics</button>
+                            </div>
+                            <button onclick="resetChartZoom()" class="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-[10px] font-bold text-slate-400 hover:text-white"><i class="fa-solid fa-arrows-rotate mr-1"></i>Reset</button>
+                            <button onclick="saveChartImage()" class="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-[10px] font-bold text-brand-400"><i class="fa-solid fa-download mr-1"></i>Save</button>
                         </div>
                     </div>
-
-                    <!-- Rapid Insights Side-Panel -->
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 flex flex-col justify-between">
-                        <div class="space-y-4">
-                            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
-                                <i class="fa-solid fa-microchip text-indigo-400"></i>
-                                <span>Synergistic Insights</span>
-                            </h3>
-                            
-                            <div class="space-y-3">
-                                <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
-                                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Strengths Detected</span>
-                                    <p id="insight-strength" class="text-xs text-slate-300 font-medium">Log some papers to start scanning for patterns.</p>
-                                </div>
-                                <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
-                                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Immediate Action Needed</span>
-                                    <p id="insight-weakness" class="text-xs text-amber-300 font-medium">No alerts detected yet.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-brand-950/20 border border-brand-800/40 p-4 rounded-xl space-y-2">
-                            <p class="text-xs text-brand-300 font-medium">Need deep diagnostic analysis?</p>
-                            <button onclick="requestAIMarkAnalysis()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2 rounded-lg text-xs transition flex items-center justify-center space-x-1.5">
-                                <i class="fa-solid fa-brain"></i>
-                                <span id="insight-ai-btn-lbl">Analyse all with Gemini</span>
-                            </button>
-                        </div>
+                    <div class="relative w-full h-[340px] md:h-[460px] bg-slate-950 rounded-xl p-3 border border-slate-800/60">
+                        <canvas id="marksChart" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
                     </div>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
-                            <i class="fa-solid fa-history text-slate-400"></i>
-                            <span>Logged Papers Log History</span>
-                        </h3>
-                        <div class="text-[11px] text-slate-400">
-                            Total Records: <span id="paper-count-badge" class="font-bold text-brand-400">0</span>
+                <!-- Intelligence -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-black text-white"><i class="fa-solid fa-microchip text-indigo-400 mr-2"></i>Performance Intelligence</h3>
+                            <span id="marks-intelligence-status" class="text-[9px] font-black uppercase px-2 py-1 rounded-lg bg-slate-950 text-slate-500">Waiting</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl"><span class="text-[9px] uppercase font-black text-slate-500">Strength</span><p id="insight-strength" class="text-xs text-slate-300 font-semibold mt-1">Log papers to start.</p></div>
+                            <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl"><span class="text-[9px] uppercase font-black text-slate-500">Immediate Action</span><p id="insight-weakness" class="text-xs text-amber-300 font-semibold mt-1">No alerts detected.</p></div>
+                            <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl"><span class="text-[9px] uppercase font-black text-slate-500">Trend</span><p id="marks-intelligence-trend" class="text-xs text-slate-300 font-semibold mt-1">Waiting for enough records.</p></div>
+                            <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl"><span class="text-[9px] uppercase font-black text-slate-500">Projection</span><p id="marks-intelligence-projection" class="text-xs text-slate-300 font-semibold mt-1">Waiting for enough records.</p></div>
                         </div>
                     </div>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs text-slate-300">
-                            <thead class="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 text-[10px]">
+                    <div class="bg-brand-950/20 border border-brand-800/40 rounded-2xl p-5 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-black text-white">AI Diagnostic</h3>
+                            <p class="text-[10px] text-slate-500 mt-1">Send the current performance dataset to your configured AI coach.</p>
+                        </div>
+                        <button onclick="requestAIMarkAnalysis()" class="w-full mt-4 bg-brand-600 hover:bg-brand-500 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-brain"></i><span id="insight-ai-btn-lbl">Analyse all with Gemini</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Grade distribution -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-black text-white">Grade Distribution</h3>
+                            <span id="marks-grade-summary" class="text-[10px] text-slate-500">No scored papers</span>
+                        </div>
+                        <div id="marks-grade-bars" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                        <h3 class="text-sm font-black text-white mb-4">Target Projection</h3>
+                        <div id="marks-target-summary" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h3 class="text-sm font-black text-white"><i class="fa-solid fa-history text-slate-400 mr-2"></i>Paper History</h3>
+                            <p class="text-[10px] text-slate-500">Paper 12 and 26 remain visible as benchmark records instead of being discarded.</p>
+                        </div>
+                        <div class="text-[10px] text-slate-400">Total: <span id="paper-count-badge" class="font-black text-brand-400">0</span></div>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-slate-800">
+                        <table class="w-full min-w-[650px] text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
                                 <tr>
-                                    <th class="p-3">Subject</th>
-                                    <th class="p-3">Paper Number</th>
-                                    <th class="p-3">Marks Obtained</th>
-                                    <th class="p-3">Grade Tier</th>
-                                    <th class="p-3">Date logged</th>
-                                    <th class="p-3 text-right">Actions</th>
+                                    <th class="p-3">Subject</th><th class="p-3">Paper</th><th class="p-3">Marks</th><th class="p-3">Grade</th><th class="p-3">Date</th><th class="p-3 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="paper-table-body" class="divide-y divide-slate-800/50">
-                                <!-- Dynamic rows populated via Javascript -->
-                            </tbody>
+                            <tbody id="paper-table-body" class="divide-y divide-slate-800/50"></tbody>
                         </table>
                     </div>
                 </div>
@@ -1587,6 +1662,10 @@ aside button:active{
                     </div>
 
                     <form id="task-form" onsubmit="addTask(event)" class="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr_1.6fr_auto] gap-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                        <div class="lg:col-span-full flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2">
+                            <div class="text-xs text-slate-400"><i class="fa-solid fa-bell text-indigo-400 mr-1"></i> Get device notifications when your tasks are due.</div>
+                            <button type="button" id="enable-task-notifications" onclick="enableTaskNotifications()" class="text-xs font-bold px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition">Enable Notifications</button>
+                        </div>
                         <div class="min-w-0">
                             <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Task</label>
                             <input type="text" id="task-name" required maxlength="180" autocomplete="off" placeholder="e.g. Solve integration past paper"
@@ -1650,6 +1729,65 @@ aside button:active{
 
                     <div id="task-list-container" class="space-y-2 max-h-[34rem] overflow-y-auto pr-1">
                         <!-- Dynamic tasks -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= ACTIVE RECALL PLANNER TAB ================= -->
+            <section id="tab-content-forgetting" class="tab-pane hidden space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-brain text-purple-400"></i>
+                            <span>Active Recall Spacing Planner</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Map high-difficulty concepts to optimized memory spacing intervals to conquer the forgetting curve.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-square-plus text-purple-400"></i>
+                            <span>Log New Hard Topic</span>
+                        </h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Learned a tough mechanism, an integration pattern, or electric theory? Log it below to schedule automated spacing reviews.
+                        </p>
+                        
+                        <form id="forgetting-form" onsubmit="saveRecallTopic(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Subject Area</label>
+                                <select id="recall-subject" required class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                                    <option value="Combined Maths">Combined Mathematics</option>
+                                    <option value="Chemistry">Chemistry</option>
+                                    <option value="Physics">Physics</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Topic / Lesson Concept</label>
+                                <input type="text" id="recall-topic" required placeholder="e.g. Organic Rx Mechanisms (Grignard)" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Initial Date Studied</label>
+                                <input type="date" id="recall-date" required class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            </div>
+                            <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition">
+                                Build Spaced Spacing Intervals
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-list-check text-purple-400"></i>
+                                <span>Spaced Milestones Review Feed</span>
+                            </h3>
+                            <div class="space-y-2 overflow-y-auto max-h-96 pr-2" id="recall-list-container">
+                                <!-- Generated items -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1942,6 +2080,10 @@ aside button:active{
             <i class="fa-solid fa-list-check text-sm"></i>
             <span class="text-[8px] font-semibold">Tasks</span>
         </button>
+        <button onclick="switchTab('forgetting')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
+            <i class="fa-solid fa-brain text-sm"></i>
+            <span class="text-[8px] font-semibold">Recall</span>
+        </button>
         <button onclick="switchTab('ai')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
             <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
             <span class="text-[8px] font-semibold">Mastermind AI</span>
@@ -1973,6 +2115,7 @@ aside button:active{
         let paperLogs = [];
         let taskLogs = [];
         let classLogs = [];
+        let recallLogs = [];
         let studentProfile = {
             name: "Supun Perera",
             year: "2027-08-10",
@@ -2267,6 +2410,9 @@ aside button:active{
 
                 const { data: classes } = await supabaseClient.from('classes').select('*').eq('user_id', user.id);
                 if (classes) classLogs = classes;
+
+                const { data: recalls } = await supabaseClient.from('recalls').select('*').eq('user_id', user.id);
+                if (recalls) recallLogs = recalls;
             } catch (err) {
                 console.error("Data synchronization failed:", err);
             }
@@ -2470,6 +2616,7 @@ aside button:active{
             paperLogs = [];
             taskLogs = [];
             classLogs = [];
+            recallLogs = [];
             document.getElementById('auth-screen').classList.remove('hidden');
             const authForm = document.getElementById('auth-form');
             if (authForm) authForm.reset();
@@ -2535,6 +2682,7 @@ aside button:active{
             "Organic Chemistry isn't about memorization; it's about patterns and pathways.",
             "Physics is logic made physical. Visualize the forces and currents.",
             "A single mark can shift your Z-score dramatically. Count every percent.",
+            "Keep fighting the forgetting curve. Spacing makes learning permanent."
         ];
 
         function generateNewQuote() {
@@ -2558,6 +2706,8 @@ aside button:active{
             document.getElementById('stat-maths-grade').innerText = getA_LGradeLetter(mathAvg);
             document.getElementById('stat-chemistry-grade').innerText = getA_LGradeLetter(chemAvg);
             document.getElementById('stat-physics-grade').innerText = getA_LGradeLetter(physAvg);
+
+            document.getElementById('stat-active-recall-items').innerText = recallLogs.length;
 
             const globalAvg = (mathAvg + chemAvg + physAvg) / 3;
             
@@ -2599,6 +2749,8 @@ aside button:active{
                 document.getElementById('est-admission').innerText = 'Below Cutoff';
                 document.getElementById('est-admission').className = 'text-xs font-bold text-pink-400';
             }
+
+            updateForgettingCurveHeaderAlert();
         }
 
         function getA_LGradeLetter(marks) {
@@ -2609,6 +2761,18 @@ aside button:active{
             if (marks >= 35) return 'S';
             return 'F';
         }
+
+        function updateForgettingCurveHeaderAlert() {
+            const pendingAlert = document.getElementById('next-forgetting-alert');
+            if (!pendingAlert) return;
+            if (!recallLogs.length) {
+                pendingAlert.innerText = 'No Spaced Logs';
+                return;
+            }
+            const pending = recallLogs.filter(r => r.reviewedCount < 4).length;
+            pendingAlert.innerText = `${pending} Concept(s) Pending`;
+        }
+
         async function addTask(event) {
             event.preventDefault();
             const name = document.getElementById('task-name').value;
@@ -2738,11 +2902,16 @@ aside button:active{
             let marks = null;
 
             if (!isAbsent) {
-                marks = parseInt(marksInput.value);
-                if (isNaN(marks) || marks < 0 || marks > 100) {
-                    showAlert('Invalid Entry', 'Marks must be an integer between 0 and 100.');
+                marks = Number.parseFloat(marksInput.value);
+                if (!Number.isFinite(marks) || marks < 0 || marks > 100) {
+                    showAlert('Invalid Entry', 'Marks must be between 0 and 100.');
                     return;
                 }
+            }
+
+            if (!subject || !numberVal || !date) {
+                showAlert('Incomplete Entry', 'Please complete the subject, paper number and date.');
+                return;
             }
 
             if (supabaseClient) {
@@ -2751,19 +2920,41 @@ aside button:active{
                     const { data, error } = await supabaseClient.from('papers').insert([
                         { user_id: user.id, subject, type, marks, date, absent: isAbsent }
                     ]).select();
-                    if (!error && data) {
+
+                    if (!error && data?.[0]) {
                         paperLogs.push(data[0]);
+                    } else if (error) {
+                        console.warn('Paper cloud save failed:', error);
+                        paperLogs.push({
+                            id: 'local_' + Date.now(),
+                            subject, type, marks, date, absent: isAbsent
+                        });
                     }
                 } catch (err) {
-                    console.warn("Bypassed dynamic score cloud sync.");
+                    console.warn('Bypassed dynamic score cloud sync.', err);
+                    paperLogs.push({
+                        id: 'local_' + Date.now(),
+                        subject, type, marks, date, absent: isAbsent
+                    });
                 }
+            } else {
+                paperLogs.push({
+                    id: 'local_' + Date.now(),
+                    subject, type, marks, date, absent: isAbsent
+                });
             }
 
             document.getElementById('paper-form').reset();
             toggleAbsentInput(document.getElementById('paper-absent'));
             closeLogPaperModal();
-            showAlert('Success', isAbsent ? 'Absent status recorded successfully!' : 'Paper score successfully saved!');
-            
+
+            showAlert(
+                'Score Saved',
+                isAbsent
+                    ? `${type} marked absent.`
+                    : `${type} saved at ${marks.toFixed(1)}%.`
+            );
+
             renderMarksAnalytics();
             updateCoreStats();
         }
@@ -2900,154 +3091,7 @@ aside button:active{
 
         let performanceChartInstance = null;
 
-
-/* =========================================================
-   MARKS INTELLIGENCE ENGINE
-   Uses only logged numeric paper marks; absent records are excluded.
-   ========================================================= */
-let marksAnalyticsWindow = 5;
-const MARKS_TARGET_KEY = 'mm_marks_targets_v1';
-const DEFAULT_MARKS_TARGETS = { 'Combined Maths': 75, 'Chemistry': 75, 'Physics': 75 };
-
-function loadMarksTargets(){
-    let saved = {};
-    try { saved = JSON.parse(localStorage.getItem(MARKS_TARGET_KEY) || '{}') || {}; } catch(e) {}
-    const targets = {...DEFAULT_MARKS_TARGETS, ...saved};
-    const map = { 'Combined Maths':'target-maths', 'Chemistry':'target-chemistry', 'Physics':'target-physics' };
-    Object.entries(map).forEach(([subject,id])=>{
-        const el=document.getElementById(id);
-        if(el) el.value = Number.isFinite(Number(targets[subject])) ? Number(targets[subject]) : 75;
-    });
-    return targets;
-}
-function saveMarksTargets(){
-    const targets = {
-        'Combined Maths': Math.max(0,Math.min(100,Number(document.getElementById('target-maths')?.value)||75)),
-        'Chemistry': Math.max(0,Math.min(100,Number(document.getElementById('target-chemistry')?.value)||75)),
-        'Physics': Math.max(0,Math.min(100,Number(document.getElementById('target-physics')?.value)||75))
-    };
-    try{ localStorage.setItem(MARKS_TARGET_KEY,JSON.stringify(targets)); }catch(e){}
-    if(typeof renderAdvancedMarksIntelligence==='function') renderAdvancedMarksIntelligence();
-    if(typeof showAlert==='function') showAlert('Targets Saved','Subject performance targets updated successfully.');
-}
-function setMarksWindow(windowSize){
-    marksAnalyticsWindow = windowSize;
-    document.querySelectorAll('.marks-window-btn').forEach(btn=>{
-        btn.classList.remove('bg-brand-600','text-white');
-        btn.classList.add('bg-slate-950','text-slate-400','border','border-slate-800');
-    });
-    const key = windowSize === 5 ? 'marks-window-5' : windowSize === 10 ? 'marks-window-10' : 'marks-window-all';
-    const active=document.getElementById(key);
-    if(active){ active.classList.remove('bg-slate-950','text-slate-400','border','border-slate-800'); active.classList.add('bg-brand-600','text-white'); }
-    renderAdvancedMarksIntelligence();
-}
-function getNumericMarksRecords(source = paperLogs){
-    return (Array.isArray(source)?source:[])
-        .filter(p=>!p?.absent && Number.isFinite(Number(p?.marks)))
-        .map(p=>({...p,marks:Number(p.marks)}));
-}
-function marksMean(values){ return values.length ? values.reduce((a,b)=>a+b,0)/values.length : 0; }
-function marksMedian(values){
-    if(!values.length) return 0;
-    const a=[...values].sort((x,y)=>x-y), m=Math.floor(a.length/2);
-    return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
-}
-function marksStd(values){
-    if(values.length<2) return 0;
-    const avg=marksMean(values);
-    return Math.sqrt(marksMean(values.map(v=>(v-avg)**2)));
-}
-function marksTrend(values){
-    if(values.length<2) return 0;
-    const half=Math.max(1,Math.floor(values.length/2));
-    const first=marksMean(values.slice(0,half));
-    const last=marksMean(values.slice(-half));
-    return last-first;
-}
-function marksConsistency(values){
-    if(!values.length) return 0;
-    const sd=marksStd(values);
-    return Math.max(0,Math.min(100,100-(sd*2.4)));
-}
-function renderAdvancedMarksIntelligence(){
-    const records=getNumericMarksRecords();
-    const filter = activeChartFilter || 'All';
-    const filtered = filter==='All' ? records : records.filter(p=>p.subject===filter);
-    const chronological=[...filtered].sort((a,b)=>new Date(a.date||0)-new Date(b.date||0) || (parseInt(String(a.type).replace(/\D/g,''),10)||0)-(parseInt(String(b.type).replace(/\D/g,''),10)||0));
-    const selected = marksAnalyticsWindow==='all' ? chronological : chronological.slice(-Number(marksAnalyticsWindow));
-    const values=selected.map(p=>p.marks);
-    const allValues=chronological.map(p=>p.marks);
-    const currentAvg=marksMean(allValues);
-    const recentAvg=marksMean(values);
-    const sd=marksStd(values);
-    const trend=marksTrend(values);
-    const best=allValues.length ? Math.max(...allValues) : 0;
-    const lowest=allValues.length ? Math.min(...allValues) : 0;
-    const median=marksMedian(allValues);
-    const consistency=marksConsistency(values);
-    const targets=loadMarksTargets();
-    const target=filter==='All' ? 75 : (targets[filter]||75);
-    const gap=currentAvg-target;
-    const grade=getA_LGradeLetter(currentAvg);
-    const set=(id,value)=>{const el=document.getElementById(id); if(el) el.textContent=value;};
-
-    set('mi-current-avg',allValues.length?`${currentAvg.toFixed(1)}%`:'0%');
-    set('mi-current-grade',allValues.length?`Current grade: ${grade}`:'N/A');
-    set('mi-recent-avg',values.length?`${recentAvg.toFixed(1)}%`:'0%');
-    set('mi-recent-delta',values.length>1 ? `${trend>=0?'↑':'↓'} ${Math.abs(trend).toFixed(1)} pts momentum` : 'Not enough data');
-    set('mi-best',allValues.length?`${best.toFixed(1)}%`:'0%');
-    const bestPaper=chronological.find(p=>p.marks===best);
-    set('mi-best-paper',bestPaper ? `${bestPaper.subject} • ${bestPaper.type}`:'—');
-    set('mi-consistency',values.length?`${consistency.toFixed(0)}%`:'0%');
-    set('mi-volatility',`SD ${sd.toFixed(1)}`);
-    set('mi-target-gap',allValues.length ? `${gap>=0?'+':''}${gap.toFixed(1)} pts`:'—');
-    set('mi-target-label',`Target ${target.toFixed(0)}%`);
-    set('mi-momentum',values.length>1 ? `${trend>=0?'+':''}${trend.toFixed(1)}`:'—');
-    set('mi-momentum-note',values.length>1 ? (trend>2?'Improving':trend<-2?'Needs attention':'Stable') : 'Waiting for data');
-    set('mi-median',allValues.length?`${median.toFixed(1)}%`:'0%');
-    set('mi-lowest',allValues.length?`${lowest.toFixed(1)}%`:'0%');
-    set('mi-highest',allValues.length?`${best.toFixed(1)}%`:'0%');
-    set('mi-attempts',String(allValues.length));
-
-    const gradeCounts={A:0,B:0,C:0,S:0,F:0};
-    allValues.forEach(v=>{ const g=getA_LGradeLetter(v); if(gradeCounts[g]!=null) gradeCounts[g]++; });
-    const gradeBars=document.getElementById('mi-grade-bars');
-    if(gradeBars){
-        const total=Math.max(1,allValues.length);
-        gradeBars.innerHTML=Object.entries(gradeCounts).map(([g,c])=>`<div class="mi-bar"><span class="font-black text-slate-300">${g}</span><div class="mi-track"><div class="mi-fill ${g==='A'?'bg-emerald-500':g==='B'?'bg-cyan-500':g==='C'?'bg-amber-500':g==='S'?'bg-orange-500':'bg-rose-500'}" style="width:${(c/total)*100}%"></div></div><span class="text-right text-slate-400 font-bold">${c}</span></div>`).join('');
-    }
-
-    const subjects=['Combined Maths','Chemistry','Physics'];
-    const intel=document.getElementById('mi-subject-intel');
-    if(intel){
-        intel.innerHTML=subjects.map(subject=>{
-            const arr=records.filter(p=>p.subject===subject).sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)).map(p=>p.marks);
-            const avg=marksMean(arr), delta=marksTrend(arr), t=targets[subject]||75, g=avg-t;
-            const cls=avg>=t?'text-emerald-300':avg>=t-10?'text-amber-300':'text-rose-300';
-            const short=subject==='Combined Maths'?'Maths':subject;
-            return `<div class="mi-subject-row"><div><div class="text-slate-300 font-bold">${short}</div><div class="text-slate-500">${arr.length} papers • ${delta>=0?'+':''}${delta.toFixed(1)} trend</div></div><div class="text-right"><div class="mi-score ${cls}">${arr.length?avg.toFixed(1):'—'}%</div><div class="text-slate-500">target ${t.toFixed(0)}%</div></div></div>`;
-        }).join('');
-    }
-
-    const verdict=document.getElementById('mi-verdict');
-    if(verdict){
-        if(!allValues.length){
-            verdict.textContent='Log at least 2 papers to unlock performance intelligence.';
-        }else{
-            const parts=[];
-            if(gap>=0) parts.push(`You are ${gap.toFixed(1)} points above the ${target.toFixed(0)}% target.`); else parts.push(`You are ${Math.abs(gap).toFixed(1)} points below the ${target.toFixed(0)}% target.`);
-            if(trend>2) parts.push('Recent performance is improving.');
-            else if(trend<-2) parts.push('Recent performance is declining.');
-            else parts.push('Recent performance is broadly stable.');
-            if(consistency>=80) parts.push('Consistency is strong.');
-            else if(consistency<60) parts.push('Score volatility is high.');
-            verdict.textContent=parts.join(' ');
-        }
-    }
-}
-
         function renderMarksAnalytics() {
-            try { renderAdvancedMarksIntelligence(); } catch (analyticsError) { console.warn('Marks intelligence render failed.', analyticsError); }
             const tableBody = document.getElementById('paper-table-body');
             document.getElementById('paper-count-badge').innerText = paperLogs.length;
 
@@ -3122,7 +3166,10 @@ function renderAdvancedMarksIntelligence(){
             }
 
             const datasets = [];
-            const activePapersForLabels = (activeChartFilter === 'All' ? paperLogs : paperLogs.filter(p => p.subject === activeChartFilter));
+            const activePapersForLabels = (activeChartFilter === 'All'
+                ? paperLogs
+                : paperLogs.filter(p => p.subject === activeChartFilter))
+                .filter(p => p && p.type != null);
             
             const uniqueLabels = [...new Set(activePapersForLabels.map(p => p.type))];
 
@@ -3156,8 +3203,14 @@ function renderAdvancedMarksIntelligence(){
                         borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     },
                     pointBackgroundColor: '#818cf8',
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointBorderColor: '#020617',
+                    pointBorderWidth: 2,
+                    pointRadius: ctx => {
+                        const label = ctx.chart?.data?.labels?.[ctx.dataIndex];
+                        const num = Number.parseInt(String(label ?? '').replace(/\D/g, ''), 10);
+                        return (num === 12 || num === 26) ? 5 : 4;
+                    },
+                    pointHoverRadius: 7
                 });
             }
             if (activeChartFilter === 'All' || activeChartFilter === 'Chemistry') {
@@ -3178,8 +3231,14 @@ function renderAdvancedMarksIntelligence(){
                         borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     },
                     pointBackgroundColor: '#34d399',
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointBorderColor: '#020617',
+                    pointBorderWidth: 2,
+                    pointRadius: ctx => {
+                        const label = ctx.chart?.data?.labels?.[ctx.dataIndex];
+                        const num = Number.parseInt(String(label ?? '').replace(/\D/g, ''), 10);
+                        return (num === 12 || num === 26) ? 5 : 4;
+                    },
+                    pointHoverRadius: 7
                 });
             }
             if (activeChartFilter === 'All' || activeChartFilter === 'Physics') {
@@ -3200,8 +3259,14 @@ function renderAdvancedMarksIntelligence(){
                         borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     },
                     pointBackgroundColor: '#fbbf24',
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointBorderColor: '#020617',
+                    pointBorderWidth: 2,
+                    pointRadius: ctx => {
+                        const label = ctx.chart?.data?.labels?.[ctx.dataIndex];
+                        const num = Number.parseInt(String(label ?? '').replace(/\D/g, ''), 10);
+                        return (num === 12 || num === 26) ? 5 : 4;
+                    },
+                    pointHoverRadius: 7
                 });
             }
 
@@ -3276,7 +3341,10 @@ function renderAdvancedMarksIntelligence(){
                 chatSideChartInstance.destroy();
             }
 
-            const activePapersForLabels = (activeChartFilter === 'All' ? paperLogs : paperLogs.filter(p => p.subject === activeChartFilter));
+            const activePapersForLabels = (activeChartFilter === 'All'
+                ? paperLogs
+                : paperLogs.filter(p => p.subject === activeChartFilter))
+                .filter(p => p && p.type != null);
             
             const uniqueLabels = [...new Set(activePapersForLabels.map(p => p.type))];
 
@@ -3379,43 +3447,356 @@ function renderAdvancedMarksIntelligence(){
             });
         }
 
-        function calculateInsights() {
-            if (!paperLogs.length) return;
+        const MARKS_TARGET_KEY = 'al_mastermind_marks_targets_v1';
+
+        function getMarksTargets() {
+            const defaults = { 'Combined Maths': 75, 'Chemistry': 75, 'Physics': 75 };
+            try {
+                const saved = JSON.parse(localStorage.getItem(MARKS_TARGET_KEY) || '{}');
+                return { ...defaults, ...saved };
+            } catch {
+                return defaults;
+            }
+        }
+
+        function openMarksTargetPanel() {
+            const panel = document.getElementById('marks-target-panel');
+            if (!panel) return;
+            const t = getMarksTargets();
+            document.getElementById('target-maths').value = t['Combined Maths'];
+            document.getElementById('target-chemistry').value = t['Chemistry'];
+            document.getElementById('target-physics').value = t['Physics'];
+            panel.classList.remove('hidden');
+        }
+
+        function closeMarksTargetPanel() {
+            document.getElementById('marks-target-panel')?.classList.add('hidden');
+        }
+
+        function saveMarksTargets() {
+            const targets = {
+                'Combined Maths': Math.min(100, Math.max(0, Number(document.getElementById('target-maths').value) || 75)),
+                'Chemistry': Math.min(100, Math.max(0, Number(document.getElementById('target-chemistry').value) || 75)),
+                'Physics': Math.min(100, Math.max(0, Number(document.getElementById('target-physics').value) || 75))
+            };
+            localStorage.setItem(MARKS_TARGET_KEY, JSON.stringify(targets));
+            closeMarksTargetPanel();
+            renderMarksAnalytics();
+            showAlert('Targets Updated', 'Your marks targets have been saved.');
+        }
+
+        function marksAverage(arr) {
+            const values = arr.filter(v => Number.isFinite(Number(v))).map(Number);
+            return values.length ? values.reduce((a,b) => a+b, 0) / values.length : 0;
+        }
+
+        function marksMedian(arr) {
+            const v = arr.filter(Number.isFinite).slice().sort((a,b) => a-b);
+            if (!v.length) return 0;
+            const m = Math.floor(v.length / 2);
+            return v.length % 2 ? v[m] : (v[m-1] + v[m]) / 2;
+        }
+
+        function marksGrade(value) {
+            if (!Number.isFinite(Number(value))) return '—';
+            const n = Number(value);
+            if (typeof getA_LGradeLetter === 'function') return getA_LGradeLetter(n);
+            if (n >= 75) return 'A';
+            if (n >= 65) return 'B';
+            if (n >= 55) return 'C';
+            if (n >= 35) return 'S';
+            return 'F';
+        }
+
+        function marksSetText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
+
+        function renderMarksAdvancedDashboard() {
+            const targets = getMarksTargets();
+            const scored = paperLogs
+                .filter(p => !p.absent && Number.isFinite(Number(p.marks)))
+                .map(p => ({ ...p, marks: Number(p.marks) }))
+                .sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')));
+
+            const avg = marksAverage(scored.map(p => p.marks));
+            const recent = scored.slice(-5);
+            const recentAvg = marksAverage(recent.map(p => p.marks));
+            const best = scored.reduce((x,p) => !x || p.marks > x.marks ? p : x, null);
+            const variance = scored.length > 1
+                ? marksAverage(scored.map(p => Math.pow(p.marks - avg, 2)))
+                : 0;
+            const sd = Math.sqrt(variance);
+            const consistency = Math.max(0, Math.min(100, 100 - (sd * 2)));
+            const trend = recent.length >= 2 ? recentAvg - marksAverage(scored.slice(0, Math.max(1, scored.length - recent.length)).map(p => p.marks)) : 0;
+
+            marksSetText('marks-stat-average', scored.length ? `${avg.toFixed(1)}%` : '0%');
+            marksSetText('marks-stat-trend', scored.length >= 2 ? `${trend >= 0 ? '↑' : '↓'} ${Math.abs(trend).toFixed(1)}%` : '—');
+            marksSetText('marks-stat-subtitle', scored.length ? `${scored.length} scored paper${scored.length === 1 ? '' : 's'} • Median ${marksMedian(scored.map(p => p.marks)).toFixed(1)}%` : 'No scored papers');
+            marksSetText('marks-stat-recent', recent.length ? `${recentAvg.toFixed(1)}%` : '0%');
+            marksSetText('marks-stat-recent-gap', scored.length ? `${recentAvg >= avg ? 'Above' : 'Below'} lifetime average` : 'Waiting for data');
+            marksSetText('marks-stat-consistency', scored.length > 1 ? `${consistency.toFixed(0)}%` : '—');
+            marksSetText('marks-stat-volatility', scored.length > 1 ? `Volatility: ±${sd.toFixed(1)}%` : 'Volatility: —');
+            marksSetText('marks-stat-best', best ? `${best.marks.toFixed(1)}%` : '0%');
+            marksSetText('marks-stat-best-paper', best ? `${best.subject} • ${best.type}` : 'No record yet');
+
+            const groups = {
+                'Combined Maths': scored.filter(p => p.subject === 'Combined Maths'),
+                'Chemistry': scored.filter(p => p.subject === 'Chemistry'),
+                'Physics': scored.filter(p => p.subject === 'Physics')
+            };
+
+            const ids = {
+                'Combined Maths': ['marks-maths-avg','marks-maths-grade','marks-maths-bar','marks-maths-gap'],
+                'Chemistry': ['marks-chemistry-avg','marks-chemistry-grade','marks-chemistry-bar','marks-chemistry-gap'],
+                'Physics': ['marks-physics-avg','marks-physics-grade','marks-physics-bar','marks-physics-gap']
+            };
+
+            Object.entries(groups).forEach(([subject, rows]) => {
+                const a = marksAverage(rows.map(p => p.marks));
+                const target = Number(targets[subject] ?? 75);
+                const [avgId, gradeId, barId, gapId] = ids[subject];
+                marksSetText(avgId, rows.length ? `${a.toFixed(1)}%` : '0%');
+                marksSetText(gradeId, rows.length ? marksGrade(a) : '—');
+                const bar = document.getElementById(barId);
+                if (bar) bar.style.width = `${Math.min(100, Math.max(0, a))}%`;
+                marksSetText(gapId, rows.length
+                    ? (a >= target ? `✓ Target ${target}% reached • +${(a-target).toFixed(1)}%` : `Target ${target}% • ${(target-a).toFixed(1)}% gap`)
+                    : `Target: ${target}%`);
+            });
+
+            const validSubjects = Object.entries(groups).filter(([,rows]) => rows.length);
+            const strongest = validSubjects.sort((a,b) => marksAverage(b[1].map(p=>p.marks)) - marksAverage(a[1].map(p=>p.marks)))[0];
+            const weakest = [...validSubjects].sort((a,b) => marksAverage(a[1].map(p=>p.marks)) - marksAverage(b[1].map(p=>p.marks)))[0];
+
+            marksSetText('insight-strength', strongest
+                ? `Strongest: ${strongest[0]} at ${marksAverage(strongest[1].map(p=>p.marks)).toFixed(1)}%.`
+                : 'Log papers to start scanning patterns.');
 
             const absentCount = paperLogs.filter(p => p.absent).length;
-            const grouped = { 'Combined Maths': [], 'Chemistry': [], 'Physics': [] };
-            paperLogs.filter(p => !p.absent).forEach(p => grouped[p.subject].push(p.marks));
+            marksSetText('insight-weakness', absentCount
+                ? `${absentCount} absent record${absentCount > 1 ? 's' : ''}.`
+                : weakest
+                    ? `Focus next on ${weakest[0]} at ${marksAverage(weakest[1].map(p=>p.marks)).toFixed(1)}%.`
+                    : 'No alerts detected.');
 
-            let highestSub = '';
-            let highestVal = -1;
-            let lowestSub = '';
-            let lowestVal = 101;
+            const status = document.getElementById('marks-intelligence-status');
+            if (status) {
+                status.textContent = scored.length < 2 ? 'Collecting' : trend >= 2 ? 'Improving' : trend <= -2 ? 'Needs attention' : 'Stable';
+                status.className = `text-[9px] font-black uppercase px-2 py-1 rounded-lg ${
+                    trend >= 2 ? 'bg-emerald-500/10 text-emerald-400' :
+                    trend <= -2 ? 'bg-rose-500/10 text-rose-400' :
+                    'bg-indigo-500/10 text-indigo-400'
+                }`;
+            }
 
-            for (const sub in grouped) {
-                if (grouped[sub].length) {
-                    const avg = grouped[sub].reduce((a,b) => a+b, 0) / grouped[sub].length;
-                    if (avg > highestVal) {
-                        highestVal = avg;
-                        highestSub = sub;
+            marksSetText('marks-intelligence-trend',
+                scored.length < 2 ? 'Add at least two scored papers for trend analysis.' :
+                trend > 2 ? `Recent performance is up ${trend.toFixed(1)} points.` :
+                trend < -2 ? `Recent performance is down ${Math.abs(trend).toFixed(1)} points.` :
+                'Recent performance is broadly stable.');
+
+            const projection = scored.length >= 3 ? Math.min(100, recentAvg + trend * 0.5) : avg;
+            marksSetText('marks-intelligence-projection',
+                scored.length ? `Short-term projection: ${projection.toFixed(1)}% based on recent trend.` : 'Waiting for enough records.');
+
+            // Grade distribution
+            const gradeCounts = { A:0, B:0, C:0, S:0, F:0 };
+            scored.forEach(p => { const g = marksGrade(p.marks); if (gradeCounts[g] !== undefined) gradeCounts[g]++; });
+            const total = scored.length;
+            const gradeColors = { A:'text-emerald-400', B:'text-indigo-400', C:'text-amber-400', S:'text-orange-400', F:'text-rose-400' };
+            const gradeBars = document.getElementById('marks-grade-bars');
+            if (gradeBars) {
+                gradeBars.innerHTML = total ? Object.entries(gradeCounts).map(([g,n]) => {
+                    const pct = total ? (n/total)*100 : 0;
+                    return `<div><div class="flex justify-between text-[10px] font-bold mb-1"><span class="${gradeColors[g]}">${g} Grade</span><span class="text-slate-500">${n} • ${pct.toFixed(0)}%</span></div><div class="h-2 bg-slate-950 rounded-full overflow-hidden"><div class="h-full bg-current ${gradeColors[g]} rounded-full" style="width:${pct}%"></div></div></div>`;
+                }).join('') : '<p class="text-xs text-slate-500">No scored papers yet.</p>';
+            }
+            marksSetText('marks-grade-summary', total ? `${total} scored paper${total === 1 ? '' : 's'}` : 'No scored papers');
+
+            // Target projection cards
+            const targetSummary = document.getElementById('marks-target-summary');
+            if (targetSummary) {
+                targetSummary.innerHTML = Object.entries(groups).map(([subject, rows]) => {
+                    const a = marksAverage(rows.map(p=>p.marks));
+                    const target = Number(targets[subject] || 75);
+                    const gap = target - a;
+                    const label = rows.length ? (gap <= 0 ? `Target reached by ${Math.abs(gap).toFixed(1)} pts` : `${gap.toFixed(1)} pts to target`) : `Need first score`;
+                    return `<div class="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl"><div><span class="block text-[9px] uppercase font-black text-slate-500">${subject}</span><strong class="text-sm text-white">${rows.length ? a.toFixed(1) : '—'}%</strong></div><span class="text-[10px] font-bold ${gap <= 0 && rows.length ? 'text-emerald-400' : 'text-amber-400'}">${label}</span></div>`;
+                }).join('');
+            }
+        }
+
+        function calculateInsights() {
+            renderMarksAdvancedDashboard();
+        }
+
+        async function saveRecallTopic(event) {
+            event.preventDefault();
+            const subject = document.getElementById('recall-subject').value;
+            const topic = document.getElementById('recall-topic').value;
+            const date = document.getElementById('recall-date').value;
+
+            if (!subject || !topic || !date) {
+                showAlert('Validation Error', 'Please enter a subject, topic, and study date.');
+                return;
+            }
+
+            let newRecallItem = {
+                id: 'local_' + Date.now(),
+                subject,
+                topic,
+                date_studied: date,
+                reviewed_count: 0
+            };
+
+            if (supabaseClient) {
+                try {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { data, error } = await supabaseClient.from('recalls').insert([
+                        { user_id: user.id, subject, topic, date_studied: date, reviewed_count: 0 }
+                    ]).select();
+                    if (!error && data?.[0]) {
+                        recallLogs.push(data[0]);
+                        document.getElementById('forgetting-form').reset();
+                        renderRecallPlanner();
+                        updateCoreStats();
+                        showAlert('Spaced Loop Added', `Recall loops mapped for "${topic}".`);
+                        return;
                     }
-                    if (avg < lowestVal) {
-                        lowestVal = avg;
-                        lowestSub = sub;
-                    }
+                } catch (err) {
+                    console.warn("Bypassed dynamic recall cloud sync.", err);
                 }
             }
 
-            if (highestSub) {
-                document.getElementById('insight-strength').innerText = `Excelling in ${highestSub} averaging ${Math.round(highestVal)}%. Optimize advanced essays next.`;
-            }
-            
-            if (absentCount > 0) {
-                document.getElementById('insight-weakness').innerText = `Warning: You were absent for ${absentCount} weekly papers. Retrieve these papers from your tutors immediately!`;
-            } else if (lowestSub && lowestVal < 65) {
-                document.getElementById('insight-weakness').innerText = `Critical push needed in ${lowestSub} (${Math.round(lowestVal)}%). `;
+            recallLogs.push(newRecallItem);
+            document.getElementById('forgetting-form').reset();
+            renderRecallPlanner();
+            updateCoreStats();
+            showAlert('Spaced Loop Added', `Recall loops mapped for "${topic}" in offline mode.`);
+        }
+
+        function renderRecallTopic(topic, subject, date) {
+            renderRecallPlanner();
+            updateCoreStats();
+        }
+
+        async function advanceRecallStage(id) {
+            const item = recallLogs.find(r => r.id === id);
+            if (!item) return;
+
+            const nextCount = (item.reviewed_count ?? item.reviewedCount ?? 0) + 1;
+
+            if (supabaseClient) {
+                try {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { error } = await supabaseClient.from('recalls').update({ reviewed_count: nextCount }).eq('id', id).eq('user_id', user.id);
+                    if (!error) {
+                        recallLogs = recallLogs.map(r => r.id === id ? { ...r, reviewed_count: nextCount, reviewedCount: nextCount } : r);
+                    }
+                } catch (err) {
+                    recallLogs = recallLogs.map(r => r.id === id ? { ...r, reviewedCount: nextCount, reviewed_count: nextCount } : r);
+                }
             } else {
-                document.getElementById('insight-weakness').innerText = `Steady performance tracked.`;
+                recallLogs = recallLogs.map(r => r.id === id ? { ...r, reviewedCount: nextCount, reviewed_count: nextCount } : r);
             }
+            renderRecallPlanner();
+            updateCoreStats();
+        }
+
+        async function deleteRecallItem(id) {
+            if (supabaseClient) {
+                try {
+                    const { data: { user } } = await supabaseClient.auth.getUser();
+                    const { error } = await supabaseClient.from('recalls').delete().eq('id', id).eq('user_id', user.id);
+                    if (!error) {
+                        recallLogs = recallLogs.filter(r => r.id !== id);
+                    }
+                } catch (err) {
+                    recallLogs = recallLogs.filter(r => r.id !== id);
+                }
+            } else {
+                recallLogs = recallLogs.filter(r => r.id !== id);
+            }
+            renderRecallPlanner();
+            updateCoreStats();
+        }
+
+        function renderRecallPlanner() {
+            const container = document.getElementById('recall-list-container');
+            if (!container) return;
+            if (!recallLogs.length) {
+                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No spaced revision loops configured. Keep active learning on track!</p>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            const reviewOffsets = [1, 3, 7, 30]; 
+
+            recallLogs.forEach(item => {
+                const initialDate = new Date(item.date_studied ?? item.dateStudied);
+                const currentReviewedCount = item.reviewed_count ?? item.reviewedCount ?? 0;
+                
+                let phasesHtml = '';
+                for (let i = 0; i < 4; i++) {
+                    const milestoneDate = new Date(initialDate);
+                    milestoneDate.setDate(initialDate.getDate() + reviewOffsets[i]);
+                    const displayMilestoneStr = milestoneDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                    const isUnlocked = currentReviewedCount >= i;
+                    const isActiveNow = currentReviewedCount === i;
+
+                    let bgClass = 'bg-slate-950 border-slate-900 text-slate-600';
+                    if (isUnlocked) {
+                        bgClass = 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400';
+                    } else if (isActiveNow) {
+                        bgClass = 'bg-brand-600/20 border-brand-500/50 text-brand-300 animate-pulse';
+                    }
+
+                    phasesHtml += `
+                        <div class="flex-1 p-2 border rounded text-center text-[10px] ${bgClass}">
+                            <span class="block font-bold">Review ${i+1}</span>
+                            <span>${displayMilestoneStr}</span>
+                        </div>
+                    `;
+                }
+
+                const recallCard = document.createElement('div');
+                recallCard.className = 'bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 relative hover:border-purple-500/30 transition';
+                
+                let subColor = 'text-indigo-400';
+                if (item.subject === 'Chemistry') subColor = 'text-emerald-400';
+                else if (item.subject === 'Physics') subColor = 'text-amber-400';
+
+                const isCompleted = currentReviewedCount >= 4;
+
+                recallCard.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase ${subColor}">${item.subject}</span>
+                            <h4 class="text-xs font-bold text-white mt-0.5">${item.topic}</h4>
+                            <p class="text-[10px] text-slate-500 mt-0.5">Initial Study: ${item.date_studied ?? item.dateStudied}</p>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            ${!isCompleted ? `
+                                <button onclick="advanceRecallStage('${item.id}')" class="bg-brand-600 hover:bg-brand-500 text-white font-bold py-1 px-2 rounded-lg text-[10px] transition">
+                                    <i class="fa-solid fa-square-check mr-1"></i> Mark Reviewed
+                                </button>
+                            ` : `<span class="bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full text-[10px] font-bold">Concept Mastered</span>`}
+                            
+                            <button onclick="deleteRecallItem('${item.id}')" class="text-slate-500 hover:text-rose-500 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        ${phasesHtml}
+                    </div>
+                `;
+
+                container.appendChild(recallCard);
+            });
         }
 
         let selectedMedium = ''; 
@@ -3545,7 +3926,9 @@ ${JSON.stringify(paperLogs)}
 
 Tasks and homework:
 ${JSON.stringify(taskLogs)}
-`
+
+Active-recall logs:
+${JSON.stringify(recallLogs)}`
                 : `Student records are intentionally omitted because this is a direct question. Do not invent or discuss marks, schedules, Z-scores, study plans, or performance data.`;
 
             const responseMode = includeStudentData
@@ -4012,7 +4395,7 @@ Strict answer rules:
 
             const mobileBtns = document.querySelectorAll('.mobile-tab-btn');
             mobileBtns.forEach(btn => {
-                if (btn.innerText.toLowerCase().includes(tabId === 'tracker' ? 'track' : tabId === 'tasks' ? 'task' : tabId === 'forgetting' ? 'home' : tabId === 'ai' ? 'gemini' : tabId === 'settings' ? 'sett' : 'home')) {
+                if (btn.innerText.toLowerCase().includes(tabId === 'tracker' ? 'track' : tabId === 'tasks' ? 'task' : tabId === 'forgetting' ? 'recall' : tabId === 'ai' ? 'gemini' : tabId === 'settings' ? 'sett' : 'home')) {
                     btn.classList.add('text-brand-400');
                     btn.classList.remove('text-slate-500');
                 }
@@ -4020,6 +4403,8 @@ Strict answer rules:
 
             if (tabId === 'tracker') {
                 renderMarksAnalytics();
+            } else if (tabId === 'forgetting') {
+                renderRecallPlanner();
             } else if (tabId === 'ai') {
                 checkGeminiKeyAndProceed();
                 setTimeout(renderChatViewChart, 100);
@@ -4187,6 +4572,9 @@ Strict answer rules:
         window.closeLogPaperModal = closeLogPaperModal;
         window.addTask = addTask;
         window.addClass = addClass;
+        window.saveRecallTopic = saveRecallTopic;
+        window.advanceRecallStage = advanceRecallStage;
+        window.deleteRecallItem = deleteRecallItem;
         window.submitAIChat = submitAIChat;
         window.syncChartAIConsult = syncChartAIConsult;
         window.requestAIMarkAnalysis = requestAIMarkAnalysis;
@@ -4210,6 +4598,22 @@ Strict answer rules:
             });
             loadAIChatHistory();
             generateNewQuote();
+
+            // Register the notification service worker early and keep its registration available.
+            // The notification UI uses ServiceWorkerRegistration.showNotification() instead of
+            // new Notification(), which is much more reliable for installed PWAs.
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js', { scope: './' })
+                    .then(async (reg) => {
+                        window.alMasterpZELkorMwhkkpShF5PvT8YnqRCupnLTNG = reg;
+                        try { await navigator.serviceWorker.ready; } catch (_) {}
+                        console.log('Service worker registered:', reg.scope);
+                    })
+                    .catch((err) => {
+                        window.alMasterpZELkorMwhkkpShF5PvT8YnqRCupnLTNG = null;
+                        console.warn('Service worker failed to register:', err);
+                    });
+            }
         }
     </script>
 
@@ -4218,7 +4622,7 @@ Strict answer rules:
         /* ======================================================================
            A/L MASTERMIND - Stability & Reliability Layer
            Keeps the existing UI and feature set, but hardens storage, sync,
-           task/class CRUD, responsive behavior and rendering.
+           task/class CRUD, notifications, responsive behavior and rendering.
            ====================================================================== */
         (() => {
             'use strict';
@@ -4231,6 +4635,7 @@ Strict answer rules:
             const STABILITY_RENDER_CHUNK = 80;
             const STABILITY_NETWORK_RETRIES = 3;
             const STABILITY_CACHE_WRITE_DELAY = 180;
+            const STABILITY_NOTIFICATION_LEDGER_LIMIT = 100;
             const STABILITY_RETRY_BASE_DELAY = 900;
             const STABILITY_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -4238,6 +4643,7 @@ Strict answer rules:
             let stabilityMemoryStore = new Map();
             let stabilityCacheWriteTimer = null;
             let stabilityPendingRetryTimer = null;
+            let stabilityNotificationTimer = null;
             let stabilityInitialized = false;
             let stabilityTaskSaveInProgress = false;
             let stabilityClassSaveInProgress = false;
@@ -4258,9 +4664,11 @@ Strict answer rules:
                 tasks: [],
                 classes: [],
                 pendingOps: [],
+                notificationLedger: [],
                 updatedAt: new Date().toISOString()
             };
 
+            const stabilityHasNotificationAPI = typeof window !== 'undefined' && 'Notification' in window;
 
             function stabilityUuid(prefix = 'local') {
                 try {
@@ -4441,6 +4849,7 @@ Strict answer rules:
                     tasks: [],
                     classes: [],
                     pendingOps: [],
+                    notificationLedger: [],
                     updatedAt: new Date().toISOString()
                 };
             }
@@ -4450,11 +4859,16 @@ Strict answer rules:
                 const tasks = stabilityDedupeById(source.tasks, stabilityNormalizeTask);
                 const classes = stabilityDedupeById(source.classes, stabilityNormalizeClass);
                 const pendingOps = Array.isArray(source.pendingOps) ? source.pendingOps.filter(op => op && typeof op === 'object') : [];
+                const notificationLedger = Array.isArray(source.notificationLedger)
+                    ? source.notificationLedger.filter(Boolean).map(String).slice(-STABILITY_NOTIFICATION_LEDGER_LIMIT)
+                    : [];
+
                 return {
                     schemaVersion: STABILITY_SCHEMA_VERSION,
                     tasks,
                     classes,
                     pendingOps,
+                    notificationLedger,
                     updatedAt: source.updatedAt || new Date().toISOString()
                 };
             }
@@ -4499,6 +4913,9 @@ Strict answer rules:
                         tasks: stabilityDedupeById(taskLogs, stabilityNormalizeTask),
                         classes: stabilityDedupeById(classLogs, stabilityNormalizeClass),
                         pendingOps: Array.isArray(stabilityCache.pendingOps) ? stabilityCache.pendingOps : [],
+                        notificationLedger: Array.isArray(stabilityCache.notificationLedger)
+                            ? stabilityCache.notificationLedger.slice(-STABILITY_NOTIFICATION_LEDGER_LIMIT)
+                            : [],
                         updatedAt: new Date().toISOString()
                     };
 
@@ -5175,6 +5592,8 @@ Strict answer rules:
                 stabilityScheduleCacheWrite();
                 stabilityRenderTasks({ force: true });
                 stabilityRenderClasses({ force: true });
+                stabilityScheduleNotifications();
+
                 if (hadFailure && stabilityCache.pendingOps.length) {
                     const delay = Math.min(30000, STABILITY_RETRY_BASE_DELAY * Math.max(1, stabilityCache.pendingOps.length));
                     stabilityPendingRetryTimer = setTimeout(() => {
@@ -5222,9 +5641,10 @@ Strict answer rules:
                         stabilityWithRetry(() => supabaseClient.from('papers').select('*').eq('user_id', user.id), 2),
                         stabilityWithRetry(() => supabaseClient.from('tasks').select('*').eq('user_id', user.id), 2),
                         stabilityWithRetry(() => supabaseClient.from('classes').select('*').eq('user_id', user.id), 2),
+                        stabilityWithRetry(() => supabaseClient.from('recalls').select('*').eq('user_id', user.id), 2)
                     ]);
 
-                    const [paperResult, taskResult, classResult] = results;
+                    const [paperResult, taskResult, classResult, recallResult] = results;
 
                     if (paperResult.status === 'fulfilled' && !paperResult.value.error) {
                         paperLogs = Array.isArray(paperResult.value.data) ? paperResult.value.data : [];
@@ -5242,6 +5662,10 @@ Strict answer rules:
                         classFetchSucceeded = true;
                     } else {
                         classLogs = stabilityDedupeById(cachedClasses, stabilityNormalizeClass);
+                    }
+
+                    if (recallResult.status === 'fulfilled' && !recallResult.value.error) {
+                        recallLogs = Array.isArray(recallResult.value.data) ? recallResult.value.data : [];
                     }
 
                     stabilityApplyPendingToLoadedData();
@@ -5268,6 +5692,7 @@ Strict answer rules:
                     stabilitySetClassLoading(false);
                     stabilityRenderTasks({ force: true });
                     stabilityRenderClasses({ force: true });
+                    stabilityScheduleNotifications();
                     stabilityScheduleCacheWrite();
                 }
             }
@@ -5526,6 +5951,263 @@ Strict answer rules:
                 if (cancel) cancel.classList.add('hidden');
             }
 
+            async function stabilityRequestNotificationPermission() {
+                if (!stabilityHasNotificationAPI) return 'unsupported';
+                try {
+                    if (Notification.permission === 'granted') return 'granted';
+                    if (Notification.permission === 'denied') return 'denied';
+                    return await Notification.requestPermission();
+                } catch (err) {
+                    console.warn('Notification permission request failed safely.', err);
+                    return 'denied';
+                }
+            }
+
+            function stabilityClassOccurrenceKey(cls, date) {
+                return `${cls.id}|${date}|${cls.time}`;
+            }
+
+            function stabilityGetNextClassOccurrence(cls, fromDate = new Date()) {
+                const parsed = stabilityParseClassTime(cls.time);
+                const dayIndex = STABILITY_DAY_NAMES.indexOf(cls.day);
+                if (!parsed || dayIndex < 0) return null;
+
+                const now = new Date(fromDate);
+                const currentDay = now.getDay();
+                let delta = (dayIndex - currentDay + 7) % 7;
+                const startHour = Math.floor(parsed.startMinutes / 60);
+                const startMinute = parsed.startMinutes % 60;
+
+                const candidate = new Date(now);
+                candidate.setHours(0, 0, 0, 0);
+                candidate.setDate(candidate.getDate() + delta);
+                candidate.setHours(startHour, startMinute, 0, 0);
+
+                if (candidate.getTime() <= now.getTime()) {
+                    candidate.setDate(candidate.getDate() + 7);
+                }
+                return candidate;
+            }
+
+            function stabilityIsNotificationAlreadySent(key) {
+                return Array.isArray(stabilityCache.notificationLedger) && stabilityCache.notificationLedger.includes(key);
+            }
+
+            function stabilityMarkNotificationSent(key) {
+                const ledger = Array.isArray(stabilityCache.notificationLedger) ? stabilityCache.notificationLedger : [];
+                if (!ledger.includes(key)) ledger.push(key);
+                stabilityCache.notificationLedger = ledger.slice(-STABILITY_NOTIFICATION_LEDGER_LIMIT);
+                stabilityScheduleCacheWrite();
+            }
+
+            function stabilityTaskOccurrenceKey(task) {
+                return `task|${task.id}|${task.date}|${task.time}`;
+            }
+
+            function stabilityGetTaskDueDate(task) {
+                if (!task?.date || !task?.time) return null;
+                const m = String(task.time).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                if (!m) return null;
+                let hour = Number(m[1]);
+                const minute = Number(m[2]);
+                const ampm = m[3].toUpperCase();
+                if (hour < 1 || hour > 12 || minute > 59) return null;
+                if (ampm === 'PM' && hour !== 12) hour += 12;
+                if (ampm === 'AM' && hour === 12) hour = 0;
+                const due = new Date(`${task.date}T00:00:00`);
+                if (Number.isNaN(due.getTime())) return null;
+                due.setHours(hour, minute, 0, 0);
+                return due;
+            }
+
+            async function stabilityShowNotification(title, options = {}) {
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
+                const payload = {
+                    body: '',
+                    tag: 'almastermind-notification',
+                    icon: './icons/1icon-192.png',
+                    badge: './icons/1icon-192.png',
+                    renotify: false,
+                    silent: false,
+                    ...options
+                };
+                try {
+                    if ('serviceWorker' in navigator) {
+                        const reg = window.alMasterpZELkorMwhkkpShF5PvT8YnqRCupnLTNG || await navigator.serviceWorker.ready;
+                        if (reg && typeof reg.showNotification === 'function') {
+                            await reg.showNotification(title, payload);
+                            return true;
+                        }
+                    }
+                    // Fallback for browsers that expose Notifications but not a usable SW.
+                    const notification = new Notification(title, payload);
+                    notification.onclick = () => { try { window.focus(); } catch (_) {} notification.close(); };
+                    return true;
+                } catch (err) {
+                    console.warn('Notification could not be displayed.', err);
+                    return false;
+                }
+            }
+
+            async function stabilitySendTaskNotification(task, dueDate) {
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
+                const key = stabilityTaskOccurrenceKey(task);
+                if (stabilityIsNotificationAlreadySent(key)) return false;
+                const shown = await stabilityShowNotification(`Task Due: ${task.name}`, {
+                    body: `${task.date} • ${task.time}`,
+                    tag: `almastermind-task-${task.id}`
+                });
+                if (shown) stabilityMarkNotificationSent(key);
+                return shown;
+            }
+
+            function stabilityFindNextTaskReminder() {
+                const now = Date.now();
+                let best = null;
+                for (const task of taskLogs) {
+                    if (!task || task.done) continue;
+                    const due = stabilityGetTaskDueDate(task);
+                    if (!due) continue;
+                    const diff = due.getTime() - now;
+                    if (diff < -60000) continue;
+                    if (!best || due.getTime() < best.due.getTime()) best = { task, due };
+                }
+                return best;
+            }
+
+            async function enableTaskNotifications() {
+                const button = document.getElementById('enable-task-notifications');
+
+                if (!stabilityHasNotificationAPI) {
+                    if (button) button.textContent = 'Notifications Unsupported';
+                    stabilityNotify(
+                        'Notifications Unavailable',
+                        'This browser does not support device notifications.'
+                    );
+                    return;
+                }
+
+                try {
+                    let permission = Notification.permission;
+
+                    if (permission !== 'granted') {
+                        permission = await Notification.requestPermission();
+                    }
+
+                    if (permission === 'granted') {
+                        if (button) button.textContent = 'Notifications Enabled ✓';
+
+                        // Immediate test notification. Use the service worker so the
+                        // notification is delivered by the browser notification system.
+                        const testShown = await stabilityShowNotification('🔔 Notifications Enabled', {
+                            body: 'A/L Mastermind task reminders are now active on this device.',
+                            tag: 'almastermind-notification-test'
+                        });
+                        if (!testShown) {
+                            stabilityNotify(
+                                'Permission Granted',
+                                'Permission was granted, but the browser could not display the test notification. Check site notification settings.'
+                            );
+                            return;
+                        }
+
+                        stabilityNotify(
+                            'Notifications Enabled',
+                            'Task reminders are active while the dashboard is running.'
+                        );
+
+                        stabilityScheduleTaskNotifications();
+                        return;
+                    }
+
+                    if (permission === 'denied') {
+                        if (button) button.textContent = 'Notifications Blocked';
+                        stabilityNotify(
+                            'Notifications Blocked',
+                            'Allow notifications for this site in your browser site settings, then try again.'
+                        );
+                        return;
+                    }
+
+                    if (button) button.textContent = 'Allow Notifications';
+                    stabilityNotify(
+                        'Notification Permission',
+                        'Please allow notifications in the browser permission prompt.'
+                    );
+                } catch (err) {
+                    console.error('Notification permission request failed:', err);
+                    stabilityNotify(
+                        'Notification Error',
+                        'The browser could not request notification permission. Check the site permissions and console for details.'
+                    );
+                }
+            }
+
+            // Expose the button handler because this function lives inside the
+            // stability IIFE while the HTML button uses onclick="enableTaskNotifications()".
+            window.enableTaskNotifications = enableTaskNotifications;
+
+            function stabilityScheduleTaskNotifications() {
+                if (stabilityTaskNotificationTimer) {
+                    clearTimeout(stabilityTaskNotificationTimer);
+                    stabilityTaskNotificationTimer = null;
+                }
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return;
+                const next = stabilityFindNextTaskReminder();
+                if (!next) return;
+                const delay = Math.max(1000, next.due.getTime() - Date.now());
+                stabilityTaskNotificationTimer = setTimeout(() => {
+                    stabilityTaskNotificationTimer = null;
+                    stabilitySendTaskNotification(next.task, next.due).finally(() => stabilityScheduleTaskNotifications());
+                }, Math.min(delay, 2147483647));
+            }
+
+            async function stabilitySendClassNotification(cls, occurrenceDate) {
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted') return false;
+                const dateKey = occurrenceDate.toISOString().slice(0, 10);
+                const key = stabilityClassOccurrenceKey(cls, dateKey);
+                if (stabilityIsNotificationAlreadySent(key)) return false;
+                const shown = await stabilityShowNotification(`Class Reminder: ${cls.name}`, {
+                    body: `${cls.day} • ${cls.time}`,
+                    tag: `almastermind-class-${cls.id}`
+                });
+                if (shown) stabilityMarkNotificationSent(key);
+                return shown;
+            }
+
+            function stabilityScheduleNotifications() {
+                if (stabilityNotificationTimer) {
+                    clearTimeout(stabilityNotificationTimer);
+                    stabilityNotificationTimer = null;
+                }
+                if (!stabilityHasNotificationAPI || Notification.permission !== 'granted' || !classLogs.length) return;
+
+                let next = null;
+                let nextClass = null;
+                for (const cls of classLogs) {
+                    const occurrence = stabilityGetNextClassOccurrence(cls);
+                    if (!occurrence) continue;
+                    if (!next || occurrence.getTime() < next.getTime()) {
+                        next = occurrence;
+                        nextClass = cls;
+                    }
+                }
+
+                if (!next || !nextClass) return;
+
+                const delay = Math.max(1000, next.getTime() - Date.now());
+                stabilityNotificationTimer = setTimeout(() => {
+                    stabilityNotificationTimer = null;
+                    try {
+                        stabilitySendClassNotification(nextClass, next).catch(err => console.warn('Class notification failed.', err));
+                    } catch (err) {
+                        console.warn('Class reminder timer failed safely.', err);
+                    } finally {
+                        stabilityScheduleNotifications();
+                    }
+                }, Math.min(delay, 2147483647));
+            }
+
             async function stabilityAddClass(event) {
                 event?.preventDefault?.();
                 if (stabilityClassSaveInProgress) return;
@@ -5606,13 +6288,16 @@ Strict answer rules:
                     stabilityCache.classes = [...classLogs];
                     stabilityScheduleCacheWrite();
                     stabilityRenderClasses({ force: true });
+                    stabilityScheduleNotifications();
                     if (typeof updateCoreStats === 'function') updateCoreStats();
                     stabilityCancelClassEdit();
+                    const permission = await stabilityRequestNotificationPermission();
                     if (permission === 'denied') {
                         stabilityNotify('Reminder Saved', 'The class reminder was saved, but browser notifications are blocked. The dashboard will continue working normally.');
                     } else if (permission === 'unsupported') {
                         stabilityNotify('Reminder Saved', 'The class reminder was saved. This browser does not support system notifications.');
                     } else {
+                        stabilityScheduleNotifications();
                         stabilityNotify('Success', 'Class reminder successfully saved and notification scheduling is active.');
                     }
                 } catch (err) {
@@ -5650,9 +6335,17 @@ Strict answer rules:
                     }
                 }
                 stabilityScheduleCacheWrite();
+                stabilityScheduleNotifications();
                 if (typeof updateCoreStats === 'function') updateCoreStats();
                 stabilityFlushPendingMutations().catch(err => console.warn('Class delete retry failed.', err));
             }
+
+            window.addEventListener('focus', () => stabilityScheduleTaskNotifications());
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) stabilityScheduleTaskNotifications();
+            });
+            setTimeout(() => stabilityScheduleTaskNotifications(), 1500);
+
             function stabilityHandleTaskContainerClick(event) {
                 const button = event.target.closest?.('button[data-action]');
                 if (!button) return;
@@ -5727,9 +6420,13 @@ Strict answer rules:
             }
 
             function stabilityBuildChartDatasets(uniqueLabels) {
+                const getPaperNumber = paper => Number.parseInt(String(paper?.type ?? '').replace(/\D/g, ''), 10) || 0;
                 const alignScores = (subjectPapers) => uniqueLabels.map(label => {
-                    const match = subjectPapers.find(p => p.type === label);
-                    return !match || match.absent ? null : Number(match.marks);
+                    const matches = subjectPapers.filter(p => p && p.type === label);
+                    const match = matches.length ? matches[matches.length - 1] : null;
+                    if (!match || match.absent) return null;
+                    const score = Number(match.marks);
+                    return Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : null;
                 });
                 const mathPapers = paperLogs.filter(p => p.subject === 'Combined Maths');
                 const chemPapers = paperLogs.filter(p => p.subject === 'Chemistry');
@@ -5747,8 +6444,14 @@ Strict answer rules:
                         borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     },
                     pointBackgroundColor: color,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointBorderColor: '#020617',
+                    pointBorderWidth: 2,
+                    pointRadius: ctx => {
+                        const label = ctx.chart?.data?.labels?.[ctx.dataIndex];
+                        const num = Number.parseInt(String(label ?? '').replace(/\D/g, ''), 10);
+                        return (num === 12 || num === 26) ? 5 : 4;
+                    },
+                    pointHoverRadius: 7
                 });
 
                 const datasets = [];
@@ -5781,7 +6484,9 @@ Strict answer rules:
                     const sorted = [...paperLogs].sort((a, b) => {
                         const numA = Number.parseInt(String(a.type).replace(/\D/g, ''), 10) || 0;
                         const numB = Number.parseInt(String(b.type).replace(/\D/g, ''), 10) || 0;
-                        return numA - numB || String(a.date || '').localeCompare(String(b.date || ''));
+                        return numA - numB
+                            || String(a.subject || '').localeCompare(String(b.subject || ''))
+                            || String(a.date || '').localeCompare(String(b.date || ''));
                     });
                     paperLogs = sorted;
 
@@ -5860,11 +6565,23 @@ Strict answer rules:
 
                     if (typeof calculateInsights === 'function') calculateInsights();
 
-                    const activePapers = filtered;
+                    const activePapers = filtered.filter(p => p && p.type != null);
                     const uniqueLabels = [...new Set(activePapers.map(p => p.type))];
                     const datasets = stabilityBuildChartDatasets(uniqueLabels);
                     const canvas = document.getElementById('marksChart');
                     if (!canvas || typeof Chart === 'undefined') return;
+
+                    // Chart.js can receive a zero-sized canvas while its tab is hidden.
+                    // Wait for a real layout before first draw, especially on mobile/startup.
+                    const rect = canvas.getBoundingClientRect();
+                    if (rect.width < 20 || rect.height < 20) {
+                        requestAnimationFrame(() => {
+                            try { stabilityRenderMarksAnalytics(); } catch (retryErr) {
+                                console.warn('Deferred marks chart render failed safely.', retryErr);
+                            }
+                        });
+                        return;
+                    }
 
                     const chartData = { labels: uniqueLabels, datasets };
                     if (!performanceChartInstance) {
@@ -5902,6 +6619,7 @@ Strict answer rules:
                     } else {
                         performanceChartInstance.data.labels = uniqueLabels;
                         performanceChartInstance.data.datasets = datasets;
+                        performanceChartInstance.resize();
                         performanceChartInstance.update('none');
                     }
                 } catch (err) {
@@ -6010,6 +6728,7 @@ Strict answer rules:
 
                 window.addEventListener('online', () => {
                     stabilityFlushPendingMutations().catch(err => console.warn('Online sync failed safely.', err));
+                    stabilityScheduleNotifications();
                 }, { passive: true });
 
                 window.addEventListener('offline', () => {
@@ -6042,6 +6761,7 @@ Strict answer rules:
 
                 window.addEventListener('pagehide', () => {
                     try { stabilityWriteCacheNow(); } catch (_) {}
+                    if (stabilityNotificationTimer) clearTimeout(stabilityNotificationTimer);
                     if (stabilityPendingRetryTimer) clearTimeout(stabilityPendingRetryTimer);
                 });
 
@@ -6073,6 +6793,20 @@ Strict answer rules:
             window.checkSessionStatus = stabilityCheckSessionStatus;
             window.setChartFilter = stabilityDebouncedSetChartFilter;
             window.renderMarksAnalytics = stabilityRenderMarksAnalytics;
+
+            // Redraw after the layout becomes visible; prevents blank/partially drawn charts.
+            window.addEventListener('resize', () => {
+                if (performanceChartInstance) {
+                    requestAnimationFrame(() => {
+                        try {
+                            performanceChartInstance.resize();
+                            performanceChartInstance.update('none');
+                        } catch (err) {
+                            console.warn('Marks chart resize failed safely.', err);
+                        }
+                    });
+                }
+            }, { passive: true });
             window.saveProfile = stabilitySaveProfile;
             window.saveGeminiApiKey = stabilitySaveGeminiApiKey;
             window.cancelTaskEdit = stabilityCancelTaskEdit;
@@ -6093,6 +6827,7 @@ Strict answer rules:
                     classLogs = stabilityDedupeById(classLogs, stabilityNormalizeClass);
                     stabilityRenderTasks({ force: true });
                     stabilityRenderClasses({ force: true });
+                    stabilityScheduleNotifications();
                     stabilityFlushPendingMutations().catch(err => console.warn('Initial pending sync failed safely.', err));
                 } catch (err) {
                     console.error('Stability layer initialization failed safely.', err);
@@ -6167,6 +6902,7 @@ Strict answer rules:
                 { id:'home', label:'Overview & Clock', hint:'Dashboard overview', icon:'fa-house', action:() => switchTab('home') },
                 { id:'tracker', label:'Marks Tracker', hint:'Scores and progression', icon:'fa-chart-line', action:() => switchTab('tracker') },
                 { id:'tasks', label:'Tasks & Classes', hint:'To-do list and reminders', icon:'fa-list-check', action:() => switchTab('tasks') },
+                { id:'forgetting', label:'Recall Planner', hint:'Active recall schedule', icon:'fa-brain', action:() => switchTab('forgetting') },
                 { id:'ai', label:'Mastermind AI Coach', hint:'AI study assistant', icon:'fa-wand-magic-sparkles', action:() => switchTab('ai') },
                 { id:'settings', label:'Settings', hint:'Profile and configuration', icon:'fa-sliders', action:() => switchTab('settings') },
                 { id:'new-task', label:'Add a Task', hint:'Open task manager', icon:'fa-plus', action:() => { switchTab('tasks'); setTimeout(() => document.getElementById('task-name')?.focus(), 120); } },
@@ -6384,6 +7120,7 @@ Strict answer rules:
                 '#tab-content-home > div',
                 '#tab-content-tracker > div',
                 '#tab-content-tasks > div',
+                '#tab-content-forgetting > div',
                 '#tab-content-ai > div',
                 '#tab-content-settings > div'
             ];
@@ -6660,9 +7397,5 @@ Strict answer rules:
 })();
 </script>
 
-
-window.addEventListener('DOMContentLoaded', () => {
-    try { loadMarksTargets(); } catch (e) {}
-});
 </body>
 </html>
