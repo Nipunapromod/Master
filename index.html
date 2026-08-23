@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A/L Mastermind Dashboard v8.0 • Smart Task Planner</title>
+    <title>A/L Mastermind Dashboard v9.0 • Performance Edition</title>
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#4c1d95">
     <meta name="mobile-web-app-capable" content="yes">
@@ -893,6 +893,23 @@ aside button:active{
 }
 </style>
 
+
+<style id="mm-v9-performance-ui">
+:root{--mm-bg:#050816;--mm-surface:rgba(15,23,42,.94);--mm-border:rgba(148,163,184,.14);--mm-accent:#8b5cf6;--mm-ease:cubic-bezier(.2,.8,.2,1)}
+html{background:var(--mm-bg)} body{background:var(--mm-bg);overscroll-behavior:none}
+header,aside,#mobile-bottom-nav{background-color:rgba(15,23,42,.94)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body::before,body::after{animation:none!important;filter:none!important;background:none!important}
+main .tab-pane .bg-slate-900.border,main .tab-pane .bg-gradient-to-br{will-change:auto;contain:paint}
+main .tab-pane .bg-slate-900.border::after,main .tab-pane .bg-gradient-to-br::after,main .bg-slate-900.rounded-2xl::before,main .bg-slate-950.rounded-xl::before,main .bg-slate-900.rounded-xl::before{display:none!important}
+button,a,input,select,textarea{transition:transform .16s var(--mm-ease),box-shadow .18s ease,border-color .18s ease,background-color .18s ease,color .18s ease!important}
+button:not(:disabled):hover{transform:translateY(-1px)} button:not(:disabled):active{transform:scale(.98)}
+#auth-screen{background:radial-gradient(circle at 50% 0,rgba(124,58,237,.16),transparent 38%),#020617!important}
+#auth-screen>div{border-color:rgba(139,92,246,.24)!important;box-shadow:0 30px 90px rgba(0,0,0,.45),0 0 50px rgba(124,58,237,.08)!important}
+#auth-screen input:focus,#auth-screen select:focus{transform:translateY(-1px)}
+.tab-pane:not(.hidden){animation:mmV9In .22s ease-out both}@keyframes mmV9In{from{opacity:.55;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(max-width:767px){header{padding:10px 12px!important}main{padding:12px!important;padding-bottom:88px!important}.tab-pane:not(.hidden){animation:none}main .tab-pane .bg-slate-900.border:hover,main .tab-pane .bg-gradient-to-br:hover{transform:none!important;box-shadow:none!important}button:not(:disabled):hover{transform:none}#marksChart,#chatSideChart{height:260px!important}#mobile-bottom-nav{box-shadow:0 -10px 30px rgba(0,0,0,.28)!important}.rounded-3xl{border-radius:20px!important}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
 </head>
 <body class="h-full flex flex-col font-sans overflow-hidden">
 
@@ -7397,5 +7414,36 @@ Strict answer rules:
 })();
 </script>
 
+
+<script id="mm-v9-performance">
+(() => {
+  'use strict';
+  const mobile=window.matchMedia('(max-width:767px)');
+  window.MM_PERF={version:'9.0',mobile};
+  const disableNotifications=()=>{
+    document.querySelectorAll('[id*="notification" i]').forEach(el=>el.remove());
+    document.querySelectorAll('button').forEach(btn=>{const t=(btn.textContent||'').toLowerCase();if(t.includes('enable notifications')||t.includes('allow notifications')||t.includes('notifications enabled'))btn.remove();});
+    if(typeof window.enableTaskNotifications==='function')window.enableTaskNotifications=()=>{};
+    if(typeof window.stabilityScheduleNotifications==='function')window.stabilityScheduleNotifications=()=>{};
+    if(typeof window.stabilityScheduleTaskNotifications==='function')window.stabilityScheduleTaskNotifications=()=>{};
+    try{navigator.serviceWorker?.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});}catch(_){}
+    try{if(window.caches)caches.keys().then(keys=>Promise.all(keys.filter(k=>/notification|almastermind/i.test(k)).map(k=>caches.delete(k)))).catch(()=>{});}catch(_){}
+  };
+  const removeRecallUI=()=>{
+    document.querySelectorAll('#tab-content-forgetting,#btn-tab-forgetting').forEach(el=>el.remove());
+    document.querySelectorAll('.mobile-tab-btn').forEach(btn=>{if((btn.textContent||'').toLowerCase().includes('recall'))btn.remove();});
+    document.querySelectorAll('[onclick*="forgetting"]').forEach(el=>el.remove());
+    document.querySelectorAll('h3,h4,span,p').forEach(el=>{const t=(el.textContent||'').trim().toLowerCase();if(t==='active recall spacing loop'||t==='active recall spacing planner'||t==='recall milestones'){const card=el.closest('.bg-slate-900,.bg-gradient-to-br,.border');if(card)card.remove();}});
+  };
+  const clean=()=>{disableNotifications();removeRecallUI();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',clean,{once:true});else clean();
+  setTimeout(clean,900);
+  let timer=null;
+  const tick=()=>{if(document.hidden)return;try{if(typeof window.updateCountdown==='function')window.updateCountdown();}catch(_) {}};
+  const start=()=>{if(!timer){tick();timer=setInterval(tick,1000)}}; const stop=()=>{if(timer){clearInterval(timer);timer=null}};
+  document.addEventListener('visibilitychange',()=>document.hidden?stop():start(),{passive:true});start();
+  const tune=()=>{try{if(window.Chart?.defaults){Chart.defaults.devicePixelRatio=mobile.matches?1:Math.min(window.devicePixelRatio||1,1.5);Chart.defaults.animation=mobile.matches?false:{duration:300};}}catch(_) {}};tune();mobile.addEventListener?.('change',tune);
+})();
+</script>
 </body>
 </html>
