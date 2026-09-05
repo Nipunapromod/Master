@@ -2614,102 +2614,36 @@ aside button:active{
             }
         }
 
-        // ================= 7-DAY SESSION SECURITY =================
-        // A successful sign-in creates an absolute 7-day browser-side deadline.
-        // The Supabase session is still handled normally, but this dashboard
-        // will force a fresh sign-in after the deadline.
-        const MASTER_SESSION_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+        // ================= PERSISTENT SESSION =================
+        // Supabase owns session lifetime and refreshes it when possible. There is
+        // intentionally no dashboard-level time limit or forced seven-day logout.
         const MASTER_SESSION_EXPIRY_KEY = 'almaster_session_expires_at';
-        let masterSessionExpiryTimer = null;
 
         function setSevenDaySessionExpiry() {
-            const expiresAt = Date.now() + MASTER_SESSION_MAX_AGE;
-            try {
-                localStorage.setItem(MASTER_SESSION_EXPIRY_KEY, String(expiresAt));
-            } catch (err) {
-                console.warn('Could not persist 7-day session expiry.', err);
-            }
-            scheduleSevenDaySessionCheck(expiresAt);
-            updateSessionExpiryUI(expiresAt);
-            return expiresAt;
+            // Clear the legacy deadline left by previous versions of the app.
+            try { localStorage.removeItem(MASTER_SESSION_EXPIRY_KEY); } catch (_) {}
+            updateSessionExpiryUI();
+            return 0;
         }
 
         function getSevenDaySessionExpiry() {
-            try {
-                const value = Number(localStorage.getItem(MASTER_SESSION_EXPIRY_KEY));
-                return Number.isFinite(value) && value > 0 ? value : 0;
-            } catch (_) {
-                return 0;
-            }
+            return 0;
         }
 
         function clearSevenDaySessionExpiry() {
-            if (masterSessionExpiryTimer) {
-                clearTimeout(masterSessionExpiryTimer);
-                masterSessionExpiryTimer = null;
-            }
             try { localStorage.removeItem(MASTER_SESSION_EXPIRY_KEY); } catch (_) {}
-            updateSessionExpiryUI(0);
+            updateSessionExpiryUI();
         }
 
-        function scheduleSevenDaySessionCheck(expiresAt = getSevenDaySessionExpiry()) {
-            if (masterSessionExpiryTimer) clearTimeout(masterSessionExpiryTimer);
-            if (!expiresAt) return;
-
-            const remaining = expiresAt - Date.now();
-            if (remaining <= 0) {
-                masterSessionExpiryTimer = setTimeout(() => forceSevenDayLogout(), 0);
-                return;
-            }
-
-            // Re-check at most hourly so browser sleep/background tabs are handled safely.
-            masterSessionExpiryTimer = setTimeout(() => {
-                if (Date.now() >= expiresAt) forceSevenDayLogout();
-                else {
-                    updateSessionExpiryUI(expiresAt);
-                    scheduleSevenDaySessionCheck(expiresAt);
-                }
-            }, Math.min(remaining, 60 * 60 * 1000));
-        }
-
-        function updateSessionExpiryUI(expiresAt = getSevenDaySessionExpiry()) {
+        function updateSessionExpiryUI() {
             const badge = document.getElementById('session-expiry-badge');
             if (!badge) return;
-            if (!expiresAt) {
-                badge.textContent = 'Fresh sign-in required';
-                return;
-            }
-            const remaining = Math.max(0, expiresAt - Date.now());
-            const days = Math.ceil(remaining / (24 * 60 * 60 * 1000));
-            badge.textContent = days <= 1 ? 'Session expires within 24 hours' : `Session active • ${days} days left`;
-        }
-
-        async function forceSevenDayLogout() {
-            clearSevenDaySessionExpiry();
-            try {
-                await handleLogout(true);
-            } catch (err) {
-                console.warn('Automatic logout completed with a cleanup warning.', err);
-            }
-            showAlert('Session Expired', 'For your security, this account session lasted 7 days. Please sign in again to continue.');
+            badge.textContent = 'Session active';
         }
 
         function validateSevenDaySession() {
-            const expiresAt = getSevenDaySessionExpiry();
-            if (!expiresAt) return true;
-            if (Date.now() >= expiresAt) {
-                forceSevenDayLogout();
-                return false;
-            }
-            scheduleSevenDaySessionCheck(expiresAt);
-            updateSessionExpiryUI(expiresAt);
             return true;
         }
-
-        window.addEventListener('focus', validateSevenDaySession);
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) validateSevenDaySession();
-        });
 
         async function checkSessionStatus() {
             initSupabase();
