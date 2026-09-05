@@ -1033,6 +1033,8 @@ aside button:active{
         }
         #auth-form label, #google-profile-form label { letter-spacing: .075em; }
         #auth-diagnostics { box-shadow: inset 3px 0 0 currentColor; }
+        #auth-diagnostics:not(.hidden) { animation: site-auth-notice .28s ease-out both; }
+        @keyframes site-auth-notice { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
         #google-auth-button { border: 1px solid rgba(226,232,240,.65); }
         #google-auth-button:hover { box-shadow: 0 10px 24px rgba(255,255,255,.13); }
         .auth-trust-row span { transition: border-color .2s ease, background-color .2s ease; }
@@ -1061,6 +1063,7 @@ aside button:active{
             #auth-screen > div { margin-block: auto; padding: 1.25rem !important; border-radius: 1.35rem !important; }
             .auth-trust-row { gap: .3rem; }
             .auth-trust-row span { padding: .5rem .18rem; font-size: 8px; }
+            #auth-diagnostics { font-size: 10px; line-height: 1.45; }
         }
         @media (prefers-reduced-motion: reduce) {
             body::before, body::after, #tab-content-tracker .tracker-hero { animation: none !important; }
@@ -2209,6 +2212,8 @@ aside button:active{
 
         let currentAuthMode = 'login';
         let supabaseClient = null;
+        let authStateSubscription = null;
+        let oauthReturnInProgress = false;
         let aiChatHistory = [];
 
         function initSupabase() {
@@ -2224,7 +2229,29 @@ aside button:active{
 
             try {
                 supabaseClient = supabase.createClient(defaultSupabaseUrl, defaultSupabaseAnonKey);
-                
+                if (!authStateSubscription) {
+                    const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
+                        if (event !== 'SIGNED_IN' || !session?.user || oauthReturnInProgress) return;
+                        oauthReturnInProgress = true;
+                        setTimeout(async () => {
+                            try {
+                                currentUserSession = session;
+                                setSevenDaySessionExpiry();
+                                await loadCloudData();
+                                document.getElementById('auth-screen')?.classList.add('hidden');
+                                syncProfileUI();
+                                updateCoreStats();
+                                if (window.googleProfileNeedsSetup) finishGoogleProfileSetup();
+                            } catch (err) {
+                                console.error('OAuth session initialization failed:', err);
+                            } finally {
+                                oauthReturnInProgress = false;
+                            }
+                        }, 0);
+                    });
+                    authStateSubscription = data.subscription;
+                }
+
                 document.getElementById('auth-database-badge').innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1 text-emerald-400"></i> Secure Cloud Handshake Active';
                 document.getElementById('auth-database-badge').className = "text-[9px] uppercase tracking-wider font-extrabold text-emerald-400 bg-emerald-500/10 py-1.5 px-3 rounded-lg border border-emerald-500/20";
                 
