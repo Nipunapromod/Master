@@ -566,6 +566,19 @@
 
     </style>
 
+    <style id="professional-auth-and-tracker">
+        /* Focused product polish for identity and performance tracking. */
+        #auth-screen { background: radial-gradient(circle at 18% 12%, rgba(79,70,229,.28), transparent 33%), radial-gradient(circle at 88% 88%, rgba(6,182,212,.13), transparent 32%), #020617; }
+        #auth-screen > div { border-color: rgba(148,163,184,.2); box-shadow: 0 28px 90px rgba(0,0,0,.5), 0 0 0 1px rgba(129,140,248,.08); }
+        .auth-trust-row { display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; color:#94a3b8; font-size:9px; text-align:center; }
+        .auth-trust-row span { border:1px solid rgba(51,65,85,.85); background:rgba(2,6,23,.56); padding:.55rem .25rem; border-radius:.65rem; }
+        .tracker-hero { background: linear-gradient(120deg, rgba(79,70,229,.17), rgba(15,23,42,.92) 42%, rgba(6,182,212,.09)); border:1px solid rgba(129,140,248,.24); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+        #tab-content-tracker .bg-slate-900.border { border-color: rgba(71,85,105,.72); }
+        #marksChart { filter: drop-shadow(0 14px 18px rgba(2,6,23,.35)); }
+        #google-profile-modal:not(.hidden) { display:flex; }
+        #btn-tab-forgetting, #tab-content-forgetting { display:none !important; }
+    </style>
+
 <!-- ================= MASTERMIN D ULTRA MOTION v7.3 ================= -->
 <style id="mastermind-ultra-motion">
 :root{
@@ -973,7 +986,7 @@ aside button:active{
                 <div id="register-fields" class="hidden space-y-4">
                     <div>
                         <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Full Name</label>
-                        <input type="text" id="auth-name" placeholder="Supun Perera" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                    <input type="text" id="auth-name" autocomplete="name" placeholder="Supun Perera" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -1036,17 +1049,22 @@ aside button:active{
 
                 <div>
                     <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Email Address</label>
-                    <input type="email" id="auth-email" required placeholder="name@domain.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                    <input type="email" id="auth-email" required autocomplete="email" placeholder="name@domain.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                 </div>
 
                 <div>
                     <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Password</label>
                     <div class="relative">
-                        <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 pr-10 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                        <input type="password" id="auth-password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 pr-10 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                         <button type="button" onclick="togglePasswordVisibility('auth-password','auth-password-toggle-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                             <i id="auth-password-toggle-icon" class="fa-solid fa-eye"></i>
                         </button>
                     </div>
+                </div>
+
+                <div class="flex items-center justify-between text-[10px] text-slate-500">
+                    <span>Protected with Supabase Auth</span>
+                    <button type="button" onclick="sendPasswordReset()" class="font-bold text-brand-400 hover:text-brand-300">Forgot password?</button>
                 </div>
 
                 <div class="flex gap-2">
@@ -1075,8 +1093,14 @@ aside button:active{
             </button>
 
             <p class="text-[9px] text-center text-slate-500">
-                Google sign-in is secured by Supabase Authentication.
+                Google sign-in securely creates your student profile on first use.
             </p>
+
+            <div class="auth-trust-row" aria-label="Account benefits">
+                <span><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i>Secure sign-in</span>
+                <span><i class="fa-solid fa-cloud text-indigo-400 mr-1"></i>Cloud sync</span>
+                <span><i class="fa-solid fa-bolt text-amber-400 mr-1"></i>Fast setup</span>
+            </div>
 
             <div class="text-center pt-2">
                 <p id="auth-database-badge" class="text-[9px] uppercase tracking-wider font-extrabold text-indigo-400 bg-indigo-500/10 py-1.5 px-3 rounded-lg border border-indigo-500/20">
@@ -1085,6 +1109,33 @@ aside button:active{
                 <div id="auth-diagnostics" class="hidden mt-3 text-left p-3 rounded-lg bg-red-950/40 border border-red-500/30 text-[10px] text-red-300">
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- First Google sign-in profile completion: mirrors account registration. -->
+    <div id="google-profile-modal" class="hidden fixed inset-0 z-[60] items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 overflow-y-auto">
+        <div class="w-full max-w-lg rounded-3xl border border-indigo-400/25 bg-slate-900 p-6 shadow-2xl shadow-black/50 space-y-5">
+            <div class="flex items-start gap-3">
+                <div class="shrink-0 rounded-2xl bg-white p-3"><i class="fa-brands fa-google text-xl text-red-500"></i></div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-[.18em] text-indigo-300">One-time account setup</p>
+                    <h2 class="mt-1 text-xl font-extrabold text-white">Finish your student profile</h2>
+                    <p class="mt-1 text-xs leading-relaxed text-slate-400">Your Google account is connected. Add the same academic details used when creating an account.</p>
+                </div>
+            </div>
+            <form id="google-profile-form" onsubmit="saveGoogleProfileSetup(event)" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">Full name</label><input id="google-setup-name" required autocomplete="name" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100 focus:border-indigo-400 focus:outline-none"></div>
+                    <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">Google email</label><input id="google-setup-email" readonly class="w-full rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-400"></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">Target degree</label><select id="google-setup-course" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100"><option value="Engineering">BSc. Eng (Engineering)</option><option value="Physical Science">BSc. Physical Science</option><option value="Computer Science">BSc. Computer Science / IT</option><option value="Quantity Surveying">BSc. Quantity Surveying</option></select></div>
+                    <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">A/L exam year</label><select id="google-setup-year" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100"><option value="2027-08-10">2027 A/L</option><option value="2028-11-25">2028 A/L</option><option value="2029-11-25">2029 A/L</option></select></div>
+                </div>
+                <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">District</label><select id="google-setup-district" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100"><option value="Colombo">Colombo</option><option value="Gampaha">Gampaha</option><option value="Kandy">Kandy</option><option value="Galle">Galle</option><option value="Kurunegala">Kurunegala</option><option value="Jaffna">Jaffna</option><option value="Ratnapura">Ratnapura</option><option value="Badulla">Badulla</option><option value="Anuradhapura">Anuradhapura</option><option value="Other">Other Sri Lankan district</option></select></div>
+                <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">Gemini API key <span class="normal-case text-slate-500">(optional)</span></label><input id="google-setup-gemini-key" type="password" autocomplete="off" placeholder="Add later in Settings" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100 focus:border-indigo-400 focus:outline-none"></div>
+                <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-brand-600 py-3 text-xs font-extrabold text-white shadow-lg shadow-indigo-950/50 transition hover:brightness-110"><i class="fa-solid fa-check mr-1.5"></i>Complete secure setup</button>
+            </form>
         </div>
     </div>
 
@@ -1145,11 +1196,6 @@ aside button:active{
                     <span>Task Planner</span>
                 </button>
 
-                <button onclick="switchTab('forgetting')" id="btn-tab-forgetting" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
-                    <i class="fa-solid fa-brain text-lg w-6"></i>
-                    <span>Recall Planner</span>
-                </button>
-                
                 <button onclick="switchTab('ai')" id="btn-tab-ai" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
                     <i class="fa-solid fa-wand-magic-sparkles text-lg w-6"></i>
                     <span>Mastermind AI Coach</span>
@@ -1341,16 +1387,17 @@ aside button:active{
             <!-- ================= TRACKER TAB ================= -->
             <section id="tab-content-tracker" class="tab-pane hidden space-y-6">
                 
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="tracker-hero flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl p-5">
                     <div>
-                        <h2 class="text-2xl font-bold text-white tracking-tight">Paper Marks Analyzer</h2>
-                        <p class="text-xs text-slate-400">Log scores of model, school, and provincial exams. Use the mouse wheel to zoom the chart horizontally.</p>
+                        <p class="text-[10px] font-black uppercase tracking-[.18em] text-cyan-300">Performance intelligence</p>
+                        <h2 class="mt-1 text-2xl font-extrabold text-white tracking-tight">Mark Tracker</h2>
+                        <p class="mt-1 text-xs text-slate-400">Turn every paper into a clear trend, actionable insight, and stronger next attempt.</p>
                     </div>
                     
                     <div class="flex items-center space-x-2">
                         <button onclick="openLogPaperModal()" class="bg-brand-600 hover:bg-brand-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center space-x-1.5">
                             <i class="fa-solid fa-plus"></i>
-                            <span>Log New Paper</span>
+                            <span>Add mark record</span>
                         </button>
                     </div>
                 </div>
@@ -1950,10 +1997,6 @@ aside button:active{
             <i class="fa-solid fa-list-check text-sm"></i>
             <span class="text-[8px] font-semibold">Tasks</span>
         </button>
-        <button onclick="switchTab('forgetting')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
-            <i class="fa-solid fa-brain text-sm"></i>
-            <span class="text-[8px] font-semibold">Recall</span>
-        </button>
         <button onclick="switchTab('ai')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
             <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
             <span class="text-[8px] font-semibold">Mastermind AI</span>
@@ -2126,7 +2169,8 @@ aside button:active{
                 const { error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo
+                        redirectTo,
+                        queryParams: { access_type: 'offline', prompt: 'select_account' }
                     }
                 });
 
@@ -2174,7 +2218,14 @@ aside button:active{
                     const district = document.getElementById('auth-district').value;
                     const registerGeminiKey = document.getElementById('register-gemini-key').value.trim();
 
-                    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                    if (!name || name === 'Scholar') {
+                        showAuthDiagError('Name Required', 'Please enter your full name to create your student profile.');
+                        return;
+                    }
+                    const { data, error } = await supabaseClient.auth.signUp({
+                        email, password,
+                        options: { data: { full_name: name } }
+                    });
                     if (error) {
                         showAuthDiagError("Registration Failed", error.message);
                         return;
@@ -2290,45 +2341,42 @@ aside button:active{
 
         async function finishGoogleProfileSetup() {
             if (!window.googleProfileNeedsSetup) return;
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            document.getElementById('google-setup-name').value = studentProfile.name || '';
+            document.getElementById('google-setup-email').value = user?.email || '';
+            document.getElementById('google-setup-year').value = studentProfile.year || '2027-08-10';
+            document.getElementById('google-setup-course').value = studentProfile.course || 'Engineering';
+            document.getElementById('google-setup-district').value = studentProfile.district || 'Colombo';
+            document.getElementById('google-profile-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('google-setup-course')?.focus(), 100);
+        }
 
-            const setupNote = document.getElementById('google-profile-setup-note');
-            if (setupNote) setupNote.classList.remove('hidden');
-
-            const nameInput = document.getElementById('profile-name');
-            const yearInput = document.getElementById('profile-year');
-            const courseInput = document.getElementById('profile-course');
-            const districtInput = document.getElementById('profile-district');
-
-            // Google account name is filled automatically. Do not ask the user
-            // to type it again. The other profile fields are collected here.
-            if (nameInput) {
-                nameInput.value = studentProfile.name || '';
-                nameInput.readOnly = true;
-                nameInput.classList.add('opacity-70', 'cursor-not-allowed');
-                nameInput.title = 'Name imported automatically from your Google account';
-            }
-            if (yearInput) yearInput.value = studentProfile.year || '2027-08-10';
-            if (courseInput) courseInput.value = studentProfile.course || 'Engineering';
-            if (districtInput) districtInput.value = studentProfile.district || 'Colombo';
-
-            // This dashboard uses a Settings tab rather than a separate modal.
-            // Open it immediately after Google authentication so the user can
-            // complete the remaining inputs.
-            try {
-                switchTab('settings');
-                setTimeout(() => {
-                    document.getElementById('profile-course')?.focus();
-                }, 100);
-            } catch (err) {
-                console.warn('Could not open profile setup:', err);
-            }
-
+        async function saveGoogleProfileSetup(event) {
+            event.preventDefault();
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return;
+            studentProfile = {
+                name: document.getElementById('google-setup-name').value.trim(),
+                year: document.getElementById('google-setup-year').value,
+                course: document.getElementById('google-setup-course').value,
+                district: document.getElementById('google-setup-district').value,
+                gemini_api_key: document.getElementById('google-setup-gemini-key').value.trim()
+            };
+            const { error } = await supabaseClient.from('profiles').upsert({ id: user.id, ...studentProfile });
+            if (error) { showAlert('Profile setup failed', error.message); return; }
+            if (studentProfile.gemini_api_key) localStorage.setItem('gemini_api_key', studentProfile.gemini_api_key);
             window.googleProfileNeedsSetup = false;
+            document.getElementById('google-profile-modal').classList.add('hidden');
+            syncProfileUI(); updateCoreStats();
+            showAlert('Profile ready', 'Welcome to A/L Mastermind. Your dashboard is synced and ready.');
+        }
 
-            showAlert(
-                'Complete Your Profile',
-                'Your name was imported automatically from your Google account. Complete the remaining profile details and save your profile.'
-            );
+        async function sendPasswordReset() {
+            const email = document.getElementById('auth-email').value.trim().toLowerCase();
+            if (!email) { showAuthDiagError('Enter your email', 'Add your account email above, then select “Forgot password?” again.'); return; }
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+            if (error) { showAuthDiagError('Password reset unavailable', error.message); return; }
+            showAlert('Check your inbox', 'We sent a secure password-reset link to your email address.');
         }
 
         async function saveProfileToCloud() {
@@ -4060,6 +4108,8 @@ Strict answer rules:
         }
 
         function switchTab(tabId) {
+            // Recall Planner has been retired; stale saved links safely return home.
+            if (tabId === 'forgetting') tabId = 'home';
             document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('bg-brand-600', 'text-white');
@@ -4241,6 +4291,8 @@ Strict answer rules:
         window.handleAuthSubmit = handleAuthSubmit;
         window.signInWithGoogle = signInWithGoogle;
         window.finishGoogleProfileSetup = finishGoogleProfileSetup;
+        window.saveGoogleProfileSetup = saveGoogleProfileSetup;
+        window.sendPasswordReset = sendPasswordReset;
         window.handleLogout = handleLogout;
         window.toggleAbsentInput = toggleAbsentInput;
         window.initCountdown = initCountdown;
@@ -6385,7 +6437,6 @@ Strict answer rules:
                 { id:'home', label:'Overview & Clock', hint:'Dashboard overview', icon:'fa-house', action:() => switchTab('home') },
                 { id:'tracker', label:'Marks Tracker', hint:'Scores and progression', icon:'fa-chart-line', action:() => switchTab('tracker') },
                 { id:'tasks', label:'Tasks & Classes', hint:'To-do list and reminders', icon:'fa-list-check', action:() => switchTab('tasks') },
-                { id:'forgetting', label:'Recall Planner', hint:'Active recall schedule', icon:'fa-brain', action:() => switchTab('forgetting') },
                 { id:'ai', label:'Mastermind AI Coach', hint:'AI study assistant', icon:'fa-wand-magic-sparkles', action:() => switchTab('ai') },
                 { id:'settings', label:'Settings', hint:'Profile and configuration', icon:'fa-sliders', action:() => switchTab('settings') },
                 { id:'new-task', label:'Add a Task', hint:'Open task manager', icon:'fa-plus', action:() => { switchTab('tasks'); setTimeout(() => document.getElementById('task-name')?.focus(), 120); } },
@@ -6716,6 +6767,24 @@ Strict answer rules:
     })();
     </script>
 
+
+<script>
+/* Retire the Recall Planner and its dashboard promotions completely. */
+(() => {
+  const removeRecallUI = () => {
+    document.querySelectorAll('[onclick*="forgetting"]').forEach(el => {
+      const card = el.closest('.bg-slate-900, .bg-gradient-to-br');
+      (card || el).remove();
+    });
+    document.querySelectorAll('.mobile-tab-btn').forEach(el => {
+      if (/recall/i.test(el.textContent)) el.remove();
+    });
+    document.getElementById('stat-active-recall-items')?.closest('.bg-slate-900')?.remove();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', removeRecallUI);
+  else removeRecallUI();
+})();
+</script>
 
 <script id="mastermind-ultra-motion-js">
 (() => {
