@@ -566,6 +566,19 @@
 
     </style>
 
+    <style id="professional-auth-and-tracker">
+        /* Focused product polish for identity and performance tracking. */
+        #auth-screen { background: radial-gradient(circle at 18% 12%, rgba(79,70,229,.28), transparent 33%), radial-gradient(circle at 88% 88%, rgba(6,182,212,.13), transparent 32%), #020617; }
+        #auth-screen > div { border-color: rgba(148,163,184,.2); box-shadow: 0 28px 90px rgba(0,0,0,.5), 0 0 0 1px rgba(129,140,248,.08); }
+        .auth-trust-row { display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; color:#94a3b8; font-size:9px; text-align:center; }
+        .auth-trust-row span { border:1px solid rgba(51,65,85,.85); background:rgba(2,6,23,.56); padding:.55rem .25rem; border-radius:.65rem; }
+        .tracker-hero { background: linear-gradient(120deg, rgba(79,70,229,.17), rgba(15,23,42,.92) 42%, rgba(6,182,212,.09)); border:1px solid rgba(129,140,248,.24); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+        #tab-content-tracker .bg-slate-900.border { border-color: rgba(71,85,105,.72); }
+        #marksChart { filter: drop-shadow(0 14px 18px rgba(2,6,23,.35)); }
+        #google-profile-modal:not(.hidden) { display:flex; }
+        #btn-tab-forgetting, #tab-content-forgetting { display:none !important; }
+    </style>
+
 <!-- ================= MASTERMIN D ULTRA MOTION v7.3 ================= -->
 <style id="mastermind-ultra-motion">
 :root{
@@ -893,6 +906,169 @@ aside button:active{
 }
 </style>
 
+    <style id="mastermind-site-refresh">
+        :root {
+            --ui-ink: #e8edf8;
+            --ui-muted: #94a3b8;
+            --ui-panel: rgba(15, 23, 42, .74);
+            --ui-panel-strong: rgba(15, 23, 42, .92);
+            --ui-border: rgba(148, 163, 184, .15);
+            --ui-violet: #8b5cf6;
+            --ui-cyan: #22d3ee;
+        }
+
+        body {
+            color: var(--ui-ink);
+            background:
+                radial-gradient(ellipse 70% 54% at 6% 4%, rgba(109, 40, 217, .24), transparent 68%),
+                radial-gradient(ellipse 58% 46% at 95% 10%, rgba(8, 145, 178, .16), transparent 70%),
+                radial-gradient(ellipse 60% 50% at 48% 100%, rgba(79, 70, 229, .15), transparent 72%),
+                #020617 !important;
+        }
+
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            pointer-events: none;
+            z-index: -1;
+            inset: -35%;
+            background:
+                radial-gradient(circle at 25% 38%, rgba(139, 92, 246, .19), transparent 17%),
+                radial-gradient(circle at 70% 60%, rgba(34, 211, 238, .12), transparent 15%),
+                radial-gradient(circle at 54% 16%, rgba(59, 130, 246, .13), transparent 14%);
+            filter: blur(34px);
+            transform: translate3d(0,0,0);
+            animation: site-aurora 22s ease-in-out infinite alternate;
+        }
+        body::after {
+            opacity: .65;
+            animation: site-aurora-reverse 28s ease-in-out infinite alternate;
+        }
+        @keyframes site-aurora {
+            from { transform: translate3d(-4%, -3%, 0) rotate(-3deg) scale(1); }
+            to { transform: translate3d(5%, 4%, 0) rotate(5deg) scale(1.1); }
+        }
+        @keyframes site-aurora-reverse {
+            from { transform: translate3d(4%, 2%, 0) rotate(4deg) scale(1.08); }
+            to { transform: translate3d(-5%, -4%, 0) rotate(-4deg) scale(1); }
+        }
+        @keyframes site-glow-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+            50% { box-shadow: 0 0 28px 1px rgba(139, 92, 246, .14); }
+        }
+
+        header, aside, #mobile-bottom-nav {
+            background: rgba(7, 12, 28, .76) !important;
+            border-color: var(--ui-border) !important;
+            -webkit-backdrop-filter: blur(22px) saturate(150%);
+            backdrop-filter: blur(22px) saturate(150%);
+        }
+        header { box-shadow: 0 10px 35px rgba(0, 0, 0, .16); }
+        aside { box-shadow: 14px 0 45px rgba(0, 0, 0, .12); }
+
+        main .bg-slate-900.border, main .bg-slate-950.border, .tracker-hero,
+        #log-paper-modal, #custom-alert-modal > div {
+            background: linear-gradient(145deg, rgba(30, 41, 59, .82), rgba(15, 23, 42, .72)) !important;
+            border-color: var(--ui-border) !important;
+            -webkit-backdrop-filter: blur(18px) saturate(125%);
+            backdrop-filter: blur(18px) saturate(125%);
+            box-shadow: 0 18px 48px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(255,255,255,.035);
+        }
+        main .bg-slate-900.border:hover, .tracker-hero:hover {
+            border-color: rgba(167, 139, 250, .36) !important;
+            box-shadow: 0 22px 55px rgba(0, 0, 0, .23), 0 0 30px rgba(99,102,241,.075), inset 0 1px 0 rgba(255,255,255,.055);
+        }
+
+        .tab-btn { border: 1px solid transparent; }
+        .tab-btn:hover { background: rgba(51, 65, 85, .54) !important; border-color: rgba(148,163,184,.1); }
+        .tab-btn.bg-brand-600 { background: linear-gradient(135deg, #7c3aed, #4f46e5) !important; box-shadow: 0 8px 22px rgba(79,70,229,.28); }
+        .mobile-tab-btn.text-brand-400 { color: #c4b5fd !important; }
+
+        button.bg-brand-600, button.bg-indigo-600, .bg-brand-600 button {
+            background-image: linear-gradient(115deg, #7c3aed, #4f46e5 52%, #0891b2) !important;
+            background-size: 180% 100%;
+        }
+        button.bg-brand-600:hover, button.bg-indigo-600:hover { background-position: 100% 0; }
+
+        input, select, textarea {
+            background-color: rgba(2, 6, 23, .72) !important;
+            border-color: rgba(71, 85, 105, .72) !important;
+            border-radius: .75rem !important;
+        }
+        input:hover, select:hover, textarea:hover { border-color: rgba(148, 163, 184, .56) !important; }
+        input:focus, select:focus, textarea:focus {
+            border-color: rgba(129, 140, 248, .86) !important;
+            box-shadow: 0 0 0 3px rgba(99,102,241,.17), 0 0 22px rgba(99,102,241,.1) !important;
+        }
+
+        #tab-content-tracker .tracker-hero {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(118deg, rgba(79,70,229,.32), rgba(15,23,42,.86) 48%, rgba(8,145,178,.2)) !important;
+            animation: site-glow-pulse 5s ease-in-out infinite;
+        }
+        #tab-content-tracker .tracker-hero::after {
+            content: ''; position: absolute; width: 16rem; height: 16rem; right: -5rem; top: -10rem;
+            border-radius: 999px; background: rgba(34,211,238,.12); filter: blur(28px); pointer-events: none;
+        }
+        #marksChart { border-radius: .9rem; }
+        #marks-chart-viewport {
+            background: radial-gradient(circle at 70% 0%, rgba(79,70,229,.12), transparent 36%), rgba(2,6,23,.72) !important;
+            border-color: rgba(99,102,241,.18) !important;
+        }
+        .chart-filter-btn { letter-spacing: .01em; }
+        thead { background: rgba(2, 6, 23, .72) !important; }
+        tbody tr:hover { background: linear-gradient(90deg, rgba(79,70,229,.11), rgba(34,211,238,.04)) !important; }
+
+        #auth-screen > div, #google-profile-modal > div {
+            background: linear-gradient(145deg, rgba(30,41,59,.94), rgba(15,23,42,.94)) !important;
+            border-color: rgba(129,140,248,.25) !important;
+        }
+        #auth-screen h1 { letter-spacing: .08em; }
+        #auth-screen > div { position: relative; }
+        #auth-screen > div::before {
+            content: ''; position: absolute; inset: 0 0 auto; height: 2px; border-radius: inherit;
+            background: linear-gradient(90deg, transparent, #22d3ee, #8b5cf6, transparent);
+            opacity: .8;
+        }
+        #auth-form label, #google-profile-form label { letter-spacing: .075em; }
+        #auth-diagnostics { box-shadow: inset 3px 0 0 currentColor; }
+        #auth-diagnostics:not(.hidden) { animation: site-auth-notice .28s ease-out both; }
+        @keyframes site-auth-notice { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        #google-auth-button { border: 1px solid rgba(226,232,240,.65); }
+        #google-auth-button:hover { box-shadow: 0 10px 24px rgba(255,255,255,.13); }
+        .auth-trust-row span { transition: border-color .2s ease, background-color .2s ease; }
+        .auth-trust-row span:hover { border-color: rgba(129,140,248,.42); background: rgba(30,41,59,.72); }
+
+        @media (max-width: 767px) {
+            header { padding: .85rem .9rem !important; }
+            main .bg-slate-900.border, main .bg-slate-950.border { border-radius: 1rem !important; }
+            #tab-content-tracker .tracker-hero { padding: 1.1rem !important; }
+            #chart-controls {
+                flex-wrap: nowrap !important;
+                overflow-x: auto;
+                scrollbar-width: none;
+                margin-inline: -.25rem;
+                padding: .15rem .25rem .45rem;
+                -webkit-overflow-scrolling: touch;
+            }
+            #chart-controls::-webkit-scrollbar { display: none; }
+            #chart-controls > div { flex: 0 0 auto; scroll-snap-align: start; }
+            #chart-controls button { min-height: 42px; padding-inline: .7rem; }
+            #marks-chart-viewport { height: clamp(270px, 54vh, 350px) !important; padding: .45rem !important; }
+            #marksChart { min-height: 0 !important; }
+            #tab-content-tracker table th, #tab-content-tracker table td { padding: .7rem .55rem; white-space: nowrap; }
+            #tab-content-tracker .tracker-hero h2 { font-size: 1.45rem; }
+            #auth-screen { align-items: flex-start; padding-top: max(1rem, env(safe-area-inset-top)); }
+            #auth-screen > div { margin-block: auto; padding: 1.25rem !important; border-radius: 1.35rem !important; }
+            .auth-trust-row { gap: .3rem; }
+            .auth-trust-row span { padding: .5rem .18rem; font-size: 8px; }
+            #auth-diagnostics { font-size: 10px; line-height: 1.45; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            body::before, body::after, #tab-content-tracker .tracker-hero { animation: none !important; }
+        }
+    </style>
 </head>
 <body class="h-full flex flex-col font-sans overflow-hidden">
 
@@ -973,7 +1149,7 @@ aside button:active{
                 <div id="register-fields" class="hidden space-y-4">
                     <div>
                         <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Full Name</label>
-                        <input type="text" id="auth-name" placeholder="Supun Perera" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                    <input type="text" id="auth-name" autocomplete="name" placeholder="Supun Perera" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -1036,17 +1212,22 @@ aside button:active{
 
                 <div>
                     <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Email Address</label>
-                    <input type="email" id="auth-email" required placeholder="name@domain.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                    <input type="email" id="auth-email" required autocomplete="email" placeholder="name@domain.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                 </div>
 
                 <div>
                     <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Password</label>
                     <div class="relative">
-                        <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 pr-10 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                        <input type="password" id="auth-password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 pr-10 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
                         <button type="button" onclick="togglePasswordVisibility('auth-password','auth-password-toggle-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                             <i id="auth-password-toggle-icon" class="fa-solid fa-eye"></i>
                         </button>
                     </div>
+                </div>
+
+                <div class="flex items-center justify-between text-[10px] text-slate-500">
+                    <span>Protected with Supabase Auth</span>
+                    <button type="button" onclick="sendPasswordReset()" class="font-bold text-brand-400 hover:text-brand-300">Forgot password?</button>
                 </div>
 
                 <div class="flex gap-2">
@@ -1075,8 +1256,14 @@ aside button:active{
             </button>
 
             <p class="text-[9px] text-center text-slate-500">
-                Google sign-in is secured by Supabase Authentication.
+                Google sign-in securely creates your student profile on first use.
             </p>
+
+            <div class="auth-trust-row" aria-label="Account benefits">
+                <span><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i>Secure sign-in</span>
+                <span><i class="fa-solid fa-cloud text-indigo-400 mr-1"></i>Cloud sync</span>
+                <span><i class="fa-solid fa-bolt text-amber-400 mr-1"></i>Fast setup</span>
+            </div>
 
             <div class="text-center pt-2">
                 <p id="auth-database-badge" class="text-[9px] uppercase tracking-wider font-extrabold text-indigo-400 bg-indigo-500/10 py-1.5 px-3 rounded-lg border border-indigo-500/20">
@@ -1085,6 +1272,33 @@ aside button:active{
                 <div id="auth-diagnostics" class="hidden mt-3 text-left p-3 rounded-lg bg-red-950/40 border border-red-500/30 text-[10px] text-red-300">
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- First Google sign-in profile completion: mirrors account registration. -->
+    <div id="google-profile-modal" class="hidden fixed inset-0 z-[60] items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 overflow-y-auto">
+        <div class="w-full max-w-lg rounded-3xl border border-indigo-400/25 bg-slate-900 p-6 shadow-2xl shadow-black/50 space-y-5">
+            <div class="flex items-start gap-3">
+                <div class="shrink-0 rounded-2xl bg-white p-3"><i class="fa-brands fa-google text-xl text-red-500"></i></div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-[.18em] text-indigo-300">One-time account setup</p>
+                    <h2 class="mt-1 text-xl font-extrabold text-white">Finish your student profile</h2>
+                    <p class="mt-1 text-xs leading-relaxed text-slate-400">Your Google account is connected. Add the same academic details used when creating an account.</p>
+                </div>
+            </div>
+            <form id="google-profile-form" onsubmit="saveGoogleProfileSetup(event)" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">Full name</label><input id="google-setup-name" required autocomplete="name" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100 focus:border-indigo-400 focus:outline-none"></div>
+                    <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">Google email</label><input id="google-setup-email" readonly class="w-full rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-400"></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">Target degree</label><select id="google-setup-course" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100"><option value="Engineering">BSc. Eng (Engineering)</option><option value="Physical Science">BSc. Physical Science</option><option value="Computer Science">BSc. Computer Science / IT</option><option value="Quantity Surveying">BSc. Quantity Surveying</option></select></div>
+                    <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">A/L exam year</label><select id="google-setup-year" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100"><option value="2027-08-10">2027 A/L</option><option value="2028-11-25">2028 A/L</option><option value="2029-11-25">2029 A/L</option></select></div>
+                </div>
+                <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">District</label><select id="google-setup-district" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100"><option value="Colombo">Colombo</option><option value="Gampaha">Gampaha</option><option value="Kandy">Kandy</option><option value="Galle">Galle</option><option value="Kurunegala">Kurunegala</option><option value="Jaffna">Jaffna</option><option value="Ratnapura">Ratnapura</option><option value="Badulla">Badulla</option><option value="Anuradhapura">Anuradhapura</option><option value="Other">Other Sri Lankan district</option></select></div>
+                <div><label class="block mb-1 text-[10px] font-bold uppercase text-slate-400">Gemini API key <span class="normal-case text-slate-500">(optional)</span></label><input id="google-setup-gemini-key" type="password" autocomplete="off" placeholder="Add later in Settings" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs text-slate-100 focus:border-indigo-400 focus:outline-none"></div>
+                <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-brand-600 py-3 text-xs font-extrabold text-white shadow-lg shadow-indigo-950/50 transition hover:brightness-110"><i class="fa-solid fa-check mr-1.5"></i>Complete secure setup</button>
+            </form>
         </div>
     </div>
 
@@ -1145,11 +1359,6 @@ aside button:active{
                     <span>Task Planner</span>
                 </button>
 
-                <button onclick="switchTab('forgetting')" id="btn-tab-forgetting" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
-                    <i class="fa-solid fa-brain text-lg w-6"></i>
-                    <span>Recall Planner</span>
-                </button>
-                
                 <button onclick="switchTab('ai')" id="btn-tab-ai" class="tab-btn w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
                     <i class="fa-solid fa-wand-magic-sparkles text-lg w-6"></i>
                     <span>Mastermind AI Coach</span>
@@ -1341,16 +1550,17 @@ aside button:active{
             <!-- ================= TRACKER TAB ================= -->
             <section id="tab-content-tracker" class="tab-pane hidden space-y-6">
                 
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="tracker-hero flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl p-5">
                     <div>
-                        <h2 class="text-2xl font-bold text-white tracking-tight">Paper Marks Analyzer</h2>
-                        <p class="text-xs text-slate-400">Log scores of model, school, and provincial exams. Use the mouse wheel to zoom the chart horizontally.</p>
+                        <p class="text-[10px] font-black uppercase tracking-[.18em] text-cyan-300">Performance intelligence</p>
+                        <h2 class="mt-1 text-2xl font-extrabold text-white tracking-tight">Mark Tracker</h2>
+                        <p class="mt-1 text-xs text-slate-400">Turn every paper into a clear trend, actionable insight, and stronger next attempt.</p>
                     </div>
                     
                     <div class="flex items-center space-x-2">
                         <button onclick="openLogPaperModal()" class="bg-brand-600 hover:bg-brand-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center space-x-1.5">
                             <i class="fa-solid fa-plus"></i>
-                            <span>Log New Paper</span>
+                            <span>Add mark record</span>
                         </button>
                     </div>
                 </div>
@@ -1407,7 +1617,7 @@ aside button:active{
                             </h3>
                             
                             <!-- Combined Actions: Subject Filter + Zoom & Save Controls -->
-                            <div class="flex flex-wrap items-center gap-2">
+                            <div id="chart-controls" class="flex flex-wrap items-center gap-2">
                                 <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
                                     <button onclick="setChartFilter('All')" id="btn-filter-all" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all bg-brand-600 text-white">All 3 Subjects</button>
                                     <button onclick="setChartFilter('Combined Maths')" id="btn-filter-maths" class="chart-filter-btn px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Maths</button>
@@ -1429,7 +1639,7 @@ aside button:active{
                         </div>
 
                         <!-- Canvas viewport (Expanded 480px high view) -->
-                        <div class="relative w-full h-[480px] bg-slate-950 rounded-xl p-4 border border-slate-800/60 flex items-center justify-center">
+                        <div id="marks-chart-viewport" class="relative w-full h-[480px] bg-slate-950 rounded-xl p-4 border border-slate-800/60 flex items-center justify-center">
                             <canvas id="marksChart" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
                         </div>
                     </div>
@@ -1950,10 +2160,6 @@ aside button:active{
             <i class="fa-solid fa-list-check text-sm"></i>
             <span class="text-[8px] font-semibold">Tasks</span>
         </button>
-        <button onclick="switchTab('forgetting')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
-            <i class="fa-solid fa-brain text-sm"></i>
-            <span class="text-[8px] font-semibold">Recall</span>
-        </button>
         <button onclick="switchTab('ai')" class="mobile-tab-btn flex flex-col items-center space-y-0.5 text-slate-500 flex-1 min-w-[50px]">
             <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
             <span class="text-[8px] font-semibold">Mastermind AI</span>
@@ -2006,6 +2212,8 @@ aside button:active{
 
         let currentAuthMode = 'login';
         let supabaseClient = null;
+        let authStateSubscription = null;
+        let oauthReturnInProgress = false;
         let aiChatHistory = [];
 
         function initSupabase() {
@@ -2021,7 +2229,29 @@ aside button:active{
 
             try {
                 supabaseClient = supabase.createClient(defaultSupabaseUrl, defaultSupabaseAnonKey);
-                
+                if (!authStateSubscription) {
+                    const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
+                        if (event !== 'SIGNED_IN' || !session?.user || oauthReturnInProgress) return;
+                        oauthReturnInProgress = true;
+                        setTimeout(async () => {
+                            try {
+                                currentUserSession = session;
+                                setSevenDaySessionExpiry();
+                                await loadCloudData();
+                                document.getElementById('auth-screen')?.classList.add('hidden');
+                                syncProfileUI();
+                                updateCoreStats();
+                                if (window.googleProfileNeedsSetup) finishGoogleProfileSetup();
+                            } catch (err) {
+                                console.error('OAuth session initialization failed:', err);
+                            } finally {
+                                oauthReturnInProgress = false;
+                            }
+                        }, 0);
+                    });
+                    authStateSubscription = data.subscription;
+                }
+
                 document.getElementById('auth-database-badge').innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1 text-emerald-400"></i> Secure Cloud Handshake Active';
                 document.getElementById('auth-database-badge').className = "text-[9px] uppercase tracking-wider font-extrabold text-emerald-400 bg-emerald-500/10 py-1.5 px-3 rounded-lg border border-emerald-500/20";
                 
@@ -2105,6 +2335,20 @@ aside button:active{
             }
         }
 
+        function getSafeAuthRedirectUrl() {
+            // Supabase only permits configured http(s) redirect URLs. A page opened
+            // straight from disk has a `null` origin, which must never be sent as
+            // the OAuth callback URL.
+            if (!['http:', 'https:'].includes(window.location.protocol)) return null;
+            const callback = new URL(window.location.href);
+            callback.hash = '';
+            callback.searchParams.delete('code');
+            callback.searchParams.delete('error');
+            callback.searchParams.delete('error_code');
+            callback.searchParams.delete('error_description');
+            return callback.toString();
+        }
+
         async function signInWithGoogle() {
             if (authRequestInProgress) return;
 
@@ -2121,13 +2365,26 @@ aside button:active{
 
             setAuthLoading(true);
             try {
-                const redirectTo = window.location.origin + window.location.pathname;
+                const redirectTo = getSafeAuthRedirectUrl();
+                const oauthOptions = {
+                    queryParams: { access_type: 'offline', prompt: 'select_account' }
+                };
+                if (redirectTo) {
+                    oauthOptions.redirectTo = redirectTo;
+                } else {
+                    // This lets Supabase use its configured Site URL instead of
+                    // generating the invalid `null/...` callback from file://.
+                    const note = document.getElementById('auth-diagnostics');
+                    if (note) {
+                        note.classList.remove('hidden');
+                        note.className = 'mt-3 text-left p-3 rounded-lg bg-amber-950/40 border border-amber-500/30 text-[10px] text-amber-200';
+                        note.innerHTML = '<div class="font-bold text-amber-300 mb-1"><i class="fa-solid fa-circle-info mr-1"></i>Local preview detected</div><div class="leading-relaxed text-slate-300">Google will return to the Site URL configured in Supabase. Test OAuth from your deployed HTTPS domain for a full redirect round trip.</div>';
+                    }
+                }
 
                 const { error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'google',
-                    options: {
-                        redirectTo
-                    }
+                    options: oauthOptions
                 });
 
                 if (error) {
@@ -2174,7 +2431,14 @@ aside button:active{
                     const district = document.getElementById('auth-district').value;
                     const registerGeminiKey = document.getElementById('register-gemini-key').value.trim();
 
-                    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                    if (!name || name === 'Scholar') {
+                        showAuthDiagError('Name Required', 'Please enter your full name to create your student profile.');
+                        return;
+                    }
+                    const { data, error } = await supabaseClient.auth.signUp({
+                        email, password,
+                        options: { data: { full_name: name } }
+                    });
                     if (error) {
                         showAuthDiagError("Registration Failed", error.message);
                         return;
@@ -2290,45 +2554,45 @@ aside button:active{
 
         async function finishGoogleProfileSetup() {
             if (!window.googleProfileNeedsSetup) return;
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            document.getElementById('google-setup-name').value = studentProfile.name || '';
+            document.getElementById('google-setup-email').value = user?.email || '';
+            document.getElementById('google-setup-year').value = studentProfile.year || '2027-08-10';
+            document.getElementById('google-setup-course').value = studentProfile.course || 'Engineering';
+            document.getElementById('google-setup-district').value = studentProfile.district || 'Colombo';
+            document.getElementById('google-profile-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('google-setup-course')?.focus(), 100);
+        }
 
-            const setupNote = document.getElementById('google-profile-setup-note');
-            if (setupNote) setupNote.classList.remove('hidden');
-
-            const nameInput = document.getElementById('profile-name');
-            const yearInput = document.getElementById('profile-year');
-            const courseInput = document.getElementById('profile-course');
-            const districtInput = document.getElementById('profile-district');
-
-            // Google account name is filled automatically. Do not ask the user
-            // to type it again. The other profile fields are collected here.
-            if (nameInput) {
-                nameInput.value = studentProfile.name || '';
-                nameInput.readOnly = true;
-                nameInput.classList.add('opacity-70', 'cursor-not-allowed');
-                nameInput.title = 'Name imported automatically from your Google account';
-            }
-            if (yearInput) yearInput.value = studentProfile.year || '2027-08-10';
-            if (courseInput) courseInput.value = studentProfile.course || 'Engineering';
-            if (districtInput) districtInput.value = studentProfile.district || 'Colombo';
-
-            // This dashboard uses a Settings tab rather than a separate modal.
-            // Open it immediately after Google authentication so the user can
-            // complete the remaining inputs.
-            try {
-                switchTab('settings');
-                setTimeout(() => {
-                    document.getElementById('profile-course')?.focus();
-                }, 100);
-            } catch (err) {
-                console.warn('Could not open profile setup:', err);
-            }
-
+        async function saveGoogleProfileSetup(event) {
+            event.preventDefault();
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return;
+            studentProfile = {
+                name: document.getElementById('google-setup-name').value.trim(),
+                year: document.getElementById('google-setup-year').value,
+                course: document.getElementById('google-setup-course').value,
+                district: document.getElementById('google-setup-district').value,
+                gemini_api_key: document.getElementById('google-setup-gemini-key').value.trim()
+            };
+            const { error } = await supabaseClient.from('profiles').upsert({ id: user.id, ...studentProfile });
+            if (error) { showAlert('Profile setup failed', error.message); return; }
+            if (studentProfile.gemini_api_key) localStorage.setItem('gemini_api_key', studentProfile.gemini_api_key);
             window.googleProfileNeedsSetup = false;
+            document.getElementById('google-profile-modal').classList.add('hidden');
+            syncProfileUI(); updateCoreStats();
+            showAlert('Profile ready', 'Welcome to A/L Mastermind. Your dashboard is synced and ready.');
+        }
 
-            showAlert(
-                'Complete Your Profile',
-                'Your name was imported automatically from your Google account. Complete the remaining profile details and save your profile.'
-            );
+        async function sendPasswordReset() {
+            const email = document.getElementById('auth-email').value.trim().toLowerCase();
+            if (!email) { showAuthDiagError('Enter your email', 'Add your account email above, then select “Forgot password?” again.'); return; }
+            if (!supabaseClient) { showAuthDiagError('Service unavailable', 'Secure authentication is not ready yet. Please try again in a moment.'); return; }
+            const redirectTo = getSafeAuthRedirectUrl();
+            const options = redirectTo ? { redirectTo } : {};
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email, options);
+            if (error) { showAuthDiagError('Password reset unavailable', error.message); return; }
+            showAlert('Check your inbox', 'We sent a secure password-reset link to your email address.');
         }
 
         async function saveProfileToCloud() {
@@ -2350,102 +2614,36 @@ aside button:active{
             }
         }
 
-        // ================= 7-DAY SESSION SECURITY =================
-        // A successful sign-in creates an absolute 7-day browser-side deadline.
-        // The Supabase session is still handled normally, but this dashboard
-        // will force a fresh sign-in after the deadline.
-        const MASTER_SESSION_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+        // ================= PERSISTENT SESSION =================
+        // Supabase owns session lifetime and refreshes it when possible. There is
+        // intentionally no dashboard-level time limit or forced seven-day logout.
         const MASTER_SESSION_EXPIRY_KEY = 'almaster_session_expires_at';
-        let masterSessionExpiryTimer = null;
 
         function setSevenDaySessionExpiry() {
-            const expiresAt = Date.now() + MASTER_SESSION_MAX_AGE;
-            try {
-                localStorage.setItem(MASTER_SESSION_EXPIRY_KEY, String(expiresAt));
-            } catch (err) {
-                console.warn('Could not persist 7-day session expiry.', err);
-            }
-            scheduleSevenDaySessionCheck(expiresAt);
-            updateSessionExpiryUI(expiresAt);
-            return expiresAt;
+            // Clear the legacy deadline left by previous versions of the app.
+            try { localStorage.removeItem(MASTER_SESSION_EXPIRY_KEY); } catch (_) {}
+            updateSessionExpiryUI();
+            return 0;
         }
 
         function getSevenDaySessionExpiry() {
-            try {
-                const value = Number(localStorage.getItem(MASTER_SESSION_EXPIRY_KEY));
-                return Number.isFinite(value) && value > 0 ? value : 0;
-            } catch (_) {
-                return 0;
-            }
+            return 0;
         }
 
         function clearSevenDaySessionExpiry() {
-            if (masterSessionExpiryTimer) {
-                clearTimeout(masterSessionExpiryTimer);
-                masterSessionExpiryTimer = null;
-            }
             try { localStorage.removeItem(MASTER_SESSION_EXPIRY_KEY); } catch (_) {}
-            updateSessionExpiryUI(0);
+            updateSessionExpiryUI();
         }
 
-        function scheduleSevenDaySessionCheck(expiresAt = getSevenDaySessionExpiry()) {
-            if (masterSessionExpiryTimer) clearTimeout(masterSessionExpiryTimer);
-            if (!expiresAt) return;
-
-            const remaining = expiresAt - Date.now();
-            if (remaining <= 0) {
-                masterSessionExpiryTimer = setTimeout(() => forceSevenDayLogout(), 0);
-                return;
-            }
-
-            // Re-check at most hourly so browser sleep/background tabs are handled safely.
-            masterSessionExpiryTimer = setTimeout(() => {
-                if (Date.now() >= expiresAt) forceSevenDayLogout();
-                else {
-                    updateSessionExpiryUI(expiresAt);
-                    scheduleSevenDaySessionCheck(expiresAt);
-                }
-            }, Math.min(remaining, 60 * 60 * 1000));
-        }
-
-        function updateSessionExpiryUI(expiresAt = getSevenDaySessionExpiry()) {
+        function updateSessionExpiryUI() {
             const badge = document.getElementById('session-expiry-badge');
             if (!badge) return;
-            if (!expiresAt) {
-                badge.textContent = 'Fresh sign-in required';
-                return;
-            }
-            const remaining = Math.max(0, expiresAt - Date.now());
-            const days = Math.ceil(remaining / (24 * 60 * 60 * 1000));
-            badge.textContent = days <= 1 ? 'Session expires within 24 hours' : `Session active • ${days} days left`;
-        }
-
-        async function forceSevenDayLogout() {
-            clearSevenDaySessionExpiry();
-            try {
-                await handleLogout(true);
-            } catch (err) {
-                console.warn('Automatic logout completed with a cleanup warning.', err);
-            }
-            showAlert('Session Expired', 'For your security, this account session lasted 7 days. Please sign in again to continue.');
+            badge.textContent = 'Session active';
         }
 
         function validateSevenDaySession() {
-            const expiresAt = getSevenDaySessionExpiry();
-            if (!expiresAt) return true;
-            if (Date.now() >= expiresAt) {
-                forceSevenDayLogout();
-                return false;
-            }
-            scheduleSevenDaySessionCheck(expiresAt);
-            updateSessionExpiryUI(expiresAt);
             return true;
         }
-
-        window.addEventListener('focus', validateSevenDaySession);
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) validateSevenDaySession();
-        });
 
         async function checkSessionStatus() {
             initSupabase();
@@ -2779,11 +2977,6 @@ aside button:active{
                 }
             }
 
-            if (numberVal == 12 || numberVal == 26) {
-                showAlert('Filtered Assignment', 'Note: Practice papers 12 and 26 are master calibration values and cannot be loaded.');
-                return;
-            }
-
             if (supabaseClient) {
                 try {
                     const { data: { user } } = await supabaseClient.auth.getUser();
@@ -3014,11 +3207,9 @@ aside button:active{
             }
 
             const datasets = [];
-            const activePapersForLabels = (activeChartFilter === 'All' ? paperLogs : paperLogs.filter(p => p.subject === activeChartFilter))
-                .filter(p => {
-                    const num = parseInt(String(p.type).replace(/\D/g, ''), 10);
-                    return num !== 12 && num !== 26;
-                });
+            const activePapersForLabels = activeChartFilter === 'All'
+                ? paperLogs
+                : paperLogs.filter(p => p.subject === activeChartFilter);
             
             const uniqueLabels = [...new Set(activePapersForLabels.map(p => p.type))];
 
@@ -3172,11 +3363,9 @@ aside button:active{
                 chatSideChartInstance.destroy();
             }
 
-            const activePapersForLabels = (activeChartFilter === 'All' ? paperLogs : paperLogs.filter(p => p.subject === activeChartFilter))
-                .filter(p => {
-                    const num = parseInt(String(p.type).replace(/\D/g, ''), 10);
-                    return num !== 12 && num !== 26;
-                });
+            const activePapersForLabels = activeChartFilter === 'All'
+                ? paperLogs
+                : paperLogs.filter(p => p.subject === activeChartFilter);
             
             const uniqueLabels = [...new Set(activePapersForLabels.map(p => p.type))];
 
@@ -4060,6 +4249,8 @@ Strict answer rules:
         }
 
         function switchTab(tabId) {
+            // Recall Planner has been retired; stale saved links safely return home.
+            if (tabId === 'forgetting') tabId = 'home';
             document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('bg-brand-600', 'text-white');
@@ -4241,6 +4432,8 @@ Strict answer rules:
         window.handleAuthSubmit = handleAuthSubmit;
         window.signInWithGoogle = signInWithGoogle;
         window.finishGoogleProfileSetup = finishGoogleProfileSetup;
+        window.saveGoogleProfileSetup = saveGoogleProfileSetup;
+        window.sendPasswordReset = sendPasswordReset;
         window.handleLogout = handleLogout;
         window.toggleAbsentInput = toggleAbsentInput;
         window.initCountdown = initCountdown;
@@ -5939,6 +6132,15 @@ Strict answer rules:
             }
 
             function stabilityBuildChartDatasets(uniqueLabels) {
+                const areaFill = (chart, color) => {
+                    const area = chart.chartArea;
+                    if (!area) return 'rgba(99, 102, 241, 0.08)';
+                    const gradient = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+                    gradient.addColorStop(0, `${color}42`);
+                    gradient.addColorStop(.72, `${color}0d`);
+                    gradient.addColorStop(1, `${color}00`);
+                    return gradient;
+                };
                 const alignScores = (subjectPapers) => uniqueLabels.map(label => {
                     const match = subjectPapers.find(p => p.type === label);
                     return !match || match.absent ? null : Number(match.marks);
@@ -5950,17 +6152,21 @@ Strict answer rules:
                     label,
                     data: alignScores(papers),
                     borderColor: activeChartFilter === 'All' ? color : (ctx => getVerticalGradient(ctx.chart.ctx, ctx.chart.chartArea)),
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    tension: 0.35,
+                    backgroundColor: ctx => areaFill(ctx.chart, color),
+                    fill: true,
+                    borderWidth: 3.25,
+                    tension: 0.38,
                     spanGaps: true,
                     segment: {
                         borderDash: ctx => gapSegmentDash(ctx),
                         borderColor: ctx => isGapSegment(ctx) ? 'rgba(148, 163, 184, 0.4)' : undefined
                     },
                     pointBackgroundColor: color,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointBorderColor: '#0f172a',
+                    pointBorderWidth: 2,
+                    pointRadius: 4.5,
+                    pointHoverRadius: 7,
+                    pointHoverBorderWidth: 3
                 });
 
                 const datasets = [];
@@ -6072,10 +6278,7 @@ Strict answer rules:
 
                     if (typeof calculateInsights === 'function') calculateInsights();
 
-                    const activePapers = filtered.filter(p => {
-                        const num = Number.parseInt(String(p.type).replace(/\D/g, ''), 10);
-                        return num !== 12 && num !== 26;
-                    });
+            const activePapers = filtered;
                     const uniqueLabels = [...new Set(activePapers.map(p => p.type))];
                     const datasets = stabilityBuildChartDatasets(uniqueLabels);
                     const canvas = document.getElementById('marksChart');
@@ -6091,10 +6294,22 @@ Strict answer rules:
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                animation: false,
-                                resizeDelay: 0,
+                                animation: { duration: 480, easing: 'easeOutQuart' },
+                                resizeDelay: 100,
+                                interaction: { mode: 'index', intersect: false },
+                                layout: { padding: { top: 6, right: 10, bottom: 0, left: 2 } },
                                 plugins: {
-                                    legend: { labels: { color: '#94a3b8', font: { weight: 'bold', size: 11 } } },
+                                    legend: {
+                                        position: 'top', align: 'start',
+                                        labels: { color: '#cbd5e1', font: { weight: 'bold', size: 11 }, usePointStyle: true, pointStyle: 'circle', padding: 18 }
+                                    },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(15, 23, 42, .96)',
+                                        borderColor: 'rgba(129, 140, 248, .55)', borderWidth: 1,
+                                        titleColor: '#e2e8f0', bodyColor: '#cbd5e1', padding: 12,
+                                        displayColors: true, usePointStyle: true,
+                                        callbacks: { label: item => `${item.dataset.label}: ${item.parsed.y}%` }
+                                    },
                                     zoom: {
                                         pan: { enabled: true, mode: 'x' },
                                         zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
@@ -6104,12 +6319,14 @@ Strict answer rules:
                                     y: {
                                         min: 0,
                                         max: 100,
-                                        grid: { color: 'rgba(51, 65, 85, 0.25)' },
-                                        ticks: { color: '#64748b', font: { weight: 'bold' }, stepSize: 10 }
+                                        border: { display: false },
+                                        grid: { color: 'rgba(71, 85, 105, 0.24)', drawTicks: false },
+                                        ticks: { color: '#94a3b8', font: { weight: 'bold', size: 10 }, padding: 10, stepSize: 10, callback: value => `${value}%` }
                                     },
                                     x: {
-                                        grid: { color: 'rgba(51, 65, 85, 0.25)' },
-                                        ticks: { color: '#64748b', font: { weight: 'bold' }, autoSkip: true, maxTicksLimit: 16 }
+                                        border: { display: false },
+                                        grid: { display: false },
+                                        ticks: { color: '#94a3b8', font: { weight: 'bold', size: 10 }, padding: 10, autoSkip: true, maxTicksLimit: 10 }
                                     }
                                 }
                             }
@@ -6385,7 +6602,6 @@ Strict answer rules:
                 { id:'home', label:'Overview & Clock', hint:'Dashboard overview', icon:'fa-house', action:() => switchTab('home') },
                 { id:'tracker', label:'Marks Tracker', hint:'Scores and progression', icon:'fa-chart-line', action:() => switchTab('tracker') },
                 { id:'tasks', label:'Tasks & Classes', hint:'To-do list and reminders', icon:'fa-list-check', action:() => switchTab('tasks') },
-                { id:'forgetting', label:'Recall Planner', hint:'Active recall schedule', icon:'fa-brain', action:() => switchTab('forgetting') },
                 { id:'ai', label:'Mastermind AI Coach', hint:'AI study assistant', icon:'fa-wand-magic-sparkles', action:() => switchTab('ai') },
                 { id:'settings', label:'Settings', hint:'Profile and configuration', icon:'fa-sliders', action:() => switchTab('settings') },
                 { id:'new-task', label:'Add a Task', hint:'Open task manager', icon:'fa-plus', action:() => { switchTab('tasks'); setTimeout(() => document.getElementById('task-name')?.focus(), 120); } },
@@ -6716,6 +6932,24 @@ Strict answer rules:
     })();
     </script>
 
+
+<script>
+/* Retire the Recall Planner and its dashboard promotions completely. */
+(() => {
+  const removeRecallUI = () => {
+    document.querySelectorAll('[onclick*="forgetting"]').forEach(el => {
+      const card = el.closest('.bg-slate-900, .bg-gradient-to-br');
+      (card || el).remove();
+    });
+    document.querySelectorAll('.mobile-tab-btn').forEach(el => {
+      if (/recall/i.test(el.textContent)) el.remove();
+    });
+    document.getElementById('stat-active-recall-items')?.closest('.bg-slate-900')?.remove();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', removeRecallUI);
+  else removeRecallUI();
+})();
+</script>
 
 <script id="mastermind-ultra-motion-js">
 (() => {
