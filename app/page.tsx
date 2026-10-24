@@ -1,0 +1,55 @@
+"use client";
+
+import Link from "next/link";
+import { ArrowDownRight, ArrowRight, BookOpen, BrainCircuit, ChartNoAxesCombined, Check, CheckCircle2, ChevronRight, FlaskConical, GraduationCap, LockKeyhole, Play, ShieldCheck, Sparkles, Target, TimerReset } from "lucide-react";
+
+const features = [
+  { icon: Target, title: "Know your next move", body: "Track syllabus progress and turn big chapters into small, clear steps.", color: "text-violet-300" },
+  { icon: ChartNoAxesCombined, title: "Measure progress", body: "Keep marks in one place and spot the topics that need more practice.", color: "text-cyan-300" },
+  { icon: BrainCircuit, title: "Learn with AI", body: "Get step-by-step explanations for Maths, Physics and Chemistry.", color: "text-amber-300" },
+  { icon: TimerReset, title: "Protect focus time", body: "Use a lightweight focus timer and build a routine that feels realistic.", color: "text-emerald-300" }
+];
+
+export default function Home() {
+  return <main className="min-h-screen overflow-hidden">
+    <header className="glass sticky top-0 z-30">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
+        <Link href="/" className="flex items-center gap-3" aria-label="A/L Mastermind home">
+          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 shadow-glow"><GraduationCap size={23}/></span>
+          <span><span className="block text-sm font-bold tracking-tight">A/L <span className="text-violet-300">MASTERMIND</span></span><span className="block text-[10px] tracking-[.18em] muted">YOUR STUDY OS</span></span>
+        </Link>
+        <nav className="hidden items-center gap-7 text-sm text-slate-400 md:flex"><a href="#features" className="hover:text-white">Features</a><a href="#subjects" className="hover:text-white">Subjects</a><a href="#how-it-works" className="hover:text-white">How it works</a></nav>
+        <div className="flex items-center gap-2"><Link className="btn-secondary hidden sm:inline-flex" href="/auth">Sign in</Link><Link className="btn-primary" href="/dashboard">Open workspace <ArrowRight size={15}/></Link></div>
+      </div>
+    </header>
+
+    <section className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 pb-20 pt-16 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:pb-28 lg:pt-24">
+      <div className="relative z-10">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-300/[.07] px-3 py-2 text-[11px] font-semibold tracking-wide text-violet-200"><Sparkles size={14}/> BUILT FOR SRI LANKAN A/L STUDENTS <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-emerald-300">BETA</span></div>
+        <h1 className="display max-w-2xl text-5xl font-semibold leading-[1.04] sm:text-6xl lg:text-7xl">Master your <span className="bg-gradient-to-r from-violet-300 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">A/L journey.</span></h1>
+        <p className="mt-6 max-w-xl text-base leading-7 text-slate-400 sm:text-lg">One focused space for lessons, syllabus tracking, practice, marks and study planning. Less dashboard chaos. More time actually learning.</p>
+        <div className="mt-8 flex flex-wrap gap-3"><Link href="/dashboard" className="btn-primary px-5 py-3">Explore the workspace <ArrowRight size={16}/></Link><a href="#features" className="btn-secondary px-5 py-3">See what&apos;s inside <ArrowDownRight size={16}/></a></div>
+        <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-400"><span className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-300"/>Demo mode available</span><span className="flex items-center gap-2"><ShieldCheck size={15} className="text-cyan-300"/>Keys stay server-side</span><span className="flex items-center gap-2"><LockKeyhole size={15} className="text-violet-300"/>Installable PWA</span></div>
+      </div>
+
+      <div className="relative mx-auto w-full max-w-xl">
+        <div className="absolute -inset-8 rounded-[40px] bg-gradient-to-br from-violet-600/20 via-transparent to-cyan-500/15 blur-3xl"/>
+        <div className="panel relative rounded-[26px] p-4 shadow-glow sm:p-5">
+          <div className="flex items-center justify-between border-b border-white/[.07] pb-4"><div><p className="text-[10px] uppercase tracking-[.2em] text-slate-500">Student workspace</p><h2 className="mt-1 text-lg font-semibold">Your progress, at a glance</h2></div><div className="flex gap-1.5"><span className="h-2 w-2 rounded-full bg-rose-400"/><span className="h-2 w-2 rounded-full bg-amber-300"/><span className="h-2 w-2 rounded-full bg-emerald-300"/></div></div>
+          <div className="mt-4 grid grid-cols-2 gap-3"><div className="rounded-2xl border border-white/[.07] bg-black/15 p-4"><p className="text-xs muted">Syllabus covered</p><div className="mt-2 flex items-end justify-between"><span className="display text-3xl font-semibold">43%</span><span className="text-xs text-emerald-300">+8.4%</span></div><div className="mt-3 progress-track"><div className="progress-fill bg-violet-400" style={{width:"43%"}}/></div></div><div className="rounded-2xl border border-white/[.07] bg-black/15 p-4"><p className="text-xs muted">Focus this week</p><div className="mt-2 display text-3xl font-semibold">12.5<span className="ml-1 text-sm font-medium text-slate-400">hrs</span></div><p className="mt-2 text-[11px] text-cyan-300">A little progress adds up</p></div></div>
+          <div className="mt-3 rounded-2xl border border-white/[.07] bg-black/15 p-4"><div className="mb-4 flex items-center justify-between"><div><p className="text-xs muted">Subject progress</p><p className="mt-1 text-sm font-semibold">Three subjects. One plan.</p></div><BookOpen size={18} className="text-violet-300"/></div>{[{label:"Combined Mathematics",n:42,c:"#a78bfa"},{label:"Physics",n:36,c:"#22d3ee"},{label:"Chemistry",n:51,c:"#fbbf24"}].map(s=><div key={s.label} className="mb-3 last:mb-0"><div className="mb-1.5 flex justify-between text-xs"><span className="text-slate-300">{s.label}</span><span className="muted">{s.n}%</span></div><div className="progress-track"><div className="progress-fill" style={{width:s.n+"%",background:s.c}}/></div></div>)}</div>
+          <div className="mt-3 flex items-center gap-3 rounded-2xl border border-violet-300/15 bg-violet-300/[.06] p-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-300/10 text-violet-200"><BrainCircuit size={20}/></span><div className="min-w-0 flex-1"><p className="text-sm font-semibold">Mastermind AI Coach</p><p className="truncate text-xs muted">Explain a concept. Check your reasoning.</p></div><ChevronRight size={16} className="text-slate-500"/></div>
+          <div className="dot-grid pointer-events-none absolute -right-5 -top-5 -z-10 h-24 w-24 rounded-2xl opacity-60"/>
+        </div>
+      </div>
+    </section>
+
+    <section id="subjects" className="border-y border-white/[.06] bg-white/[.015] py-10"><div className="mx-auto max-w-7xl px-5 lg:px-8"><div className="flex flex-wrap items-center justify-between gap-5"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-violet-300">Your stream, your pace</p><h2 className="mt-2 text-2xl font-semibold">Made around the subjects you actually study.</h2></div><p className="max-w-md text-sm leading-6 muted">Start with Combined Mathematics, Physics and Chemistry. Built to expand as your needs change.</p></div><div className="mt-7 grid gap-3 md:grid-cols-3">{[{name:"Combined Mathematics",sub:"Algebra · Calculus · Vectors",icon:BookOpen,c:"#a78bfa"},{name:"Physics",sub:"Mechanics · Fields · Waves",icon:Target,c:"#22d3ee"},{name:"Chemistry",sub:"Atoms · Equilibrium · Organic",icon:FlaskConical,c:"#fbbf24"}].map(s=><Link key={s.name} href="/dashboard" className="panel group flex items-center gap-4 rounded-2xl p-5 transition hover:-translate-y-1 hover:border-white/20"><span className="grid h-12 w-12 place-items-center rounded-2xl" style={{background:s.c+"18",color:s.c}}><s.icon size={23}/></span><span className="min-w-0 flex-1"><span className="block font-semibold">{s.name}</span><span className="mt-1 block text-xs muted">{s.sub}</span></span><ArrowRight size={17} className="text-slate-500 transition group-hover:translate-x-1 group-hover:text-white"/></Link>)}</div></div></section>
+
+    <section id="features" className="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24"><div className="max-w-2xl"><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-300">A smarter study routine</p><h2 className="mt-3 text-3xl font-semibold sm:text-4xl">Everything in its place.<br/><span className="text-slate-500">Your attention stays on the work.</span></h2></div><div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{features.map(f=><article key={f.title} className="panel rounded-2xl p-5 transition hover:-translate-y-1"><span className={`grid h-11 w-11 place-items-center rounded-xl bg-white/[.04] ${f.color}`}><f.icon size={21}/></span><h3 className="mt-5 text-lg font-semibold">{f.title}</h3><p className="mt-2 text-sm leading-6 muted">{f.body}</p></article>)}</div></section>
+
+    <section id="how-it-works" className="mx-auto max-w-7xl px-5 pb-20 lg:px-8"><div className="panel overflow-hidden rounded-3xl p-7 sm:p-10"><div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-violet-300">Simple by design</p><h2 className="mt-3 text-3xl font-semibold">Build momentum,<br/>not impossible timetables.</h2><p className="mt-4 max-w-md text-sm leading-6 muted">Use real marks and honest study time to decide what to do next. The goal is a routine you can repeat, not a pretty plan you abandon by Tuesday.</p><Link href="/dashboard" className="btn-primary mt-6">Try the demo <Play size={15}/></Link></div><div className="grid gap-3 sm:grid-cols-2">{[{n:"01",t:"Set your focus",d:"Choose a subject and one achievable task."},{n:"02",t:"Study & practise",d:"Work through lessons and short question sets."},{n:"03",t:"Record the result",d:"Log marks and track topic progress."},{n:"04",t:"Adjust the plan",d:"Use your results to choose the next step."}].map(s=><div key={s.n} className="rounded-2xl border border-white/[.07] bg-black/15 p-4"><span className="text-xs font-bold text-violet-300">{s.n}</span><h3 className="mt-3 font-semibold">{s.t}</h3><p className="mt-1 text-sm leading-5 muted">{s.d}</p></div>)}</div></div></div></section>
+
+    <footer className="border-t border-white/[.07]"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-7 text-xs muted lg:px-8"><span>© {new Date().getFullYear()} A/L Mastermind · Built for the study journey.</span><span className="flex items-center gap-2"><Check size={13} className="text-emerald-300"/> Demo content is illustrative, not an official syllabus dataset.</span></div></footer>
+  </main>;
+}
