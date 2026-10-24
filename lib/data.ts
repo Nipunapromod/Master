@@ -1,3 +1,5 @@
+const localDate = (date: Date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+
 export type SubjectName = "Combined Mathematics" | "Physics" | "Chemistry";
 export type StudentTask = {
   id: string;
@@ -30,9 +32,9 @@ export const subjectInfo: Array<{ name: SubjectName; short: string; color: strin
 ];
 
 export const initialTasks: StudentTask[] = [
-  { id: "t1", title: "Revise differentiation examples", subject: "Combined Mathematics", dueDate: new Date().toISOString().slice(0, 10), dueTime: "18:30", priority: "High", completed: false },
+  { id: "t1", title: "Revise differentiation examples", subject: "Combined Mathematics", dueDate: localDate(), dueTime: "18:30", priority: "High", completed: false },
   { id: "t2", title: "Finish Work, Energy & Power notes", subject: "Physics", dueDate: new Date().toISOString().slice(0, 10), dueTime: "20:00", priority: "Medium", completed: false },
-  { id: "t3", title: "Practice equilibrium MCQs", subject: "Chemistry", dueDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10), dueTime: "17:00", priority: "Medium", completed: false }
+  { id: "t3", title: "Practice equilibrium MCQs", subject: "Chemistry", dueDate: localDate(new Date(Date.now() + 86400000)), dueTime: "17:00", priority: "Medium", completed: false }
 ];
 
 export const initialMarks: MarkEntry[] = [
