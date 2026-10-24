@@ -2,13 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, GraduationCap, LoaderCircle, Mail, ShieldCheck } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function AuthPage() {
   const router = useRouter();
-  const search = useSearchParams();
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -49,7 +48,7 @@ export default function AuthPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        router.push(search.get("next") === "/dashboard" ? "/dashboard" : "/dashboard");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch (e) {
