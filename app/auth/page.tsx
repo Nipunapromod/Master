@@ -33,11 +33,11 @@ export default function AuthPage() {
           password,
           options: {
             data: { full_name: name.trim() },
-            emailRedirectTo: window.location.origin + "/auth/callback?next=/dashboard"
+            emailRedirectTo: window.location.origin + "/auth/callback?next=/onboarding"
           }
         });
         if (error) throw error;
-        if (data.session) router.push("/dashboard");
+        if (data.session) router.push("/onboarding");
         else setMessage("Account request received. Check your email to verify the account, then sign in.");
       } else if (mode === "reset") {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -68,7 +68,7 @@ export default function AuthPage() {
     }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin + "/auth/callback?next=/dashboard" }
+      options: { redirectTo: window.location.origin + "/auth/callback?next=/onboarding" }
     });
     if (error) { setError(error.message); setBusy(false); }
   }
@@ -99,7 +99,7 @@ export default function AuthPage() {
           {mode !== "reset" && <><div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-white/[.08]"/><span className="text-[10px] muted">OR</span><span className="h-px flex-1 bg-white/[.08]"/></div><button type="button" disabled={busy} onClick={googleSignIn} className="btn-secondary w-full disabled:opacity-50">Continue with Google</button></>}
           <div className="mt-6 text-center text-xs muted">{mode === "login" ? <>New here? <button onClick={()=>{setMode("signup");setError("");setMessage("");}} className="font-semibold text-violet-300">Create an account</button></> : mode === "signup" ? <>Already registered? <button onClick={()=>{setMode("login");setError("");setMessage("");}} className="font-semibold text-violet-300">Sign in</button></> : <>Remembered it? <button onClick={()=>{setMode("login");setError("");setMessage("");}} className="font-semibold text-violet-300">Back to sign in</button></>}</div>
           <div className="mt-7 rounded-xl border border-white/[.06] bg-white/[.02] p-3 text-[10px] leading-5 muted">No Supabase credentials? You can still open the demo dashboard. Authentication is real only when the Supabase project and redirect URLs are configured.</div>
-          <Link href="/dashboard" className="mt-4 block text-center text-xs text-slate-300 hover:text-white">Continue in demo mode →</Link>
+          <Link href="/onboarding" className="mt-4 block text-center text-xs text-slate-300 hover:text-white">Continue in demo mode →</Link>
         </section>
       </div>
     </div>
