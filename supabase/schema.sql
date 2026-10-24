@@ -111,7 +111,6 @@ create table if not exists public.questions (
   subject_id uuid references public.subjects(id) on delete set null,
   question_type text not null check (question_type in ('mcq','structured')),
   prompt text not null,
-  explanation text not null default '',
   difficulty text not null default 'medium' check (difficulty in ('easy','medium','hard')),
   marks numeric(7,2) not null default 1 check (marks >= 0),
   language text not null default 'English',
@@ -122,8 +121,14 @@ create table if not exists public.question_options (
   id uuid primary key default gen_random_uuid(),
   question_id uuid not null references public.questions(id) on delete cascade,
   option_text text not null,
-  sort_order integer not null default 0,
-  is_correct boolean not null default false
+  sort_order integer not null default 0
+);
+create table if not exists public.question_answer_keys (
+  question_id uuid primary key references public.questions(id) on delete cascade,
+  correct_option_id uuid references public.question_options(id) on delete set null,
+  explanation text not null default '',
+  worked_solution text not null default '',
+  updated_at timestamptz not null default now()
 );
 create table if not exists public.quiz_attempts (
   id uuid primary key default gen_random_uuid(),
@@ -259,6 +264,7 @@ alter table public.notes enable row level security;
 alter table public.past_papers enable row level security;
 alter table public.questions enable row level security;
 alter table public.question_options enable row level security;
+alter table public.question_answer_keys enable row level security;
 alter table public.quiz_attempts enable row level security;
 alter table public.quiz_answers enable row level security;
 alter table public.marks enable row level security;
@@ -301,6 +307,7 @@ create policy "Published questions readable" on public.questions for select usin
 create policy "Admins manage questions" on public.questions for all using (public.is_admin()) with check (public.is_admin());
 create policy "Question options readable" on public.question_options for select using (exists (select 1 from public.questions q where q.id = question_id and (q.is_published or public.is_admin())));
 create policy "Admins manage question options" on public.question_options for all using (public.is_admin()) with check (public.is_admin());
+create policy "Admins manage answer keys" on public.question_answer_keys for all using (public.is_admin()) with check (public.is_admin());
 
 create policy "Users own quiz attempts" on public.quiz_attempts for all using (user_id = auth.uid() or public.is_admin()) with check (user_id = auth.uid() or public.is_admin());
 create policy "Users own quiz answers" on public.quiz_answers for all using (exists (select 1 from public.quiz_attempts a where a.id = attempt_id and (a.user_id = auth.uid() or public.is_admin()))) with check (exists (select 1 from public.quiz_attempts a where a.id = attempt_id and (a.user_id = auth.uid() or public.is_admin())));
@@ -315,6 +322,15 @@ create policy "Users own AI messages" on public.ai_messages for all using (user_
 create policy "Users own notifications" on public.notifications for all using (user_id = auth.uid() or public.is_admin()) with check (user_id = auth.uid() or public.is_admin());
 create policy "Admins read audit logs" on public.admin_logs for select using (admin_id = auth.uid() and public.is_admin());
 create policy "Admins insert audit logs" on public.admin_logs for insert with check (admin_id = auth.uid() and public.is_admin());
+
+
+-- Prevent students from granting themselves admin privileges by changing profiles.role.
+-- Profile INSERT/UPDATE is column-limited; role changes belong to trusted administrative tooling.
+revoke insert, update on table public.profiles from authenticated;
+grant insert (id, full_name, avatar_url, school, district, stream, subjects, preferred_language, target_exam_year, target_grades, daily_study_minutes)
+  on table public.profiles to authenticated;
+grant update (full_name, avatar_url, school, district, stream, subjects, preferred_language, target_exam_year, target_grades, daily_study_minutes)
+  on table public.profiles to authenticated;
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public
