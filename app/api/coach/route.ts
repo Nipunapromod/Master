@@ -5,6 +5,10 @@ export const dynamic = "force-dynamic";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
+const rateLimit = new Map<string, { count: number; resetsAt: number }>();
+const RATE_LIMIT_MAX = 12;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+
 const SYSTEM_PROMPT = `You are Mastermind AI Coach, a careful academic tutor for Sri Lankan G.C.E. Advanced Level students studying Combined Mathematics, Physics, and Chemistry.
 Explain concepts at A/L level, start simply, then show reasoning and relevant formulas. For calculations, state assumptions, show steps and check units. Encourage understanding, not copying. Do not claim a topic is in the official current syllabus unless the context supports that; say when unsure and recommend checking the official NIE syllabus or teacher. Do not invent past-paper references. Answer in the student's language when clear. If a problem is ambiguous, state the ambiguity and solve only under explicit assumptions.`;
 
@@ -37,6 +41,16 @@ export async function POST(request: Request) {
   if (messages[messages.length - 1]?.role !== "user") {
     return NextResponse.json({ error: "The latest message must be a student question." }, { status: 400 });
   }
+
+  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const clientKey = forwardedFor || request.headers.get("x-real-ip") || "unknown-client";
+  const now = Date.now();
+  const currentLimit = rateLimit.get(clientKey);
+  if (currentLimit && currentLimit.resetsAt > now && currentLimit.count >= RATE_LIMIT_MAX) {
+    return NextResponse.json({ error: "You have sent several questions recently. Take a short break and try again in a few minutes." }, { status: 429 });
+  }
+  if (!currentLimit || currentLimit.resetsAt <= now) rateLimit.set(clientKey, { count: 1, resetsAt: now + RATE_LIMIT_WINDOW_MS });
+  else rateLimit.set(clientKey, { count: currentLimit.count + 1, resetsAt: currentLimit.resetsAt });
 
   const subject = typeof body.subject === "string" ? body.subject.slice(0, 100) : "Sri Lankan A/L Science and Mathematics";
   const apiKey = process.env.OPENAI_API_KEY;
